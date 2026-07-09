@@ -1,0 +1,50 @@
+{
+   "code_review": {
+      "description": "Ship-readiness review of a code change.",
+      "mode": "sequential",
+      "synthesize": "judge",
+      "roles": [
+         { "role": "builder", "description": "Advocate for the change. Explain what it does well and why it should ship." },
+         { "role": "critic", "description": "Find flaws, edge cases, security and performance risks. Be specific and cite lines where possible." },
+         { "role": "judge", "description": "Weigh both sides and deliver a clear ship / hold verdict with the top reasons." }
+      ]
+   },
+   "debate": {
+      "description": "Adversarial pressure-test of a proposal.",
+      "mode": "sequential",
+      "synthesize": "moderator",
+      "roles": [
+         { "role": "proponent", "description": "Argue forcefully FOR the proposal. Make the strongest possible case." },
+         { "role": "opponent", "description": "Argue forcefully AGAINST it. Attack the weakest assumptions." },
+         { "role": "moderator", "description": "Declare a winner and summarize the decisive arguments from both sides." }
+      ]
+   },
+   "brainstorm": {
+      "description": "Diverge on ideas independently, then converge.",
+      "mode": "parallel",
+      "synthesize": "curator",
+      "roles": [
+         { "role": "ideator", "description": "Generate bold, varied ideas. Quantity over caution; no self-censoring." },
+         { "role": "pragmatist", "description": "Ground the ideas in what is actually feasible and cheap to try first." },
+         { "role": "curator", "description": "Cluster the ideas and pick the 3 most promising to pursue, with why." }
+      ]
+   },
+   "quick_take": {
+      "description": "Fast two-voice gut check, no deliberation.",
+      "mode": "parallel",
+      "roles": [
+         { "role": "answerer", "description": "Give an immediate, direct answer. No hedging, no preamble." },
+         { "role": "challenger", "description": "One sharp line of pushback on that answer." }
+      ]
+   },
+   "tiebreak": {
+      "description": "Resolve a stalemate with a decisive third voice.",
+      "mode": "sequential",
+      "synthesize": "arbiter",
+      "roles": [
+         { "role": "side_a", "description": "State the strongest case for option A in a few tight sentences." },
+         { "role": "side_b", "description": "State the strongest case for option B in a few tight sentences." },
+         { "role": "arbiter", "description": "Pick A or B decisively and give the single most important reason." }
+      ]
+   }
+}

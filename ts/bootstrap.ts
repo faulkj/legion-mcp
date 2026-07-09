@@ -1,5 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/server'
-import { loadConfig, loadDescription, loadErrors, loadModels, loadPrompts, loadRoles, loadSchema, loadToolDescription } from './config.js'
+import { loadConfig, loadDescription, loadErrors, loadModels, loadPresets, loadPrompts, loadRoles, loadSchema, loadToolDescription } from './config.js'
 import { makeProbe } from './health.js'
 import { createPrompt } from './llm.js'
 import { setLogLevel } from './log.js'
@@ -31,11 +31,12 @@ export const makeServerFactory = (config: AppConfig): () => McpServer => {
          schema = loadSchema(),
          templates = loadPrompts(),
          errors = loadErrors(),
+         presets = loadPresets(),
          // Forward roles + templates so quorum can pass its effective (file + ad-hoc) roles; both default here.
          prompt: ReturnType<typeof createPrompt> = (def, input, override, tpl) => basePrompt(def, input, override ?? roles, tpl ?? templates)
 
       registerModelTools(server, models, roles, prompt, errors, schema)
-      registerQuorumTool(server, models, roles, prompt, config.maxRounds, config.dynamicRoles, templates, errors, config.tokenBudget, loadToolDescription(config, 'quorum'), schema)
+      registerQuorumTool(server, models, roles, prompt, config.maxRounds, config.dynamicRoles, templates, errors, config.tokenBudget, presets, loadToolDescription(config, 'quorum'), schema)
 
       return server
    }

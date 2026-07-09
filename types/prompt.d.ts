@@ -33,6 +33,7 @@ interface QuorumInput extends PromptInput {
    mode?: 'sequential' | 'parallel'
    synthesize?: string
    tokenBudget?: number
+   preset?: string
 }
 
 /** Internal per-turn transcript entry for a quorum round. */

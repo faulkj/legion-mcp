@@ -3,7 +3,7 @@ import { basename, join } from 'node:path'
 import * as z from 'zod/v4'
 import { configDir, readOptional } from './configText.js'
 
-export { configDir, fill, loadDescription, loadErrors, loadPrompts, loadSchema, loadToolDescription } from './configText.js'
+export { configDir, fill, loadDescription, loadErrors, loadPresets, loadPrompts, loadSchema, loadToolDescription } from './configText.js'
 
 /** Turn a model file name into a tool-name slug. */
 export const slugify = (name: string): string =>

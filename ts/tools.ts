@@ -50,12 +50,14 @@ export const registerQuorumTool = (
    templates: PromptTemplates,
    errors: ErrorMessages,
    tokenBudget?: number,
+   presets: Presets = {},
    description?: string,
    schema: SchemaDescriptions = {}
 ): void => {
    const
       d = (key: string) => schema[key] ?? '',
       names = models.map(m => slugify(m.name)),
+      presetList = Object.entries(presets).map(([n, p]) => `${n} — ${p.description ?? p.roles.map(r => r.role).join('/')}`).join('; '),
       quorumSchema = z.object({
          models: z.array(z.string()).min(2).describe(`${d('models')} Available models: ${names.join(', ')}`),
          roles: z.record(z.string(), z.string()).optional().describe(d('roles')),
@@ -63,18 +65,21 @@ export const registerQuorumTool = (
          mode: z.enum(['sequential', 'parallel']).optional().describe(d('mode')),
          synthesize: z.string().optional().describe(d('synthesize')),
          tokenBudget: z.number().int().positive().optional().describe(d('tokenBudget')),
+         preset: z.string().optional().describe(d('preset')),
          ...buildInputSchema(schema).omit({ role: true }).shape
       })
 
-   const fallback = 'Fan a prompt out to two or more models (see config/tools/quorum.md).'
+   const
+      fallback = 'Fan a prompt out to two or more models (see config/tools/quorum.md).',
+      presetLine = presetList ? `\nAvailable presets: ${presetList}.` : ''
 
    server.registerTool(
       'quorum',
       {
-         description: `${description ?? fallback}\n\nAvailable models: ${names.join(', ')}.`,
+         description: `${description ?? fallback}\n\nAvailable models: ${names.join(', ')}.${presetLine}`,
          inputSchema: quorumSchema
       },
-      (args: QuorumInput) => runQuorum(args, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget)
+      (args: QuorumInput) => runQuorum(args, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget, presets)
    )
 }
 

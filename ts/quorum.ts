@@ -1,7 +1,7 @@
 import { fill, slugify } from './config.js'
 import { createPrompt } from './llm.js'
 import { log, logPrompt, okStatus, promptEntry } from './log.js'
-import { banner, dedup, resolve, toContext } from './quorumHelpers.js'
+import { banner, dedup, mergePresetRoles, presetError, presetSynth, resolve, toContext, validatePreset } from './quorumHelpers.js'
 
 type Prompt = ReturnType<typeof createPrompt>
 
@@ -14,7 +14,8 @@ export const runQuorum = async (
    dynamicRoles: boolean,
    templates: PromptTemplates,
    errors: ErrorMessages,
-   tokenBudget?: number
+   tokenBudget?: number,
+   presets: Presets = {}
 ): Promise<{ content: { type: 'text'; text: string }[]; structuredContent?: unknown; isError: boolean }> => {
    const err = (text: string) => ({ content: [{ type: 'text' as const, text }], isError: true })
 
@@ -26,10 +27,13 @@ export const runQuorum = async (
       return err(errors.adhocEmptyName)
 
    const
-      effectiveRoles = [...roles.filter(r => !adHoc.some(a => a.name === r.name)), ...adHoc],
+      preset = args.preset === undefined ? undefined : presets[args.preset],
+      baseRoles = [...roles.filter(r => !adHoc.some(a => a.name === r.name)), ...adHoc],
+      effectiveRoles = preset ? mergePresetRoles(baseRoles, preset) : baseRoles,
       rounds = Math.min(maxRounds, Math.max(1, args.rounds ?? 1)),
-      mode = args.mode ?? 'sequential',
+      mode = preset?.mode ?? args.mode ?? 'sequential',
       selectors = dedup(args.models),
+      synthesize = preset ? presetSynth(preset, selectors, models, effectiveRoles) : args.synthesize,
       telemetry: TurnTelemetry[] = [],
       turns: QuorumTurn[] = [],
       content: { type: 'text'; text: string }[] = []
@@ -39,6 +43,9 @@ export const runQuorum = async (
       badIndex = resolved.indexOf(null)
    if (badIndex !== -1)
       return err(fill(errors.unknownSelector, { selector: selectors[badIndex]! }))
+
+   const presetFailure = args.preset === undefined ? null : presetError(validatePreset(args.preset, selectors, presets, models, roles, effectiveRoles, adHoc), args.preset, presets, errors)
+   if (presetFailure) return err(presetFailure)
 
    let used = 0
 
@@ -100,17 +107,13 @@ export const runQuorum = async (
       }
    }
 
-   if (args.synthesize !== undefined) {
-      const synthResolved = resolve(args.synthesize, models, effectiveRoles)
-      if (!synthResolved)
-         telemetry.push({ selector: args.synthesize, modelName: '', modelId: '', round: 0, isSynthesis: true, usage: {}, latencyMs: 0, status: errors.unresolvableSelector })
-      else {
-         const synthText = await speakOne(args.synthesize, 0, true, toContext(turns, templates, args.context))
-         synthText !== null && turns.push({ selector: args.synthesize, round: 0, text: synthText })
-         const synthTurn = telemetry[telemetry.length - 1]
-         synthTurn?.status.includes('reasoning-heavy') &&
-            log('warn', `⚠️ synthesis (${args.synthesize}) spent most of its budget reasoning — raise maxTokens or use a lighter model for synthesize`)
-      }
+   if (synthesize !== undefined && !resolve(synthesize, models, effectiveRoles))
+      telemetry.push({ selector: synthesize, modelName: '', modelId: '', round: 0, isSynthesis: true, usage: {}, latencyMs: 0, status: errors.unresolvableSelector })
+   else if (synthesize !== undefined) {
+      const synthText = await speakOne(synthesize, 0, true, toContext(turns, templates, args.context))
+      synthText !== null && turns.push({ selector: synthesize, round: 0, text: synthText })
+      telemetry[telemetry.length - 1]?.status.includes('reasoning-heavy') &&
+         log('warn', `⚠️ synthesis (${synthesize}) spent most of its budget reasoning — raise maxTokens or use a lighter model for synthesize`)
    }
 
    return {
@@ -118,6 +121,7 @@ export const runQuorum = async (
       structuredContent: {
          turns: telemetry,
          transcript: toContext(turns, templates) ?? '',
+         ...(args.preset ? { preset: args.preset } : {}),
          ...(tokenBudget ? { budget: { limit: tokenBudget, used, exceeded: used > tokenBudget } } : {})
       },
       isError: content.length === 0

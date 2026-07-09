@@ -143,6 +143,44 @@ ready-to-use starters — edit or delete them freely (they hold no secrets).
 Available selectors in tools become `roleName`, e.g. passing `role: "skeptic"`
 or using `"model:skeptic"` in `quorum.models`.
 
+### Presets — `config/presets.json`
+
+Optional hot-reloadable **council recipes**: a named, self-contained multi-model
+job. Each preset has a short `description`, a `roles` list, and optional
+authoritative `mode` / `synthesize` defaults. Crucially, each role defines its
+own behavior **inline** — a role's `description` *is* its instructions (the
+behavior contract). A role with no `description` falls back to a matching
+`config/roles/<role>.md` file:
+
+```json
+{
+   "code_review": {
+      "description": "Ship-readiness review of a code change.",
+      "mode": "sequential",
+      "synthesize": "judge",
+      "roles": [
+         { "role": "builder", "description": "Advocate for the change; explain why it should ship." },
+         { "role": "critic",  "description": "Find flaws, edge cases, security and perf risks." },
+         { "role": "judge",   "description": "Weigh both sides and give a ship / hold verdict." }
+      ]
+   }
+}
+```
+
+The caller passes `preset: "code_review"` on the `quorum` tool **and** still
+writes the `models` selectors, freely assigning any model to any preset role (a
+model may play several). When a preset is set it is **enforced**: every
+selector's role must be one of the preset's roles, and every preset role must be
+staffed by ≥1 selector (a role with no inline description must also have a
+`config/roles/*.md` file). A preset's `mode` and `synthesize` are
+**authoritative** — when set they win and any `mode`/`synthesize` you pass is
+ignored; `synthesize` names a role, and the first selector staffing it runs the
+synthesis turn. Violations return an `isError` explaining the fix; freestyle by
+omitting `preset`. The chosen preset is echoed in `structuredContent.preset` so
+the moderator AI can re-run the same recipe with new context. This repo ships
+`code_review`, `debate`, `brainstorm`, `quick_take`, and `tiebreak` — edit or
+delete freely (they hold no secrets). Missing file → no presets.
+
 ### AI guidance — `config/description.md`
 
 Optional markdown served to clients as MCP `instructions` — describe your
@@ -172,8 +210,10 @@ All user-facing text lives in config, not code, and hot-reloads per request:
   roles bind, how context is framed, and how rounds are announced.
 - `config/errors.json` — the **runtime error messages** shown to the calling
   AI: `unknownRole`, `unknownSelector`, `adhocDisabled`, `adhocEmptyName`,
-  `unresolvableSelector`, `modelFailed`. Tokens in `{braces}` (`{role}`,
-  `{available}`, `{selector}`, `{model}`, `{message}`) are filled at runtime.
+  `unresolvableSelector`, `modelFailed`, and the preset messages `unknownPreset`,
+  `roleNotInPreset`, `presetRoleUncovered`, `presetRoleMissingFile`,
+  `presetRoleShadowed`, `presetSynthUncovered`. Tokens in `{braces}` (`{role}`, `{available}`,
+  `{selector}`, `{model}`, `{message}`, `{preset}`) are filled at runtime.
   Omit any key or the whole file to use built-in defaults.
   (Startup/config-validation errors stay in code — a message that reports a
   broken config file can't live inside it.)

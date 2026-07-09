@@ -4,5 +4,11 @@
    "adhocDisabled": "Ad-hoc roles are disabled (set DYNAMIC_ROLES=true to enable).",
    "adhocEmptyName": "Every ad-hoc role name must contain at least one alphanumeric character.",
    "unresolvableSelector": "error: unresolvable selector",
-   "modelFailed": "{model} failed: {message}"
+   "modelFailed": "{model} failed: {message}",
+   "unknownPreset": "Unknown preset \"{preset}\". Available: {available}",
+   "roleNotInPreset": "Selector \"{selector}\" uses a role not in preset \"{preset}\" (allowed: {available}).",
+   "presetRoleUncovered": "Preset \"{preset}\" role \"{role}\" has no speaker — add a selector like \"model:{role}\".",
+   "presetRoleMissingFile": "Preset \"{preset}\" references role \"{role}\" which has no config/roles/{role}.md file.",
+   "presetRoleShadowed": "Preset \"{preset}\" role \"{role}\" cannot be shadowed by an ad-hoc role; remove it from roles or omit preset.",
+   "presetSynthUncovered": "Preset \"{preset}\" synthesizes with role \"{role}\" — add a selector like \"model:{role}\" to staff it."
 }
