@@ -1,9 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import * as z from 'zod/v4'
-import { readOptional } from './configText.js'
+import { configDir, readOptional } from './configText.js'
 
-export { fill, loadDescription, loadErrors, loadPrompts, loadSchema, loadToolDescription } from './configText.js'
+export { configDir, fill, loadDescription, loadErrors, loadPrompts, loadSchema, loadToolDescription } from './configText.js'
 
 /** Turn a model file name into a tool-name slug. */
 export const slugify = (name: string): string =>
@@ -60,7 +60,6 @@ export const loadModels = (config: AppConfig): ModelDef[] => {
 }
 
 const
-   configDir = 'config',
    modelSchema = z.object({
       model: z.string().min(1),
       description: z.string().optional(),

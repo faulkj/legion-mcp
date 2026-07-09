@@ -28,18 +28,23 @@
       "node": ">=24"
    },
    "bin": {
-      "legion-mcp": "bin/main.js"
+      "legion-mcp": "bin/server.js"
    },
    "files": [
-      "bin"
+      "bin",
+      "config/roles",
+      "config/tools",
+      "config/*.json",
+      "config/*.md",
+      "config/models/*.example.json"
    ],
    "scripts": {
       "dev": "tsx watch --env-file-if-exists=.env ts/main.ts",
       "dev:http": "tsx watch --env-file-if-exists=.env ts/main.ts http",
-      "build": "tsc --noEmit && tsup ts/main.ts --format esm --out-dir bin --no-splitting --platform node --clean",
+      "build": "tsc --noEmit && tsup --entry.server=ts/main.ts --format esm --out-dir bin --no-splitting --platform node --clean",
       "prepack": "npm run build",
-      "start": "node --env-file-if-exists=.env bin/main.js",
-      "start:http": "node --env-file-if-exists=.env bin/main.js http",
+      "start": "node --env-file-if-exists=.env bin/server.js",
+      "start:http": "node --env-file-if-exists=.env bin/server.js http",
       "inspector": "npx @modelcontextprotocol/inspector --transport http --server-url http://localhost:5000/mcp"
    },
    "dependencies": {

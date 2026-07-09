@@ -45,6 +45,13 @@ copy .env.example .env   # then edit .env
 
 ## Configuration
 
+All configuration lives in a `config/` directory. The server resolves it in one of two ways:
+
+- **Installed from npm** (or run from any other directory): if a `config/` folder exists in the current working directory, it is used and **overrides all the built-in defaults**. Otherwise the defaults bundled with the package are used. So to customize an npm install, just drop a `config/` folder next to where you run the server — copy the shipped `config/` as a starting point and edit freely.
+- **Running from the repo:** the repo's own `config/` folder is the working directory config.
+
+Either way the layout below is identical, and everything hot-reloads per request.
+
 ### Models — `config/models/*.json`
 
 Each JSON file becomes a tool, named after the slugified file name (`config/models/fable.json` → tool `fable`):
@@ -131,12 +138,12 @@ npm run dev        # stdio transport
 npm run dev:http   # Streamable HTTP transport on :$PORT/mcp
 ```
 
-Production (compiled to `bin/`):
+Production (compiled to `bin/server.js`):
 
 ```pwsh
 npm run build
-npm start          # node bin/main.js       (stdio)
-npm run start:http # node bin/main.js http
+npm start          # node bin/server.js       (stdio)
+npm run start:http # node bin/server.js http
 ```
 
 ## Try it
@@ -156,7 +163,7 @@ Add to your `mcp.json`:
    "servers": {
       "legion": {
          "command": "node",
-         "args": ["bin/main.js"],
+         "args": ["bin/server.js"],
          "cwd": "path/to/legion",
          "env": {
             "DEFAULT_BASE_URL": "https://your-gateway.example.com",
@@ -189,7 +196,7 @@ ts/                 TypeScript source
    llm.ts            OpenAI Responses client → prompt() with layered instructions
    server.ts         bootstrap + McpServer factory
    tools.ts          tool schemas + registerModelTools + registerQuorumTool
-   main.ts           single entrypoint — `main.js [stdio|http]`
+   main.ts           single entrypoint — compiled to `bin/server.js [stdio|http]`
 bin/                compiled output (git-ignored)
 ```
 
