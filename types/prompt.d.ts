@@ -25,6 +25,12 @@ interface PromptResult {
    reasoningHeavy?: boolean
 }
 
+/** A resolved quorum turn awaiting ordered recording: text plus its telemetry (contentIndex filled at record time). */
+interface TurnOutcome {
+   text: string | null
+   entry: TurnTelemetry
+}
+
 /** Arguments accepted by the quorum fan-out tool. */
 interface QuorumInput extends PromptInput {
    models: string[]

@@ -53,9 +53,20 @@ export const runQuorum = async (
       resolved.forEach((r, i) =>
          telemetry.push({ selector: selectors[i]!, modelName: r!.def.name, modelId: r!.def.model, role: r!.role, round, isSynthesis: false, usage: {}, latencyMs: 0, status: 'skipped: budget' }))
 
-   const speakOne = async (selector: string, round: number, isSynthesis: boolean, extraContext?: string) => {
+   // Record an outcome in council order: push content (assigning contentIndex), the turn, then telemetry.
+   const record = ({ text, entry }: TurnOutcome, round: number): void => {
+      if (text !== null) {
+         entry.contentIndex = content.length
+         content.push({ type: 'text', text })
+         turns.push({ selector: entry.selector, round, text })
+      }
+      telemetry.push(entry)
+   }
+
+   const speakOne = async (selector: string, round: number, isSynthesis: boolean, extraContext?: string): Promise<TurnOutcome> => {
       const
          r = resolve(selector, models, effectiveRoles)!,
+         base = { selector, modelName: r.def.name, modelId: r.def.model, role: r.role, round, isSynthesis },
          roleInput: PromptInput = {
             prompt: banner(round, rounds, isSynthesis, templates) + args.prompt,
             system: args.system,
@@ -66,21 +77,16 @@ export const runQuorum = async (
          },
          started = performance.now()
       try {
-         const
-            result = await prompt(r.def, roleInput, effectiveRoles, templates),
-            ci = content.length
+         const result = await prompt(r.def, roleInput, effectiveRoles, templates)
          used += result.usage.totalTokens ?? 0
-         content.push({ type: 'text', text: result.text })
          logPrompt(promptEntry(r.def, roleInput, { response: result.text, usage: result.usage, latencyMs: result.latencyMs }, selector))
-         telemetry.push({ selector, modelName: r.def.name, modelId: r.def.model, role: r.role, round, isSynthesis, usage: result.usage, latencyMs: result.latencyMs, status: okStatus(result), contentIndex: ci })
-         return result.text
+         return { text: result.text, entry: { ...base, usage: result.usage, latencyMs: result.latencyMs, status: okStatus(result) } }
       } catch (err) {
          const
             message = err instanceof Error ? err.message : String(err),
             latencyMs = Math.round(performance.now() - started)
          logPrompt(promptEntry(r.def, roleInput, { error: message, latencyMs }, selector))
-         telemetry.push({ selector, modelName: r.def.name, modelId: r.def.model, role: r.role, round, isSynthesis, usage: {}, latencyMs, status: `error: ${message}` })
-         return null
+         return { text: null, entry: { ...base, usage: {}, latencyMs, status: `error: ${message}` } }
       }
    }
 
@@ -90,29 +96,23 @@ export const runQuorum = async (
          log('warn', `⚠️ token budget ${tokenBudget} exceeded (${used}) — skipping remaining turns`)
          break
       }
-      if (mode === 'sequential') {
+      if (mode === 'sequential')
          for (const selector of selectors) {
             if (tokenBudget && used >= tokenBudget) break
-            const
-               ctx = toContext(turns, templates, args.context),
-               text = await speakOne(selector, round, false, ctx)
-            text !== null && turns.push({ selector, round, text })
+            record(await speakOne(selector, round, false, toContext(turns, templates, args.context)), round)
          }
-      } else {
-         const
-            prevCtx = toContext(turns, templates, args.context),
-            results = await Promise.allSettled(selectors.map(s => speakOne(s, round, false, prevCtx)))
-         results.forEach((r, i) => {
-            r.status === 'fulfilled' && r.value !== null && turns.push({ selector: selectors[i]!, round, text: r.value })
-         })
+      else {
+         // Buffer the whole round, then record in selector order so content[] reads in council order, not completion order.
+         const prevCtx = toContext(turns, templates, args.context)
+         for (const outcome of await Promise.all(selectors.map(s => speakOne(s, round, false, prevCtx))))
+            record(outcome, round)
       }
    }
 
    if (synthesize !== undefined && !resolve(synthesize, models, effectiveRoles))
       telemetry.push({ selector: synthesize, modelName: '', modelId: '', round: 0, isSynthesis: true, usage: {}, latencyMs: 0, status: errors.unresolvableSelector })
    else if (synthesize !== undefined) {
-      const synthText = await speakOne(synthesize, 0, true, toContext(turns, templates, args.context))
-      synthText !== null && turns.push({ selector: synthesize, round: 0, text: synthText })
+      record(await speakOne(synthesize, 0, true, toContext(turns, templates, args.context)), 0)
       telemetry[telemetry.length - 1]?.status.includes('reasoning-heavy') &&
          log('warn', `⚠️ synthesis (${synthesize}) spent most of its budget reasoning — raise maxTokens or use a lighter model for synthesize`)
    }
