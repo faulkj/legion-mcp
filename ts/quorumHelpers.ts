@@ -73,10 +73,14 @@ export const validatePreset = (
       // Skip unknown models here; the generic unknown-selector check reports those with a clearer message.
       if (modelKnown && (rolePart === undefined || !roleSlugs.includes(slugify(rolePart)))) return { kind: 'roleNotInPreset', selector }
    }
-   const uncovered = roleSlugs.find(role => !selectors.some(s => resolve(s, models, effectiveRoles)?.role === role))
+   // Coverage matches on a selector's role PART (not resolve), so an unknown model staffing a role
+   // still falls through to the generic unknown-selector check rather than masking it as uncovered.
+   const
+      staffed = (role: string) => selectors.some(s => slugify(s.split(':', 2)[1] ?? '') === role),
+      uncovered = roleSlugs.find(role => !staffed(role))
    if (uncovered) return { kind: 'presetRoleUncovered', role: uncovered }
    const synth = preset.synthesize === undefined ? undefined : slugify(preset.synthesize)
-   return synth && !selectors.some(s => resolve(s, models, effectiveRoles)?.role === synth)
+   return synth && !staffed(synth)
       ? { kind: 'presetSynthUncovered', role: synth }
       : { kind: 'ok' }
 }

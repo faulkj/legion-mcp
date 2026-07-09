@@ -92,6 +92,7 @@ export const runQuorum = async (
       }
       if (mode === 'sequential') {
          for (const selector of selectors) {
+            if (tokenBudget && used >= tokenBudget) break
             const
                ctx = toContext(turns, templates, args.context),
                text = await speakOne(selector, round, false, ctx)
