@@ -31,6 +31,17 @@ interface TurnOutcome {
    entry: TurnTelemetry
 }
 
+/** Stateful per-run turn engine: runs model calls and records outcomes/skips into shared collectors. */
+interface TurnRunner {
+   readonly telemetry: TurnTelemetry[]
+   readonly turns: QuorumTurn[]
+   readonly content: { type: 'text'; text: string }[]
+   used(): number
+   speakOne(selector: string, round: number, isSynthesis: boolean, extraContext?: string): Promise<TurnOutcome>
+   record(outcome: TurnOutcome, round: number): void
+   skip(round: number, from?: number): void
+}
+
 /** Arguments accepted by the quorum fan-out tool. */
 interface QuorumInput extends PromptInput {
    models: string[]
