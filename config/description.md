@@ -18,3 +18,5 @@ Identity and telemetry (usage, latency, status) are returned in `structuredConte
 
 Each model in `config/models/` is exposed as its own tool. The `quorum` tool fans a prompt out to two or more of them at once (with optional roles, multi-round discussion, and synthesis) — see the `quorum` tool's own description for details, customizable via `config/tools/quorum.md`.
 
+Each preset in `config/presets/` is also exposed as its own tool (e.g. `code_review`, `debate`) — a named, enforced council recipe. Call a preset tool directly when you want a pre-staffed multi-model job; each one self-documents which roles to staff via its `models` selectors.
+

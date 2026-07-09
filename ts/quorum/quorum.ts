@@ -1,8 +1,8 @@
-import { fill, slugify } from './config.js'
-import { createPrompt } from './llm.js'
-import { log } from './log.js'
-import { dedup, mergePresetRoles, presetError, presetSynth, resolve, toContext, validatePreset } from './quorumHelpers.js'
-import { makeTurnRunner } from './turnRunner.js'
+import { fill, slugify } from '../config/config.js'
+import { createPrompt } from '../core/llm.js'
+import { log } from '../core/log.js'
+import { dedup, mergePresetRoles, presetError, presetSynth, resolve, toContext, validatePreset } from './helpers.js'
+import { makeTurnRunner } from './runner.js'
 
 type Prompt = ReturnType<typeof createPrompt>
 
@@ -36,7 +36,7 @@ export const runQuorum = async (
       selectors = dedup(args.models),
       synthesize = preset ? presetSynth(preset, selectors, models, effectiveRoles) : args.synthesize
 
-   const presetFailure = args.preset === undefined ? null : presetError(validatePreset(args.preset, selectors, presets, models, roles, effectiveRoles, adHoc), args.preset, presets, errors)
+   const presetFailure = args.preset === undefined ? null : presetError(validatePreset(args.preset, selectors, presets, models, roles), args.preset, presets, errors)
    if (presetFailure) return err(presetFailure)
 
    const

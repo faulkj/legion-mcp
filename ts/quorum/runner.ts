@@ -1,6 +1,6 @@
-import { createPrompt } from './llm.js'
-import { logPrompt, okStatus, promptEntry } from './log.js'
-import { banner, resolve } from './quorumHelpers.js'
+import { createPrompt } from '../core/llm.js'
+import { logPrompt, okStatus, promptEntry } from '../core/log.js'
+import { banner, resolve } from './helpers.js'
 
 type Prompt = ReturnType<typeof createPrompt>
 

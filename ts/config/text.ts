@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join, resolve } from 'node:path'
-import * as z from 'zod/v4'
 
 /**
  * The active config directory. A `config/` folder in the current working
@@ -43,19 +42,6 @@ export const loadErrors = (): ErrorMessages => {
    catch { throw new Error('config/errors.json is not valid JSON.') }
 }
 
-/** Read config/presets.json council recipes; missing file → none, invalid JSON/shape fails fast. */
-export const loadPresets = (): Presets => {
-   const raw = readOptional(join(configDir, 'presets.json'))
-   if (raw === undefined) return {}
-   let json: unknown
-   try { json = JSON.parse(raw) }
-   catch { throw new Error('config/presets.json is not valid JSON.') }
-   const parsed = presetsSchema.safeParse(json)
-   if (!parsed.success)
-      throw new Error(`Invalid config/presets.json:\n${z.prettifyError(parsed.error)}`)
-   return parsed.data
-}
-
 /** Fill {token} placeholders in a template. */
 export const fill = (template: string, vars: Record<string, string | number>): string =>
    template.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
@@ -83,14 +69,8 @@ const
       modelFailed: '{model} failed: {message}',
       unknownPreset: 'Unknown preset "{preset}". Available: {available}',
       roleNotInPreset: 'Selector "{selector}" uses a role not in preset "{preset}" (allowed: {available}).',
-      presetRoleUncovered: 'Preset "{preset}" role "{role}" has no speaker — add a selector like "model:{role}".',
+      presetRoleUnderStaffed: 'Preset "{preset}" role "{role}" needs at least {min} speaker(s), got {count} — add a selector like "model:{role}".',
+      presetRoleOverStaffed: 'Preset "{preset}" role "{role}" allows at most {max} speaker(s), got {count} — remove a "model:{role}" selector.',
       presetRoleMissingFile: 'Preset "{preset}" references role "{role}" which has no config/roles/{role}.md file.',
-      presetRoleShadowed: 'Preset "{preset}" role "{role}" cannot be shadowed by an ad-hoc role; remove it from roles or omit preset.',
       presetSynthUncovered: 'Preset "{preset}" synthesizes with role "{role}" — add a selector like "model:{role}" to staff it.'
-   },
-   presetsSchema = z.record(z.string(), z.object({
-      description: z.string().optional(),
-      roles: z.array(z.object({ role: z.string().min(1), description: z.string().optional() })).min(1),
-      mode: z.enum(['sequential', 'parallel']).optional(),
-      synthesize: z.string().optional()
-   }))
+   }

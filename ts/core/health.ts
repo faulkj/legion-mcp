@@ -1,4 +1,4 @@
-import { loadModels } from './config.js'
+import { loadModels } from '../config/config.js'
 import { createPrompt, emptyOutputError } from './llm.js'
 
 /**

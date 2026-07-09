@@ -1,0 +1,13 @@
+{
+   "description": [
+      "Free-for-all: pit two or more contestants against each other, then crown a winner.",
+      "",
+      "Staff `entrant` with as many models as you like (min 2, no cap) — each argues its own answer is best and picks apart the others. A single `judge` declares the winner and says why."
+   ],
+   "mode": "parallel",
+   "synthesizer": "judge",
+   "roles": [
+      { "role": "entrant", "description": "Give your best answer, then argue why it beats the others. No mercy, no consensus-seeking.", "min": 2, "max": null },
+      { "role": "judge", "description": "Crown a single winner. Name it, justify it in a few tight sentences, and note the runner-up."}
+   ]
+}

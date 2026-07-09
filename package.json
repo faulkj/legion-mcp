@@ -34,6 +34,7 @@
       "bin",
       "config/roles",
       "config/tools",
+      "config/presets",
       "config/*.json",
       "config/*.md",
       "config/models/*.example.json"
@@ -48,10 +49,10 @@
       "inspector": "npx @modelcontextprotocol/inspector --transport http --server-url http://localhost:5000/mcp"
    },
    "dependencies": {
-      "@modelcontextprotocol/express": "2.0.0-beta.2",
-      "@modelcontextprotocol/node": "2.0.0-beta.2",
-      "@modelcontextprotocol/server": "2.0.0-beta.2",
-      "openai": "^6.45.0",
+      "@modelcontextprotocol/express": "2.0.0-beta.3",
+      "@modelcontextprotocol/node": "2.0.0-beta.3",
+      "@modelcontextprotocol/server": "2.0.0-beta.3",
+      "openai": "^6.46.0",
       "zod": "^4.4.3"
    },
    "devDependencies": {

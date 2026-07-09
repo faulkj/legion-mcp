@@ -1,9 +1,10 @@
 import { McpServer } from '@modelcontextprotocol/server'
-import { loadConfig, loadDescription, loadErrors, loadModels, loadPresets, loadPrompts, loadRoles, loadSchema, loadToolDescription } from './config.js'
-import { makeProbe } from './health.js'
-import { createPrompt } from './llm.js'
-import { setLogLevel } from './log.js'
-import { registerModelTools, registerQuorumTool } from './tools.js'
+import { loadConfig, loadDescription, loadErrors, loadModels, loadPrompts, loadRoles, loadSchema, loadToolDescription } from './config/config.js'
+import { loadPresets } from './config/presets.js'
+import { makeProbe } from './core/health.js'
+import { createPrompt } from './core/llm.js'
+import { setLogLevel } from './core/log.js'
+import { registerModelTools, registerPresetTools, registerQuorumTool } from './tools/tools.js'
 
 /** Load config, validate the models directory, and return a per-request server factory plus a deep-health probe. */
 export const bootstrap = (): { config: AppConfig; models: ModelDef[]; createServer: () => McpServer; probe: () => Promise<HealthReport> } => {
@@ -31,12 +32,13 @@ export const makeServerFactory = (config: AppConfig): () => McpServer => {
          schema = loadSchema(),
          templates = loadPrompts(),
          errors = loadErrors(),
-         presets = loadPresets(),
+         presets = loadPresets(config),
          // Forward roles + templates so quorum can pass its effective (file + ad-hoc) roles; both default here.
          prompt: ReturnType<typeof createPrompt> = (def, input, override, tpl) => basePrompt(def, input, override ?? roles, tpl ?? templates)
 
       registerModelTools(server, models, roles, prompt, errors, schema)
       registerQuorumTool(server, models, roles, prompt, config.maxRounds, config.dynamicRoles, templates, errors, config.tokenBudget, presets, loadToolDescription(config, 'quorum'), schema)
+      registerPresetTools(server, models, roles, prompt, config.maxRounds, config.dynamicRoles, templates, errors, config.tokenBudget, presets, schema)
 
       return server
    }

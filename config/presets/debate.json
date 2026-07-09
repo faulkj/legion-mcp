@@ -1,0 +1,10 @@
+{
+   "description": "Adversarial pressure-test of a proposal.",
+   "mode": "sequential",
+   "synthesize": "moderator",
+   "roles": [
+      { "role": "proponent", "description": "Argue forcefully FOR the proposal. Make the strongest possible case." },
+      { "role": "opponent", "description": "Argue forcefully AGAINST it. Attack the weakest assumptions." },
+      { "role": "moderator", "description": "Declare a winner and summarize the decisive arguments from both sides." }
+   ]
+}

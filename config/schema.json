@@ -13,7 +13,6 @@
       "rounds": "Discussion rounds (default 1; max set by MAX_ROUNDS)",
       "mode": "sequential (default) or parallel",
       "synthesize": "Selector for a final synthesis turn after all rounds",
-      "tokenBudget": "Optional SOFT cumulative token budget for the whole run (overrides TOKEN_BUDGET). Sequential mode checks it between turns; parallel mode checks at round boundaries, so a round can overshoot before it trips. Once crossed, remaining turns are skipped gracefully but synthesis still runs. Not a hard cap. See structuredContent.budget.",
-      "preset": "Optional named council recipe (config/presets.json). Defines the roles for the run; you still pick which model plays each via models[] selectors. When set, every selector must use a preset role, every preset role must be staffed, and the preset's mode/synthesize (if any) are authoritative (your mode/synthesize args are ignored). Omit to freestyle."
+      "tokenBudget": "Optional SOFT cumulative token budget for the whole run (overrides TOKEN_BUDGET). Sequential mode checks it between turns; parallel mode checks at round boundaries, so a round can overshoot before it trips. Once crossed, remaining turns are skipped gracefully but synthesis still runs. Not a hard cap. See structuredContent.budget."
    }
 }

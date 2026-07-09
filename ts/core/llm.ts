@@ -1,5 +1,5 @@
 import OpenAI from 'openai'
-import { fill, loadPrompts } from './config.js'
+import { fill, loadPrompts } from '../config/config.js'
 
 /** Prefix of the error thrown when a model answers but emits no text before hitting maxTokens. */
 export const emptyOutputError = 'no output before hitting maxTokens'

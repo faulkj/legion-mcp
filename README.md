@@ -55,7 +55,8 @@ flowchart LR
   directory is re-read per request, so no rebuild or restart.
 - **One tool per model.** Each model appears to the calling AI as its own tool
   with its own description, rather than a single tool with a model parameter.
-  The `quorum` tool covers the multi-model case.
+  The `quorum` tool covers the ad-hoc multi-model case, and each preset in
+  `config/presets/` is exposed as its own enforced, pre-staffed council tool.
 - **Stateless.** Every call is one-shot with `store: false`. Nothing is
   persisted, so there is no database and no conversation state to manage.
 - **Small.** A few hundred lines of TypeScript, one bundled output file, six
@@ -146,43 +147,59 @@ ready-to-use starters — edit or delete them freely (they hold no secrets).
 Available selectors in tools become `roleName`, e.g. passing `role: "skeptic"`
 or using `"model:skeptic"` in `quorum.models`.
 
-### Presets — `config/presets.json`
+### Presets — `config/presets/*.json`
 
-Optional hot-reloadable **council recipes**: a named, self-contained multi-model
-job. Each preset has a short `description`, a `roles` list, and optional
-authoritative `mode` / `synthesize` defaults. Crucially, each role defines its
-own behavior **inline** — a role's `description` *is* its instructions (the
-behavior contract). A role with no `description` falls back to a matching
-`config/roles/<role>.md` file:
+Optional hot-droppable **council recipes**, one JSON file per preset (named after
+the slugified file name, like models). **Each preset becomes its own tool** — drop
+`config/presets/code_review.json` and a `code_review` tool appears on the next
+request. Each preset has a `description`, a `roles` list, and optional
+authoritative `mode` / `synthesizer` defaults. Each role defines its behavior
+**inline** — a role's `description` *is* its instructions (the behavior contract);
+a role with no `description` falls back to a matching `config/roles/<role>.md`
+file:
 
 ```json
 {
-   "code_review": {
-      "description": "Ship-readiness review of a code change.",
-      "mode": "sequential",
-      "synthesize": "judge",
-      "roles": [
-         { "role": "builder", "description": "Advocate for the change; explain why it should ship." },
-         { "role": "critic",  "description": "Find flaws, edge cases, security and perf risks." },
-         { "role": "judge",   "description": "Weigh both sides and give a ship / hold verdict." }
-      ]
-   }
+   "description": [
+      "Free-for-all: pit several contestants against each other, then crown a winner.",
+      "",
+      "Staff `contestant` with as many models as you like; one `judge` decides."
+   ],
+   "mode": "parallel",
+   "synthesizer": "judge",
+   "roles": [
+      { "role": "contestant", "description": "Argue why your answer beats the others.", "min": 2, "max": null },
+      { "role": "judge",      "description": "Crown a single winner and justify it.", "min": 1, "max": 1 }
+   ]
 }
 ```
 
-The caller passes `preset: "code_review"` on the `quorum` tool **and** still
-writes the `models` selectors, freely assigning any model to any preset role (a
-model may play several). When a preset is set it is **enforced**: every
-selector's role must be one of the preset's roles, and every preset role must be
-staffed by ≥1 selector (a role with no inline description must also have a
-`config/roles/*.md` file). A preset's `mode` and `synthesize` are
-**authoritative** — when set they win and any `mode`/`synthesize` you pass is
-ignored; `synthesize` names a role, and the first selector staffing it runs the
-synthesis turn. Violations return an `isError` explaining the fix; freestyle by
-omitting `preset`. The chosen preset is echoed in `structuredContent.preset` so
-the moderator AI can re-run the same recipe with new context. This repo ships
-`code_review`, `debate`, `brainstorm`, `quick_take`, and `tiebreak` — edit or
-delete freely (they hold no secrets). Missing file → no presets.
+The calling AI invokes the preset tool directly (e.g. `code_review`) and still
+writes the `models` selectors, assigning any model to any preset role. Presets
+are **enforced**: every selector must use a preset role and every role must be
+staffed within its cardinality, else the result is an error saying what to fix.
+
+- **`description`** may be a plain string **or an array of strings** (joined with
+  newlines) so multi-line prose stays clean without escaping. It is the preset
+  tool's own MCP description, so it is **required**.
+- **`synthesizer`** (optional) names the role that runs a final synthesis turn
+  after all rounds — it must be one of the preset's roles.
+- **Cardinality** — each role may set `min` / `max` speakers (default exactly
+  one). `max: null` means unbounded. So the battle-royale `contestant` above is
+  `{ "min": 2, "max": null }` and the shipped `jury` uses `{ "min": 3, "max": 12 }`,
+  while a lone `judge` stays `{}`. The same role staffed by several `model:role`
+  selectors is several distinct speakers.
+
+This repo ships `code_review`, `debate`, `brainstorm`, `quick_take`, `tiebreak`,
+`battle_royale`, and `jury` — edit or delete freely (they hold no secrets).
+Empty/missing folder → no preset tools.
+
+> **Output length is model-driven, not enforced by role text.** A terse role
+> nudges but doesn't cap output — use each tool's `maxTokens` for a hard limit.
+> Budget generously for reasoning models (thinking tokens count against it) and
+> for multi-round quorums (the transcript grows each round, so a ceiling that's
+> fine in round 1 can truncate by round 3). The shipped `short` role shows the
+> pattern for coaxing brevity: "answer immediately, no deliberation."
 
 ### AI guidance — `config/description.md`
 
@@ -191,35 +208,21 @@ models and when the AI should use each. See this repo's copy for a template.
 
 ### Tool, field & message text — `config/*.json` and `config/tools/*.md`
 
-All user-facing text lives in config, not code, and hot-reloads per request:
+All user-facing text lives in config, not code, and hot-reloads per request.
+Each file merges over built-in defaults per key, so override only what you want;
+open the shipped copies to see the full key set and `{token}` placeholders:
 
-- `config/tools/<tool>.md` — a tool's description (e.g.
-  `config/tools/quorum.md`). For `quorum`, the live `Available models:` line is
-  always appended automatically. Delete the file to fall back to a built-in
-  string.
-- `config/schema.json` — **the source of all input-field descriptions** (no
-  descriptions are hardcoded in the server). Grouped into sections (`prompt` for
-  shared model-tool fields, `quorum` for quorum-only fields) since JSON can't
-  carry comments; flattened into one lookup at load, so a `quorum` key overrides
-  a `prompt` key of the same name. Omit a key and that field simply ships
-  without a description.
-- `config/prompts.json` — the **prompt-shaping templates the models actually
-  read**: the role contract wrapper (`roleContract`), the context block
-  (`contextBlock`), the transcript header (`transcriptBlock`), and the quorum
-  round banners (`roundExploring`, `roundFinal`, `synthesis`). Tokens in
-  `{braces}` (`{role}`, `{instructions}`, `{prompt}`, `{context}`,
-  `{transcript}`, `{round}`, `{rounds}`) are filled at runtime. Omit any key or
-  the whole file to use built-in defaults. This is where you tune how strongly
-  roles bind, how context is framed, and how rounds are announced.
-- `config/errors.json` — the **runtime error messages** shown to the calling
-  AI: `unknownRole`, `unknownSelector`, `adhocDisabled`, `adhocEmptyName`,
-  `unresolvableSelector`, `modelFailed`, and the preset messages `unknownPreset`,
-  `roleNotInPreset`, `presetRoleUncovered`, `presetRoleMissingFile`,
-  `presetRoleShadowed`, `presetSynthUncovered`. Tokens in `{braces}` (`{role}`, `{available}`,
-  `{selector}`, `{model}`, `{message}`, `{preset}`) are filled at runtime.
-  Omit any key or the whole file to use built-in defaults.
-  (Startup/config-validation errors stay in code — a message that reports a
-  broken config file can't live inside it.)
+- `config/tools/<tool>.md` — a tool's description (e.g. `quorum.md`). Delete to
+  fall back to the built-in string.
+- `config/schema.json` — input-field descriptions (`prompt` = shared fields,
+  `quorum` = quorum-only; a `quorum` key wins on a name clash).
+- `config/prompts.json` — the prompt-shaping templates models read: role
+  contract, context block, transcript header, round banners. Tune how strongly
+  roles bind and how rounds are framed here.
+- `config/errors.json` — runtime error messages shown to the calling AI.
+
+(Startup/config-validation errors stay in code — a message that reports a broken
+config file can't live inside it.)
 
 ### Environment variables
 

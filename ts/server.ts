@@ -2,7 +2,7 @@ import { createMcpExpressApp } from '@modelcontextprotocol/express'
 import { toNodeHandler } from '@modelcontextprotocol/node'
 import { createMcpHandler } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
-import { banner, log } from './log.js'
+import { banner, log } from './core/log.js'
 import { bootstrap } from './bootstrap.js'
 
 const

@@ -1,72 +1,26 @@
-Fan a prompt out to two or more models and get every answer back as a separate content item.
+Fan a prompt out to two or more models; each answer comes back as a separate content item.
 
 ```
-models  — array of selectors: "modelSlug" or "modelSlug:roleSlug"
+models  — array of selectors: "modelSlug" or "modelSlug:roleSlug" (min 2)
 roles   — optional ad-hoc roles for this call: { "name": "instructions" }
-rounds  — discussion rounds (default 1; max set by MAX_ROUNDS, default 5)
+rounds  — discussion rounds (default 1; max set by MAX_ROUNDS)
 mode    — "sequential" (default) or "parallel"
-synthesize — selector for a final synthesis turn after all rounds complete
-tokenBudget — optional SOFT cumulative token budget for the whole run (overrides TOKEN_BUDGET)
-preset  — optional named council recipe (config/presets.json); defines + enforces the roles, may fix mode/synthesize
+synthesize — selector for a final synthesis turn after all rounds
+tokenBudget — optional soft cumulative token budget (overrides TOKEN_BUDGET)
 ```
 
-**Sequential** (default): speakers take turns in the order given. Each speaker receives the full accumulated transcript so far as context — a real back-and-forth. Reorder the `models` array to change who opens or closes.
+**Selectors**: `"fable"`, `"opus:skeptic"`, `"gpt:builder"`. Same model + different roles = distinct speakers (`["gpt:judge", "gpt:skeptic"]`); identical selectors dedupe.
 
-**Parallel**: all speakers answer at once per round. With `rounds > 1`, each round reacts to the previous round's snapshot.
+**Modes**: *sequential* (default) — speakers take turns, each seeing the transcript so far (a real back-and-forth). *parallel* — all answer at once per round; with `rounds > 1` each round reacts to the previous round's snapshot.
 
-**Round awareness**: in a multi-round debate each speaker is told its position (e.g. `[Round 2 of 3]`) so it knows whether to keep exploring or converge; the final round and the synthesis turn get explicit "commit" cues. This orientation is added to the speaker's prompt only — the returned `transcript` stays clean.
+**Ad-hoc roles**: define personas inline for one call — `roles: { "contrarian": "Argue against every claim." }`, then `models: ["gpt:contrarian", "fable"]`. Shadows a file role of the same name; disabled when `DYNAMIC_ROLES=false`.
 
-**Selector syntax**: `"fable"`, `"opus:skeptic"`, `"gpt:builder"`. The **same model with different roles counts as distinct speakers** — `["gpt:judge", "gpt:skeptic"]` runs one model twice with two personas. Identical selectors (`["gpt:judge", "gpt:judge"]`) dedupe to a single speaker.
+**Presets**: named council recipes are exposed as their own tools (e.g. `code_review`, `debate`) — call those directly instead of `quorum` when you want an enforced, pre-staffed council. Each preset tool self-documents which roles to staff via `models` selectors.
 
-**Ad-hoc roles**: define personas inline for a single call without adding files:
+**You are the moderator** (the server is stateless — you hold the thread): call with `rounds: 1`, read `structuredContent.transcript`, then call again with `context` = that transcript + your steering; finish with `synthesize`. Feed `transcript` straight back as `context` — don't add your own `[round N / …]` labels; the tool owns that structure.
 
-```
-roles:  { "contrarian": "Argue against every claim; find the weakest link." }
-models: ["gpt:contrarian", "fable"]
-```
+**Results**: text answers arrive in council (selector) order; per-turn telemetry (usage, latency, `status`, role, `contentIndex`) is in `structuredContent.turns`. `status` ∈ `ok` · `truncated` (hit `maxTokens`, partial text returned) · `reasoning-heavy` (spent most of the budget thinking — answer may be thin; may combine, e.g. `truncated, reasoning-heavy`) · `skipped: budget` · `error: <message>`. `isError: true` only when **all** turns fail; partial success returns what succeeded. Empty responses retry once before erroring.
 
-File roles in `config/roles/` are always available too; an ad-hoc role **shadows** a file role of the same name for that call only. Ad-hoc roles are disabled when `DYNAMIC_ROLES=false` (using `roles` then returns `isError`).
+**Budget** is soft: checked between turns (sequential) or at round boundaries (parallel — a round can overshoot); synthesis always runs. `structuredContent.budget` = `{ limit, used, exceeded }`.
 
-**You are the moderator.** The server is stateless — you hold the thread. To run a live, steered debate:
-
-1. Call quorum with `rounds: 1`. Read the answers plus `structuredContent.transcript`.
-2. Steer: call again with `context` = that transcript + your guidance (or run a single-model tool as a moderator turn).
-3. Repeat as long as it's useful; finish with `synthesize`.
-
-**Synthesis**: after the final round, the named selector reads the whole transcript and returns a final take. A failed synthesis still returns the discussion turns.
-
-Per-turn telemetry (usage, latency, status, role) is in `structuredContent.turns`; the full discussion text is in `structuredContent.transcript` — feed it straight back as `context`.
-
-**Transcript structure is owned by the moderator, not the speakers.** The `[round N / speaker]` labels are added when building the transcript; each model's answer is stored raw. Speakers are instructed not to label their own turns — so if you author your own steering turns between calls, don't add `[round N / …]` prefixes either; let the structure come from the tool.
-
-A failed call returns `isError: true` only when **all** calls failed. Partial success returns the successful content items with failures recorded in `structuredContent.turns`.
-
-**Token budget (soft)**: set `tokenBudget` (or the `TOKEN_BUDGET` default) as a **soft** cumulative budget for the run — not a hard cap. In **sequential** mode the running total is checked between each turn; in **parallel** mode a whole round fires at once, so it's checked at round boundaries and a round can overshoot before the server notices. Synthesis runs afterward by design. Once the total crosses the budget, remaining turns are skipped (recorded as `skipped: budget` in `structuredContent.turns`), and `structuredContent.budget` reports `{ limit, used, exceeded }`. Read it to see what was dropped, then re-invoke with a higher budget if you want the rest.
-
-**Presets (council recipes)**: `preset` names a recipe from `config/presets.json` — a self-contained council. Each preset defines its own roles inline (a role's description IS its behavior contract; a role with no description falls back to a `config/roles/<role>.md` file). You still write the `models` selectors and freely assign any model to any preset role (a model may play several).
-
-When a preset is set it is **enforced**: every selector must use one of the preset's roles, and every preset role must be staffed by at least one selector — otherwise the call returns `isError` explaining what to fix (e.g. add a `model:<role>` selector). A preset can also carry **authoritative** `mode` and `synthesize` defaults: when present they win, and any `mode`/`synthesize` you pass is ignored. A preset's `synthesize` names a role — the first selector staffing that role runs the synthesis turn (so staff it). The chosen preset is echoed in `structuredContent.preset`, so you can re-run the same recipe with new `context` across turns. Want to freestyle? Just omit `preset`.
-
-**Per-turn `status` values** (in `structuredContent.turns`):
-
-| `status` | Meaning | Has content? |
-| --- | --- | --- |
-| `ok` | Completed normally. | yes (`contentIndex` set) |
-| `truncated` | Hit `maxTokens` but produced usable text. | yes |
-| `reasoning-heavy` | Successful content — but the model spent at least as many tokens reasoning as it emitted as visible text, so the budget went mostly to thinking. The answer may be thin. Can combine, e.g. `truncated, reasoning-heavy`. | yes (`contentIndex` set) |
-| `error: <message>` | The call failed; no content item was added. | no |
-
-`reasoning-heavy` is a **quality hint, not a failure** — the turn still returns its text and a `contentIndex`. It matters most for **synthesis**: a reasoning model asked to consolidate a long transcript can burn the budget thinking and return a stub. If a `synthesize` turn comes back thin, raise `maxTokens` or point `synthesize` at a non-reasoning / low-reasoning model. (The server also logs a warning when a synthesis turn is reasoning-heavy.)
-
-An empty (no-text) response is **retried once automatically** before it becomes an `error` — this absorbs the transient "no output" blips models occasionally return under concurrent load. A genuine ceiling problem simply fails again on the retry.
-
-### Tuning `maxTokens`
-
-Each turn's input includes the whole discussion so far, so **context grows every round** — and reasoning models spend hidden tokens on top of visible output. A ceiling that's comfortable in round 1 often truncates by round 3. Rules of thumb:
-
-- Single-round / short answers: `maxTokens: 500` is usually fine.
-- Multi-round debates: budget higher (e.g. `1500`–`4000`) so later turns aren't clipped as the transcript grows.
-- Reasoning models: add headroom beyond the visible length you want, since thinking tokens count against the ceiling.
-- Truncation isn't fatal — a `truncated` turn still returns its partial text — but raising `maxTokens` gives fuller answers.
-
-**Terse roles / tight output**: reasoning models sometimes deliberate away the whole budget when a role asks for very short answers, especially in parallel bursts. Tell the role to skip deliberation — the shipped `short` role (`config/roles/short.md`) does exactly this: "Answer immediately … no preamble, no deliberation." Add a similar line to any terse persona.
+Roles/presets apply **pressure, not guaranteed output control** — for a hard length cap use `maxTokens`; trust `structuredContent.turns` for what actually happened.

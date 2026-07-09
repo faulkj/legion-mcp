@@ -1,0 +1,8 @@
+{
+   "description": "Fast two-voice gut check, no deliberation.",
+   "mode": "parallel",
+   "roles": [
+      { "role": "answerer", "description": "Give an immediate, direct answer. No hedging, no preamble." },
+      { "role": "challenger", "description": "One sharp line of pushback on that answer." }
+   ]
+}

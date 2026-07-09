@@ -1,4 +1,4 @@
-import { fill, slugify } from './config.js'
+import { fill, slugify } from '../config/config.js'
 
 /** Resolve a `model` or `model:role` selector to its model def and optional role; null when unknown. */
 export const resolve = (selector: string, models: ModelDef[], roles: RoleDef[]): { def: ModelDef; role?: string } | null => {
@@ -48,15 +48,13 @@ export const presetSynth = (preset: Preset, selectors: string[], models: ModelDe
       ? undefined
       : selectors.find(s => resolve(s, models, roles)?.role === slugify(preset.synthesize!))
 
-/** Validate a quorum call's selectors against a chosen preset; `ok` when the council is well-staffed. */
+/** Validate a quorum call's selectors against a chosen preset; `ok` when every role is staffed within its cardinality. */
 export const validatePreset = (
    presetName: string,
    selectors: string[],
    presets: Presets,
    models: ModelDef[],
-   fileRoles: RoleDef[],
-   effectiveRoles: RoleDef[],
-   adHocRoles: { name: string }[]
+   fileRoles: RoleDef[]
 ): PresetValidationResult => {
    const preset = presets[presetName]
    if (!preset) return { kind: 'unknownPreset' }
@@ -64,7 +62,6 @@ export const validatePreset = (
    for (const r of preset.roles) {
       const slug = slugify(r.role)
       if (r.description === undefined && !fileRoles.find(f => f.name === slug)) return { kind: 'presetRoleMissingFile', role: slug }
-      if (r.description === undefined && adHocRoles.find(a => a.name === slug)) return { kind: 'presetRoleShadowed', role: slug }
    }
    for (const selector of selectors) {
       const
@@ -73,16 +70,17 @@ export const validatePreset = (
       // Skip unknown models here; the generic unknown-selector check reports those with a clearer message.
       if (modelKnown && (rolePart === undefined || !roleSlugs.includes(slugify(rolePart)))) return { kind: 'roleNotInPreset', selector }
    }
-   // Coverage matches on a selector's role PART (not resolve), so an unknown model staffing a role
-   // still falls through to the generic unknown-selector check rather than masking it as uncovered.
-   const
-      staffed = (role: string) => selectors.some(s => slugify(s.split(':', 2)[1] ?? '') === role),
-      uncovered = roleSlugs.find(role => !staffed(role))
-   if (uncovered) return { kind: 'presetRoleUncovered', role: uncovered }
-   const synth = preset.synthesize === undefined ? undefined : slugify(preset.synthesize)
-   return synth && !staffed(synth)
-      ? { kind: 'presetSynthUncovered', role: synth }
-      : { kind: 'ok' }
+   // Count effective speakers per role (selectors already deduped upstream); enforce each role's [min, max].
+   for (const r of preset.roles) {
+      const
+         slug = slugify(r.role),
+         count = selectors.filter(s => slugify(s.split(':', 2)[1] ?? '') === slug).length,
+         min = r.min ?? 1,
+         max = r.max === null ? Infinity : (r.max ?? 1)
+      if (count < min) return { kind: 'presetRoleUnderStaffed', role: slug, min, count }
+      if (count > max) return { kind: 'presetRoleOverStaffed', role: slug, max, count }
+   }
+   return { kind: 'ok' }
 }
 
 /** Map a preset validation result to a filled error message, or null when it passed. */
@@ -94,7 +92,10 @@ export const presetError = (result: PresetValidationResult, presetName: string, 
          ? (presets[presetName]?.roles ?? []).map(r => slugify(r.role)).join(', ')
          : Object.keys(presets).join(', ') || 'none',
       selector: 'selector' in result ? result.selector : '',
-      role: 'role' in result ? result.role : ''
+      role: 'role' in result ? result.role : '',
+      min: 'min' in result ? result.min : '',
+      max: 'max' in result ? result.max : '',
+      count: 'count' in result ? result.count : ''
    }
    return fill(errors[result.kind], tokens)
 }

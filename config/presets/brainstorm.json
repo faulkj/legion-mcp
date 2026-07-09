@@ -1,0 +1,10 @@
+{
+   "description": "Diverge on ideas independently, then converge.",
+   "mode": "parallel",
+   "synthesize": "curator",
+   "roles": [
+      { "role": "ideator", "description": "Generate bold, varied ideas. Quantity over caution; no self-censoring." },
+      { "role": "pragmatist", "description": "Ground the ideas in what is actually feasible and cheap to try first." },
+      { "role": "curator", "description": "Cluster the ideas and pick the 3 most promising to pursue, with why." }
+   ]
+}

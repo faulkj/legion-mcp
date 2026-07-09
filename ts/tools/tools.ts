@@ -1,9 +1,10 @@
 import { McpServer } from '@modelcontextprotocol/server'
 import * as z from 'zod/v4'
-import { fill, slugify } from './config.js'
-import { runQuorum } from './quorum.js'
-import { createPrompt } from './llm.js'
-import { logPrompt, okStatus, promptEntry } from './log.js'
+import { fill, slugify } from '../config/config.js'
+import { runQuorum } from '../quorum/quorum.js'
+import { createPrompt } from '../core/llm.js'
+import { logPrompt, okStatus, promptEntry } from '../core/log.js'
+import { buildInputSchema, quorumShape, roleCardinality } from './schema.js'
 
 /** Register one tool per model definition on the given server. */
 export const registerModelTools = (
@@ -57,42 +58,63 @@ export const registerQuorumTool = (
    const
       d = (key: string) => schema[key] ?? '',
       names = models.map(m => slugify(m.name)),
-      presetList = Object.entries(presets).map(([n, p]) => `${n} — ${p.description ?? p.roles.map(r => r.role).join('/')}`).join('; '),
-      quorumSchema = z.object({
-         models: z.array(z.string()).min(2).describe(`${d('models')} Available models: ${names.join(', ')}`),
+      quorumSchema = {
+         ...quorumShape(schema, maxRounds, 2, `${d('models')} Available models: ${names.join(', ')}`),
          roles: z.record(z.string(), z.string()).optional().describe(d('roles')),
-         rounds: z.number().int().min(1).max(maxRounds).optional().describe(d('rounds')),
          mode: z.enum(['sequential', 'parallel']).optional().describe(d('mode')),
-         synthesize: z.string().optional().describe(d('synthesize')),
-         tokenBudget: z.number().int().positive().optional().describe(d('tokenBudget')),
-         preset: z.string().optional().describe(d('preset')),
-         ...buildInputSchema(schema).omit({ role: true }).shape
-      })
-
-   const
-      fallback = 'Fan a prompt out to two or more models (see config/tools/quorum.md).',
-      presetLine = presetList ? `\nAvailable presets: ${presetList}.` : ''
+         synthesize: z.string().optional().describe(d('synthesize'))
+      },
+      fallback = 'Fan a prompt out to two or more models (see config/tools/quorum.md).'
 
    server.registerTool(
       'quorum',
       {
-         description: `${description ?? fallback}\n\nAvailable models: ${names.join(', ')}.${presetLine}`,
+         description: `${description ?? fallback}\n\nAvailable models: ${names.join(', ')}.`,
          inputSchema: quorumSchema
       },
       (args: QuorumInput) => runQuorum(args, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget, presets)
    )
 }
 
-const buildInputSchema = (schema: SchemaDescriptions = {}) => {
-   const d = (key: string) => schema[key] ?? ''
-   return z.object({
-      prompt: z.string().min(1).describe(d('prompt')),
-      context: z.string().optional().describe(d('context')),
-      role: z.string().optional().describe(d('role')),
-      system: z.string().optional().describe(d('system')),
-      temperature: z.number().min(0).max(2).optional().describe(d('temperature')),
-      maxTokens: z.number().int().positive().optional().describe(d('maxTokens'))
-   })
+/** Register one tool per preset. Each staffs its own roles via `models` selectors and reuses the quorum engine. */
+export const registerPresetTools = (
+   server: McpServer,
+   models: ModelDef[],
+   roles: RoleDef[],
+   prompt: ReturnType<typeof createPrompt>,
+   maxRounds: number,
+   dynamicRoles: boolean,
+   templates: PromptTemplates,
+   errors: ErrorMessages,
+   tokenBudget: number | undefined,
+   presets: Presets,
+   schema: SchemaDescriptions = {}
+): void => {
+   const
+      d = (key: string) => schema[key] ?? '',
+      names = models.map(m => slugify(m.name)),
+      modelSlugs = new Set(names)
+
+   for (const [key, preset] of Object.entries(presets)) {
+      const toolName = slugify(key)
+      if (toolName === 'quorum' || modelSlugs.has(toolName))
+         throw new Error(`Preset "${key}" maps to tool "${toolName}", which collides with a model tool or the reserved name "quorum". Rename it.`)
+
+      const
+         floor = preset.roles.reduce((n, r) => n + (r.min ?? 1), 0),
+         staffing = preset.roles.map(roleCardinality).join(', '),
+         synthLine = preset.synthesize ? ` ${slugify(preset.synthesize)} also synthesizes.` : '',
+         presetSchema = quorumShape(schema, maxRounds, floor, `${d('models')} Staff via model:role selectors — ${staffing}. Available models: ${names.join(', ')}.`)
+
+      server.registerTool(
+         toolName,
+         {
+            description: `${preset.description}\n\nStaff via models[]: ${staffing}.${synthLine} Available models: ${names.join(', ')}.`,
+            inputSchema: presetSchema
+         },
+         (args: QuorumInput) => runQuorum({ ...args, preset: key }, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget, presets)
+      )
+   }
 }
 
 

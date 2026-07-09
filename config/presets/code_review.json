@@ -1,0 +1,14 @@
+{
+   "description": [
+      "Ship-readiness review of a code change.",
+      "",
+      "A builder argues for shipping, a critic hunts for flaws, and a judge weighs both and delivers a verdict."
+   ],
+   "mode": "sequential",
+   "synthesize": "judge",
+   "roles": [
+      { "role": "builder" },
+      { "role": "critic", "description": "Find flaws, edge cases, security and performance risks. Be specific and cite lines where possible.", "max": 5 },
+      { "role": "judge" }
+   ]
+}
