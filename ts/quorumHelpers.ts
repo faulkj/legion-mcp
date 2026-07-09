@@ -67,8 +67,11 @@ export const validatePreset = (
       if (r.description === undefined && adHocRoles.find(a => a.name === slug)) return { kind: 'presetRoleShadowed', role: slug }
    }
    for (const selector of selectors) {
-      const r = resolve(selector, models, effectiveRoles)
-      if (!r?.role || !roleSlugs.includes(r.role)) return { kind: 'roleNotInPreset', selector }
+      const
+         [modelPart, rolePart] = selector.split(':', 2),
+         modelKnown = models.some(m => slugify(m.name) === modelPart)
+      // Skip unknown models here; the generic unknown-selector check reports those with a clearer message.
+      if (modelKnown && (rolePart === undefined || !roleSlugs.includes(slugify(rolePart)))) return { kind: 'roleNotInPreset', selector }
    }
    const uncovered = roleSlugs.find(role => !selectors.some(s => resolve(s, models, effectiveRoles)?.role === role))
    if (uncovered) return { kind: 'presetRoleUncovered', role: uncovered }

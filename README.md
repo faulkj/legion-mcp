@@ -32,10 +32,12 @@ flowchart LR
   `roles`, multi-round discussion (`rounds`, `mode`), and an optional synthesis
   turn (`synthesize`). The calling AI acts as moderator: feed
   `structuredContent.transcript` back as `context` with new guidance to steer a
-  live debate. An optional `tokenBudget` (or the `TOKEN_BUDGET` default) caps the
-  cumulative tokens a run may spend: once crossed, remaining turns are skipped
-  gracefully (recorded as `skipped: budget` in telemetry, synthesis still runs),
-  so the moderator can see what was dropped and re-invoke with more headroom.
+  live debate. An optional `tokenBudget` (or the `TOKEN_BUDGET` default) sets a
+  **soft** cumulative budget for a run: once the running total crosses it,
+  remaining turns are skipped gracefully (recorded as `skipped: budget` in
+  telemetry, synthesis still runs), so the moderator can see what was dropped and
+  re-invoke with more headroom. It's soft, not a hard cap — a parallel round can
+  overshoot before the total is checked, and synthesis runs afterward by design.
 - Identity and telemetry are returned in `structuredContent`, not embedded in
   answer text.
 - Returns the model's text response; on failure returns an MCP error result the
@@ -228,7 +230,7 @@ All user-facing text lives in config, not code, and hot-reloads per request:
 | `ALLOWED_HOSTS` | no | Comma-separated hostnames for DNS-rebinding protection on non-localhost binds. |
 | `PORT` | no | HTTP port (default `5000`; ignored by stdio). |
 | `MAX_ROUNDS` | no | Max discussion rounds the `quorum` tool accepts (default `5`). |
-| `TOKEN_BUDGET` | no | Default cumulative token ceiling for a whole `quorum` run. Unset = no limit. A per-call `tokenBudget` overrides it. |
+| `TOKEN_BUDGET` | no | Default **soft** cumulative token budget for a whole `quorum` run (checked between turns; a parallel round can overshoot, and synthesis still runs). Unset = no limit. A per-call `tokenBudget` overrides it. |
 | `DYNAMIC_ROLES` | no | Allow the calling AI to define ad-hoc `quorum` roles inline (default `true`). |
 | `LOG_LEVEL` | no | `debug` \| `info` \| `warn` \| `error` (default `info`). |
 

@@ -6,7 +6,7 @@ roles   — optional ad-hoc roles for this call: { "name": "instructions" }
 rounds  — discussion rounds (default 1; max set by MAX_ROUNDS, default 5)
 mode    — "sequential" (default) or "parallel"
 synthesize — selector for a final synthesis turn after all rounds complete
-tokenBudget — optional cumulative token ceiling for the whole run (overrides TOKEN_BUDGET)
+tokenBudget — optional SOFT cumulative token budget for the whole run (overrides TOKEN_BUDGET)
 preset  — optional named council recipe (config/presets.json); defines + enforces the roles, may fix mode/synthesize
 ```
 
@@ -41,7 +41,7 @@ Per-turn telemetry (usage, latency, status, role) is in `structuredContent.turns
 
 A failed call returns `isError: true` only when **all** calls failed. Partial success returns the successful content items with failures recorded in `structuredContent.turns`.
 
-**Token budget**: set `tokenBudget` (or the `TOKEN_BUDGET` default) to cap the cumulative tokens a run may spend. Once the running total crosses the ceiling, remaining turns are skipped (recorded as `skipped: budget` in `structuredContent.turns`) — synthesis still runs, and `structuredContent.budget` reports `{ limit, used, exceeded }`. Read it to see what was dropped, then re-invoke with a higher budget if you want the rest.
+**Token budget (soft)**: set `tokenBudget` (or the `TOKEN_BUDGET` default) as a **soft** cumulative budget for the run — not a hard cap. The running total is checked **between turns**, so a parallel round can overshoot before the server notices, and synthesis runs afterward by design. Once the total crosses the budget, remaining turns are skipped (recorded as `skipped: budget` in `structuredContent.turns`), and `structuredContent.budget` reports `{ limit, used, exceeded }`. Read it to see what was dropped, then re-invoke with a higher budget if you want the rest.
 
 **Presets (council recipes)**: `preset` names a recipe from `config/presets.json` — a self-contained council. Each preset defines its own roles inline (a role's description IS its behavior contract; a role with no description falls back to a `config/roles/<role>.md` file). You still write the `models` selectors and freely assign any model to any preset role (a model may play several).
 

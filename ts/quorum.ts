@@ -38,14 +38,14 @@ export const runQuorum = async (
       turns: QuorumTurn[] = [],
       content: { type: 'text'; text: string }[] = []
 
+   const presetFailure = args.preset === undefined ? null : presetError(validatePreset(args.preset, selectors, presets, models, roles, effectiveRoles, adHoc), args.preset, presets, errors)
+   if (presetFailure) return err(presetFailure)
+
    const
       resolved = selectors.map(s => resolve(s, models, effectiveRoles)),
       badIndex = resolved.indexOf(null)
    if (badIndex !== -1)
       return err(fill(errors.unknownSelector, { selector: selectors[badIndex]! }))
-
-   const presetFailure = args.preset === undefined ? null : presetError(validatePreset(args.preset, selectors, presets, models, roles, effectiveRoles, adHoc), args.preset, presets, errors)
-   if (presetFailure) return err(presetFailure)
 
    let used = 0
 
