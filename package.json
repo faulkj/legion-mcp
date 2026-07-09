@@ -1,7 +1,7 @@
 {
    "name": "legion-mcp",
    "version": "0.1.0",
-   "description": "I am Legion, for we are many — an MCP server for exposing LLMs as tools over the OpenAI Responses API.",
+   "description": "I am Legion, for we are many ~ an MCP server for exposing LLMs as tools over the OpenAI Responses API.",
    "author": "Joshua Faulkenberry <j@joshuafaulkenberry.com> (https://joshuafaulkenberry.com/)",
    "license": "Kopimi",
    "repository": {
@@ -39,9 +39,9 @@
       "config/models/*.example.json"
    ],
    "scripts": {
-      "dev": "tsx watch --env-file-if-exists=.env ts/main.ts",
-      "dev:http": "tsx watch --env-file-if-exists=.env ts/main.ts http",
-      "build": "tsc --noEmit && tsup --entry.server=ts/main.ts --format esm --out-dir bin --no-splitting --platform node --clean",
+      "dev": "tsx watch --env-file-if-exists=.env ts/server.ts",
+      "dev:http": "tsx watch --env-file-if-exists=.env ts/server.ts http",
+      "build": "tsc --noEmit && tsup --entry.server=ts/server.ts --format esm --out-dir bin --no-splitting --platform node --clean",
       "prepack": "npm run build",
       "start": "node --env-file-if-exists=.env bin/server.js",
       "start:http": "node --env-file-if-exists=.env bin/server.js http",

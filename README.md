@@ -239,7 +239,7 @@ npm run start:http # node bin/server.js http
 List the tools with the MCP Inspector:
 
 ```pwsh
-npx @modelcontextprotocol/inspector npx tsx ts/main.ts
+npx @modelcontextprotocol/inspector npx tsx ts/server.ts
 ```
 
 ## Use in VS Code
@@ -297,16 +297,16 @@ config/             runtime configuration
    prompts.json      prompt-shaping templates the models read (overridable)
    errors.json       runtime error messages (overridable)
    description.md    MCP instructions for the calling AI
-types/index.d.ts    all shared types (global, no import)
+types/*.d.ts        all shared types (global, no import)
 ts/                 TypeScript source
    config.ts         env + models/roles loading, validation, slugify
    configText.ts     description/schema/tool-description file loaders
    quorum.ts         quorum engine: speakOne(), runQuorum(), toContext()
    log.ts            level gate + colored console sink (pluggable)
    llm.ts            OpenAI Responses client → prompt() with layered instructions
-   server.ts         bootstrap + McpServer factory
+   bootstrap.ts      bootstrap + McpServer factory
    tools.ts          tool schemas + registerModelTools + registerQuorumTool
-   main.ts           single entrypoint — compiled to `bin/server.js [stdio|http]`
+   server.ts         single entrypoint — compiled to `bin/server.js [stdio|http]`
 bin/                compiled output (git-ignored)
 ```
 

@@ -1,42 +1,54 @@
-import { McpServer } from '@modelcontextprotocol/server'
-import { loadConfig, loadDescription, loadErrors, loadModels, loadPrompts, loadRoles, loadSchema, loadToolDescription } from './config.js'
-import { makeProbe } from './health.js'
-import { createPrompt } from './llm.js'
-import { setLogLevel } from './log.js'
-import { registerModelTools, registerQuorumTool } from './tools.js'
+import { createMcpExpressApp } from '@modelcontextprotocol/express'
+import { toNodeHandler } from '@modelcontextprotocol/node'
+import { createMcpHandler } from '@modelcontextprotocol/server'
+import { serveStdio } from '@modelcontextprotocol/server/stdio'
+import { banner, log } from './log.js'
+import { bootstrap } from './bootstrap.js'
 
-/** Load config, validate the models directory, and return a per-request server factory plus a deep-health probe. */
-export const bootstrap = (): { config: AppConfig; models: ModelDef[]; createServer: () => McpServer; probe: () => Promise<HealthReport> } => {
+const
+   { config, models, createServer, probe } = (() => {
+      try { return bootstrap() }
+      catch (e) {
+         console.error(`✖ Fatal: ${e instanceof Error ? e.message : String(e)}`)
+         process.exit(1)
+      }
+   })(),
+   transport = process.argv[2] ?? 'stdio',
+   displayHost = (host: string): string => host === '127.0.0.1' ? 'localhost' : host
+
+if (transport === 'http') {
    const
-      config = loadConfig(),
-      models = loadModels(config)
+      handler = createMcpHandler(createServer),
+      node = toNodeHandler(handler),
+      app = createMcpExpressApp({
+         host: config.host,
+         ...(config.allowedHosts === undefined ? {} : { allowedHosts: config.allowedHosts })
+      })
 
-   setLogLevel(config.logLevel)
-   return { config, models, createServer: makeServerFactory(config), probe: makeProbe(config) }
-}
+   app.get('/health', async (req, res) => {
+      if (req.query.deep === undefined)
+         return void res.json({ status: 'ok', name: config.name, version: config.version, models: models.length })
+      const report = await probe()
+      res.status(report.status === 'ok' ? 200 : 503).json(report)
+   })
+   app.all('/mcp', (req, res) => void node(req, res, req.body))
 
-/** Build a factory that re-scans the models directory per request — drop in a JSON, get a tool. */
-export const makeServerFactory = (config: AppConfig): () => McpServer => {
-   const basePrompt = createPrompt(config)
+   app.listen(config.port, config.host, () => {
+      banner(`🌐 ${config.name} v${config.version} listening on http://${displayHost(config.host)}:${config.port}/mcp`)
+      log('info', '🚀 transport: http')
+      log('info', `🧩 models loaded: ${models.length}`)
+   })
 
-   return () => {
-      const
-         description = loadDescription(),
-         server = new McpServer(
-            { name: config.name, version: config.version },
-            description === undefined ? {} : { instructions: description }
-         ),
-         models = loadModels(config),
-         roles = loadRoles(config),
-         schema = loadSchema(),
-         templates = loadPrompts(),
-         errors = loadErrors(),
-         // Forward roles + templates so quorum can pass its effective (file + ad-hoc) roles; both default here.
-         prompt: ReturnType<typeof createPrompt> = (def, input, override, tpl) => basePrompt(def, input, override ?? roles, tpl ?? templates)
-
-      registerModelTools(server, models, roles, prompt, errors, schema)
-      registerQuorumTool(server, models, roles, prompt, config.maxRounds, config.dynamicRoles, templates, errors, loadToolDescription(config, 'quorum'), schema)
-
-      return server
-   }
+   process.on('SIGINT', async () => {
+      await handler.close()
+      process.exit(0)
+   })
+} else if (transport === 'stdio') {
+   void serveStdio(createServer)
+   banner(`⚡ ${config.name} v${config.version} running`)
+   log('info', '🚀 transport: stdio')
+   log('info', `🧩 models loaded: ${models.length}`)
+} else {
+   console.error(`Unknown transport "${transport}". Use "stdio" (default) or "http".`)
+   process.exit(1)
 }
