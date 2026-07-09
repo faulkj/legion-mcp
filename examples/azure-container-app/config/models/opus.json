@@ -1,0 +1,5 @@
+{
+   "model": "claude-opus-4-8",
+   "description": "Claude Opus — deep reasoning, hardest problems. Routed via the default gateway.",
+   "omitParams": ["temperature"]
+}

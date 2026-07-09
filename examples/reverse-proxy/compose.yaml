@@ -1,0 +1,23 @@
+services:
+   legion:
+      build: .
+      environment:
+         DEFAULT_BASE_URL: ${DEFAULT_BASE_URL}
+         DEFAULT_API_KEY: ${DEFAULT_API_KEY}
+         # Legion binds 0.0.0.0 here, so name the public host(s) for
+         # DNS-rebinding protection. Must match the Caddyfile domain.
+         ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+
+   caddy:
+      image: caddy:2-alpine
+      ports:
+         - "80:80"
+         - "443:443"
+      volumes:
+         - ./Caddyfile:/etc/caddy/Caddyfile:ro
+         - caddy_data:/data
+      depends_on:
+         - legion
+
+volumes:
+   caddy_data:

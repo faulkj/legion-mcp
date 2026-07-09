@@ -1,0 +1,3 @@
+legion.example.org {
+   reverse_proxy legion:5000
+}

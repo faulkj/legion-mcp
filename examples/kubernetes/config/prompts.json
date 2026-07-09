@@ -1,0 +1,3 @@
+{
+   "contextBlock": "{prompt}\n\n--- Reference material ---\n{context}"
+}

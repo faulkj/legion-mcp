@@ -1,0 +1,4 @@
+{
+   "model": "gemini-2.5-pro",
+   "description": "Google Gemini 2.5 Pro — long context, strong reasoning. Routed via the default gateway (DEFAULT_BASE_URL / DEFAULT_API_KEY)."
+}

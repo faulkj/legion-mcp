@@ -264,6 +264,28 @@ Add to your `mcp.json`:
 
 For the HTTP transport, point your client at `http://<host>:<PORT>/mcp`.
 
+### Health
+
+- `GET /health` — cheap **liveness**: confirms the process is up and config
+  loaded. Returns `{ status: "ok", name, version, models }` (a count). Makes no
+  external calls. This is what container `HEALTHCHECK`s and Kubernetes
+  liveness/readiness probes should hit.
+- `GET /health?deep` — optional **connectivity** check: fans a tiny one-token
+  prompt to every model and returns a per-model `{ name, model, ok, latencyMs }`
+  array. `200` when all reachable, `503` (`status: "degraded"`) if any fail.
+  Every model reaching its endpoint counts as reachable — even reasoning models
+  that spend the whole budget thinking and emit no text. **Do not** wire this to
+  an automatic probe: it makes a real (billable) request per model on every hit,
+  and a downstream outage would needlessly restart a perfectly healthy
+  container. Use it manually or from a monitoring dashboard.
+
+## Deploy
+
+Ready-to-use container deployment examples (Azure App Service, Azure Container
+Apps, Docker Compose, Kubernetes, and Compose + Caddy for HTTPS) live in
+[`examples/`](examples/) — each installs Legion from npm and ships a complete
+drop-in `config/`.
+
 ## Project layout
 
 ```

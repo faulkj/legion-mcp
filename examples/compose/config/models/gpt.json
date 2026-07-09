@@ -1,0 +1,6 @@
+{
+   "model": "gpt-5.5",
+   "description": "OpenAI GPT 5.5 — fast, broad knowledge, strong tool use. Called directly on its own Azure OpenAI endpoint.",
+   "baseUrl": "https://your-resource.openai.azure.com/openai/v1",
+   "omitParams": ["temperature"]
+}

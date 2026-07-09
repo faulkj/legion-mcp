@@ -1,0 +1,10 @@
+services:
+   legion:
+      build: .
+      ports:
+         - "5000:5000"
+      environment:
+         DEFAULT_BASE_URL: ${DEFAULT_BASE_URL}
+         DEFAULT_API_KEY: ${DEFAULT_API_KEY}
+         LOG_LEVEL: ${LOG_LEVEL:-info}
+      restart: unless-stopped
