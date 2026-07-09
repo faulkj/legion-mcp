@@ -1,0 +1,56 @@
+/** Arguments accepted by every model tool. */
+interface PromptInput {
+   prompt: string
+   context?: string
+   role?: string
+   system?: string
+   temperature?: number
+   maxTokens?: number
+}
+
+/** Token usage reported by the Responses API. */
+interface TokenUsage {
+   inputTokens?: number
+   outputTokens?: number
+   totalTokens?: number
+   reasoningTokens?: number
+}
+
+/** Result of a single model call. */
+interface PromptResult {
+   text: string
+   usage: TokenUsage
+   latencyMs: number
+   truncated?: boolean
+   reasoningHeavy?: boolean
+}
+
+/** Arguments accepted by the quorum fan-out tool. */
+interface QuorumInput extends PromptInput {
+   models: string[]
+   roles?: Record<string, string>
+   rounds?: number
+   mode?: 'sequential' | 'parallel'
+   synthesize?: string
+}
+
+/** Internal per-turn transcript entry for a quorum round. */
+interface QuorumTurn {
+   selector: string
+   round: number
+   text: string
+}
+
+/** Per-turn telemetry emitted in quorum structuredContent. */
+interface TurnTelemetry {
+   selector: string
+   modelName: string
+   modelId: string
+   role?: string
+   round: number
+   isSynthesis: boolean
+   usage: TokenUsage
+   latencyMs: number
+   status: string
+   contentIndex?: number
+}
