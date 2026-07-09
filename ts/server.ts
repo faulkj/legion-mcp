@@ -1,17 +1,18 @@
 import { McpServer } from '@modelcontextprotocol/server'
 import { loadConfig, loadDescription, loadErrors, loadModels, loadPrompts, loadRoles, loadSchema, loadToolDescription } from './config.js'
+import { makeProbe } from './health.js'
 import { createPrompt } from './llm.js'
 import { setLogLevel } from './log.js'
 import { registerModelTools, registerQuorumTool } from './tools.js'
 
-/** Load config, validate the models directory, and return a per-request server factory. */
-export const bootstrap = (): { config: AppConfig; models: ModelDef[]; createServer: () => McpServer } => {
+/** Load config, validate the models directory, and return a per-request server factory plus a deep-health probe. */
+export const bootstrap = (): { config: AppConfig; models: ModelDef[]; createServer: () => McpServer; probe: () => Promise<HealthReport> } => {
    const
       config = loadConfig(),
       models = loadModels(config)
 
    setLogLevel(config.logLevel)
-   return { config, models, createServer: makeServerFactory(config) }
+   return { config, models, createServer: makeServerFactory(config), probe: makeProbe(config) }
 }
 
 /** Build a factory that re-scans the models directory per request — drop in a JSON, get a tool. */

@@ -1,6 +1,9 @@
 import OpenAI from 'openai'
 import { fill, loadPrompts } from './config.js'
 
+/** Prefix of the error thrown when a model answers but emits no text before hitting maxTokens. */
+export const emptyOutputError = 'no output before hitting maxTokens'
+
 /** Build a `prompt` function that routes each model to its endpoint, falling back to the defaults. */
 export const createPrompt = (config: AppConfig) => {
    const
@@ -63,7 +66,7 @@ const
    incompleteMessage = (status?: string, reason?: string): string =>
       reason && reason !== 'max_output_tokens'
          ? `response ${status ?? 'incomplete'} (${reason})`
-         : 'no output before hitting maxTokens — raise maxTokens (reasoning models can spend the full budget thinking before emitting any text)',
+         : `${emptyOutputError} — raise maxTokens (reasoning models can spend the full budget thinking before emitting any text)`,
 
    composeInput = (input: PromptInput, t: PromptTemplates): string =>
       input.context === undefined

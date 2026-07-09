@@ -6,7 +6,7 @@ import { banner, log } from './log.js'
 import { bootstrap } from './server.js'
 
 const
-   { config, models, createServer } = bootstrap(),
+   { config, models, createServer, probe } = bootstrap(),
    transport = process.argv[2] ?? 'stdio',
    displayHost = (host: string): string => host === '127.0.0.1' ? 'localhost' : host
 
@@ -19,6 +19,12 @@ if (transport === 'http') {
          ...(config.allowedHosts === undefined ? {} : { allowedHosts: config.allowedHosts })
       })
 
+   app.get('/health', async (req, res) => {
+      if (req.query.deep === undefined)
+         return void res.json({ status: 'ok', name: config.name, version: config.version, models: models.length })
+      const report = await probe()
+      res.status(report.status === 'ok' ? 200 : 503).json(report)
+   })
    app.all('/mcp', (req, res) => void node(req, res, req.body))
 
    app.listen(config.port, config.host, () => {
