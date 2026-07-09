@@ -51,6 +51,7 @@ interface AppConfig {
    allowedHosts?: string[]
    port: number
    maxRounds: number
+   tokenBudget?: number
    dynamicRoles: boolean
    logLevel: LogLevel
 }

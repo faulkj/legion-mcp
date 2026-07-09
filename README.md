@@ -32,7 +32,10 @@ flowchart LR
   `roles`, multi-round discussion (`rounds`, `mode`), and an optional synthesis
   turn (`synthesize`). The calling AI acts as moderator: feed
   `structuredContent.transcript` back as `context` with new guidance to steer a
-  live debate.
+  live debate. An optional `tokenBudget` (or the `TOKEN_BUDGET` default) caps the
+  cumulative tokens a run may spend: once crossed, remaining turns are skipped
+  gracefully (recorded as `skipped: budget` in telemetry, synthesis still runs),
+  so the moderator can see what was dropped and re-invoke with more headroom.
 - Identity and telemetry are returned in `structuredContent`, not embedded in
   answer text.
 - Returns the model's text response; on failure returns an MCP error result the
@@ -185,6 +188,7 @@ All user-facing text lives in config, not code, and hot-reloads per request:
 | `ALLOWED_HOSTS` | no | Comma-separated hostnames for DNS-rebinding protection on non-localhost binds. |
 | `PORT` | no | HTTP port (default `5000`; ignored by stdio). |
 | `MAX_ROUNDS` | no | Max discussion rounds the `quorum` tool accepts (default `5`). |
+| `TOKEN_BUDGET` | no | Default cumulative token ceiling for a whole `quorum` run. Unset = no limit. A per-call `tokenBudget` overrides it. |
 | `DYNAMIC_ROLES` | no | Allow the calling AI to define ad-hoc `quorum` roles inline (default `true`). |
 | `LOG_LEVEL` | no | `debug` \| `info` \| `warn` \| `error` (default `info`). |
 
@@ -285,33 +289,3 @@ Ready-to-use container deployment examples (Azure App Service, Azure Container
 Apps, Docker Compose, Kubernetes, and Compose + Caddy for HTTPS) live in
 [`examples/`](examples/) — each installs Legion from npm and ships a complete
 drop-in `config/`.
-
-## Project layout
-
-```
-config/             runtime configuration
-   models/*.json     one tool per file (hot-dropped per request)
-   roles/*.md        hot-droppable role instruction files
-   tools/*.md        optional per-tool descriptions (overridable), e.g. quorum.md
-   schema.json       source of all input-field descriptions
-   prompts.json      prompt-shaping templates the models read (overridable)
-   errors.json       runtime error messages (overridable)
-   description.md    MCP instructions for the calling AI
-types/*.d.ts        all shared types (global, no import)
-ts/                 TypeScript source
-   config.ts         env + models/roles loading, validation, slugify
-   configText.ts     description/schema/tool-description file loaders
-   quorum.ts         quorum engine: speakOne(), runQuorum(), toContext()
-   log.ts            level gate + colored console sink (pluggable)
-   llm.ts            OpenAI Responses client → prompt() with layered instructions
-   bootstrap.ts      bootstrap + McpServer factory
-   tools.ts          tool schemas + registerModelTools + registerQuorumTool
-   server.ts         single entrypoint — compiled to `bin/server.js [stdio|http]`
-bin/                compiled output (git-ignored)
-```
-
-## Out of scope
-
-Gateway/proxy deployment (LiteLLM or otherwise), hosting infrastructure, MCP
-client auth, response streaming, and multi-turn conversation state are
-intentionally not part of this server.

@@ -12,6 +12,7 @@
       "roles": "Ad-hoc roles for this quorum call: map of role name to instructions. Reference as \"model:role\" in models.",
       "rounds": "Discussion rounds (default 1; max set by MAX_ROUNDS)",
       "mode": "sequential (default) or parallel",
-      "synthesize": "Selector for a final synthesis turn after all rounds"
+      "synthesize": "Selector for a final synthesis turn after all rounds",
+      "tokenBudget": "Optional cumulative token ceiling for the whole run (overrides TOKEN_BUDGET). When exceeded, remaining turns are skipped gracefully; synthesis still runs. See structuredContent.budget."
    }
 }

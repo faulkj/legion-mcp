@@ -15,7 +15,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
    if (!parsed.success)
       throw new Error(`Invalid configuration:\n${z.prettifyError(parsed.error)}`)
 
-   const { DEFAULT_BASE_URL, DEFAULT_API_KEY, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, DYNAMIC_ROLES, LOG_LEVEL } = parsed.data
+   const { DEFAULT_BASE_URL, DEFAULT_API_KEY, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, TOKEN_BUDGET, DYNAMIC_ROLES, LOG_LEVEL } = parsed.data
 
    return {
       ...readPackage(),
@@ -28,6 +28,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
       allowedHosts: ALLOWED_HOSTS?.split(',').map(h => h.trim()).filter(Boolean),
       port: PORT,
       maxRounds: MAX_ROUNDS,
+      tokenBudget: TOKEN_BUDGET,
       dynamicRoles: DYNAMIC_ROLES === 'true',
       logLevel: LOG_LEVEL
    }
@@ -75,6 +76,7 @@ const
       ALLOWED_HOSTS: z.string().optional(),
       PORT: z.coerce.number().int().positive().default(5000),
       MAX_ROUNDS: z.coerce.number().int().positive().default(5),
+      TOKEN_BUDGET: z.coerce.number().int().positive().optional(),
       DYNAMIC_ROLES: z.enum(['true', 'false']).default('true'),
       LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info')
    }),

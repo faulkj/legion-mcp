@@ -49,6 +49,7 @@ export const registerQuorumTool = (
    dynamicRoles: boolean,
    templates: PromptTemplates,
    errors: ErrorMessages,
+   tokenBudget?: number,
    description?: string,
    schema: SchemaDescriptions = {}
 ): void => {
@@ -61,6 +62,7 @@ export const registerQuorumTool = (
          rounds: z.number().int().min(1).max(maxRounds).optional().describe(d('rounds')),
          mode: z.enum(['sequential', 'parallel']).optional().describe(d('mode')),
          synthesize: z.string().optional().describe(d('synthesize')),
+         tokenBudget: z.number().int().positive().optional().describe(d('tokenBudget')),
          ...buildInputSchema(schema).omit({ role: true }).shape
       })
 
@@ -72,7 +74,7 @@ export const registerQuorumTool = (
          description: `${description ?? fallback}\n\nAvailable models: ${names.join(', ')}.`,
          inputSchema: quorumSchema
       },
-      (args: QuorumInput) => runQuorum(args, models, roles, prompt, maxRounds, dynamicRoles, templates, errors)
+      (args: QuorumInput) => runQuorum(args, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget)
    )
 }
 

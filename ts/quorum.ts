@@ -1,6 +1,7 @@
 import { fill, slugify } from './config.js'
 import { createPrompt } from './llm.js'
 import { log, logPrompt, okStatus, promptEntry } from './log.js'
+import { banner, dedup, resolve, toContext } from './quorumHelpers.js'
 
 type Prompt = ReturnType<typeof createPrompt>
 
@@ -12,7 +13,8 @@ export const runQuorum = async (
    maxRounds: number,
    dynamicRoles: boolean,
    templates: PromptTemplates,
-   errors: ErrorMessages
+   errors: ErrorMessages,
+   tokenBudget?: number
 ): Promise<{ content: { type: 'text'; text: string }[]; structuredContent?: unknown; isError: boolean }> => {
    const err = (text: string) => ({ content: [{ type: 'text' as const, text }], isError: true })
 
@@ -38,6 +40,12 @@ export const runQuorum = async (
    if (badIndex !== -1)
       return err(fill(errors.unknownSelector, { selector: selectors[badIndex]! }))
 
+   let used = 0
+
+   const skip = (round: number) =>
+      resolved.forEach((r, i) =>
+         telemetry.push({ selector: selectors[i]!, modelName: r!.def.name, modelId: r!.def.model, role: r!.role, round, isSynthesis: false, usage: {}, latencyMs: 0, status: 'skipped: budget' }))
+
    const speakOne = async (selector: string, round: number, isSynthesis: boolean, extraContext?: string) => {
       const
          r = resolve(selector, models, effectiveRoles)!,
@@ -54,6 +62,7 @@ export const runQuorum = async (
          const
             result = await prompt(r.def, roleInput, effectiveRoles, templates),
             ci = content.length
+         used += result.usage.totalTokens ?? 0
          content.push({ type: 'text', text: result.text })
          logPrompt(promptEntry(r.def, roleInput, { response: result.text, usage: result.usage, latencyMs: result.latencyMs }, selector))
          telemetry.push({ selector, modelName: r.def.name, modelId: r.def.model, role: r.role, round, isSynthesis, usage: result.usage, latencyMs: result.latencyMs, status: okStatus(result), contentIndex: ci })
@@ -69,6 +78,11 @@ export const runQuorum = async (
    }
 
    for (let round = 1; round <= rounds; round++) {
+      if (tokenBudget && used >= tokenBudget) {
+         for (let r = round; r <= rounds; r++) skip(r)
+         log('warn', `⚠️ token budget ${tokenBudget} exceeded (${used}) — skipping remaining turns`)
+         break
+      }
       if (mode === 'sequential') {
          for (const selector of selectors) {
             const
@@ -99,32 +113,13 @@ export const runQuorum = async (
       }
    }
 
-   return { content, structuredContent: { turns: telemetry, transcript: toContext(turns, templates) ?? '' }, isError: content.length === 0 }
-}
-
-const
-   resolve = (selector: string, models: ModelDef[], roles: RoleDef[]): { def: ModelDef; role?: string } | null => {
-      const
-         [modelPart, rolePart] = selector.split(':', 2) as [string, string | undefined],
-         def = models.find(m => slugify(m.name) === modelPart)
-      if (!def) return null
-      if (rolePart !== undefined && !roles.find(r => r.name === rolePart)) return null
-      return { def, role: rolePart }
-   },
-
-   dedup = (selectors: string[]) => [...new Set(selectors)],
-
-   banner = (round: number, rounds: number, isSynthesis: boolean, t: PromptTemplates): string =>
-      isSynthesis
-         ? t.synthesis
-         : rounds < 2
-            ? ''
-            : fill(round < rounds ? t.roundExploring : t.roundFinal, { round, rounds }),
-
-   toContext = (turns: QuorumTurn[], t: PromptTemplates, callerContext?: string): string | undefined => {
-      if (!turns.length) return callerContext
-      const
-         transcript = turns.map(turn => `[round ${turn.round} / ${turn.selector}]\n${turn.text}`).join('\n\n'),
-         block = fill(t.transcriptBlock, { transcript })
-      return callerContext ? `${callerContext}\n\n${block}` : block
+   return {
+      content,
+      structuredContent: {
+         turns: telemetry,
+         transcript: toContext(turns, templates) ?? '',
+         ...(tokenBudget ? { budget: { limit: tokenBudget, used, exceeded: used > tokenBudget } } : {})
+      },
+      isError: content.length === 0
    }
+}

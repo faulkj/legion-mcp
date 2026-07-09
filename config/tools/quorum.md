@@ -6,6 +6,7 @@ roles   — optional ad-hoc roles for this call: { "name": "instructions" }
 rounds  — discussion rounds (default 1; max set by MAX_ROUNDS, default 5)
 mode    — "sequential" (default) or "parallel"
 synthesize — selector for a final synthesis turn after all rounds complete
+tokenBudget — optional cumulative token ceiling for the whole run (overrides TOKEN_BUDGET)
 ```
 
 **Sequential** (default): speakers take turns in the order given. Each speaker receives the full accumulated transcript so far as context — a real back-and-forth. Reorder the `models` array to change who opens or closes.
@@ -38,6 +39,8 @@ Per-turn telemetry (usage, latency, status, role) is in `structuredContent.turns
 **Transcript structure is owned by the moderator, not the speakers.** The `[round N / speaker]` labels are added when building the transcript; each model's answer is stored raw. Speakers are instructed not to label their own turns — so if you author your own steering turns between calls, don't add `[round N / …]` prefixes either; let the structure come from the tool.
 
 A failed call returns `isError: true` only when **all** calls failed. Partial success returns the successful content items with failures recorded in `structuredContent.turns`.
+
+**Token budget**: set `tokenBudget` (or the `TOKEN_BUDGET` default) to cap the cumulative tokens a run may spend. Once the running total crosses the ceiling, remaining turns are skipped (recorded as `skipped: budget` in `structuredContent.turns`) — synthesis still runs, and `structuredContent.budget` reports `{ limit, used, exceeded }`. Read it to see what was dropped, then re-invoke with a higher budget if you want the rest.
 
 **Per-turn `status` values** (in `structuredContent.turns`):
 
