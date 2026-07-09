@@ -1,0 +1,17 @@
+{
+   "prompt": {
+      "prompt": "The question or task to send to the model",
+      "context": "Optional supporting text (code, docs, data) appended to the prompt as a separate block",
+      "role": "Optional role slug from config/roles/ to shape model behavior",
+      "system": "Optional system prompt / instructions",
+      "temperature": "Optional sampling temperature",
+      "maxTokens": "Optional max output tokens. Budget for BOTH visible answer and any hidden reasoning: reasoning models spend tokens thinking before emitting text, so a tight ceiling can leave no room for a visible answer. Give reasoning models generous headroom; in multi-round quorum, raise it further since the transcript grows each round."
+   },
+   "quorum": {
+      "models": "Two or more selectors: \"model\" or \"model:role\". The same model may appear multiple times with different roles (for example \"gpt:judge\" and \"gpt:skeptic\"); each selector is a distinct speaker.",
+      "roles": "Ad-hoc roles for this quorum call: map of role name to instructions. Reference as \"model:role\" in models.",
+      "rounds": "Discussion rounds (default 1; max set by MAX_ROUNDS)",
+      "mode": "sequential (default) or parallel",
+      "synthesize": "Selector for a final synthesis turn after all rounds"
+   }
+}

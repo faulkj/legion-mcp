@@ -1,0 +1,7 @@
+{
+   "model": "gpt-5.5",
+   "description": "OpenAI GPT 5.5 — fast, broad knowledge. Called directly with its own endpoint and key.",
+   "baseUrl": "https://api.openai.com/v1",
+   "apiKey": "sk-your-openai-key",
+   "omitParams": ["temperature"]
+}

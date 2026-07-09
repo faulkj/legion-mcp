@@ -1,0 +1,8 @@
+{
+   "unknownRole": "Unknown role \"{role}\". Available: {available}",
+   "unknownSelector": "Unknown selector \"{selector}\".",
+   "adhocDisabled": "Ad-hoc roles are disabled (set DYNAMIC_ROLES=true to enable).",
+   "adhocEmptyName": "Every ad-hoc role name must contain at least one alphanumeric character.",
+   "unresolvableSelector": "error: unresolvable selector",
+   "modelFailed": "{model} failed: {message}"
+}

@@ -1,0 +1,16 @@
+{
+   "compilerOptions": {
+      "target": "ESNext",
+      "module": "nodenext",
+      "moduleResolution": "nodenext",
+      "rootDir": "ts",
+      "outDir": "bin",
+      "strict": true,
+      "noUncheckedIndexedAccess": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "declaration": true,
+      "sourceMap": true
+   },
+   "include": ["ts/**/*.ts", "types/**/*.d.ts"]
+}
