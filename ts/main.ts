@@ -6,7 +6,13 @@ import { banner, log } from './log.js'
 import { bootstrap } from './server.js'
 
 const
-   { config, models, createServer, probe } = bootstrap(),
+   { config, models, createServer, probe } = (() => {
+      try { return bootstrap() }
+      catch (e) {
+         console.error(`✖ Fatal: ${e instanceof Error ? e.message : String(e)}`)
+         process.exit(1)
+      }
+   })(),
    transport = process.argv[2] ?? 'stdio',
    displayHost = (host: string): string => host === '127.0.0.1' ? 'localhost' : host
 
