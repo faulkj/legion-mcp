@@ -1,18 +1,17 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { basename, join } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import * as z from 'zod/v4'
 import { slugify } from './config.js'
+import { layeredFiles, slugKey } from './text.js'
 
-/** Scan config/presets/*.json; each `<name>.json` becomes a preset keyed by its slugified file name. Missing dir → none. */
+/** Scan config/presets/*.json across both layers (local wins); each becomes a preset keyed by its slugified file name. `DISABLE_PRESETS` slugs are dropped after merge. */
 export const loadPresets = (config: AppConfig): Presets => {
-   let files: string[]
-   try { files = readdirSync(config.presetsDir).filter(f => f.endsWith('.json') && !f.endsWith('.example.json')) }
-   catch { return {} }
-   const
-      entries = files.map(f => [slugify(basename(f, '.json')), parsePresetFile(config.presetsDir, f)] as const),
-      seen = new Set<string>()
-   entries.forEach(([slug]) => seen.has(slug) ? (() => { throw new Error(`Preset slug collision: "${slug}". Rename one.`) })() : seen.add(slug))
-   return Object.fromEntries(entries)
+   const disabled = new Set(config.disabledPresets)
+   return Object.fromEntries(
+      layeredFiles('presets', '.json', slugKey('.json'), f => f.endsWith('.example.json'))
+         .filter(({ key }) => !disabled.has(key))
+         .map(({ key, dir, file }) => [key, parsePresetFile(dir, file)] as const)
+   )
 }
 
 const

@@ -4,9 +4,9 @@ ENV HOST=0.0.0.0
 ENV PORT=8080
 RUN npm install -g legion-mcp
 WORKDIR /app
-# Legion resolves ./config first and uses it INSTEAD OF the bundled defaults
-# (all-or-nothing, not a per-file merge). This folder ships a complete config,
-# so it must include at least one model file or the server fails fast at startup.
+# Legion overlays ./config on top of the bundled defaults, per file. This folder
+# needs only the files it customizes, but must include at least one model file —
+# the bundle ships no real models, so the server fails fast at startup without one.
 COPY config/ /app/config/
 USER node
 EXPOSE 8080

@@ -82,26 +82,32 @@ copy .env.example .env   # then edit .env
 
 ## Configuration
 
-All configuration lives in a `config/` directory. The server resolves it in one
-of two ways:
+All configuration lives in a `config/` directory. The bundled defaults are
+**always the base layer**; a `config/` folder in the current working directory
+is **overlaid on top of them, per file**:
 
-- **Installed from npm** (or run from any other directory): if a `config/`
-  folder exists in the current working directory, it is used and **overrides all
-  the built-in defaults**. Otherwise the defaults bundled with the package are
-  used.
-- **Running from the repo:** the repo's own `config/` folder is the working
-  directory config.
+- **Directory resources** (`models/`, `roles/`, `presets/`, `tools/`): a local
+  file overrides the bundled file of the same name; a local-only file is added;
+  every bundled file you don't touch stays. So dropping in one
+  `config/presets/refine.json` overrides just that preset — the other bundled
+  presets remain.
+- **Single-file text** (`prompts.json`, `errors.json`, `schema.json`): merged
+  **per key** — defaults < bundled < local. A partial local file overrides only
+  the keys it sets.
+- **`description.md`**: local wins whole if present, else bundled.
+
+The overlay can **override or add**, but not delete a bundled entry. To turn off
+bundled presets you don't want, use `DISABLE_PRESETS` (see below).
 
 > **Installing from npm? You must supply your own model files.** The bundled
 > config ships only key-free `*.example.json` model files, which the scanner
-> deliberately ignores. With no real model file the server **fails fast at
-> startup** (`No model files found in ...`). Resolution is all-or-nothing at the
-> directory level: a `config/` folder in your working directory replaces the
-> bundled one entirely — it is not merged. So the practical path is to copy the
-> shipped `config/` next to where you run the server, then add at least one
-> `config/models/<name>.json` (see below). Edit the rest freely.
+> deliberately ignores — so the bundle contributes **zero** real models. With no
+> real model file the server **fails fast at startup** (`No model files found
+> in ...`). Just drop one `config/models/<name>.json` next to where you run the
+> server (see below); you no longer need to copy the whole `config/` — the rest
+> falls back to the bundled defaults.
 
-Either way the layout below is identical, and everything hot-reloads per
+The layout below is identical either way, and everything hot-reloads per
 request.
 
 ### Models — `config/models/*.json`
@@ -249,6 +255,7 @@ config file can't live inside it.)
 | `MAX_ROUNDS` | no | Max discussion rounds the `quorum` tool accepts (default `5`). |
 | `TOKEN_BUDGET` | no | Default **soft** cumulative token budget for a whole `quorum` run (sequential checks between turns, parallel at round boundaries so a round can overshoot; synthesis still runs). Unset = no limit. A per-call `tokenBudget` overrides it. |
 | `DYNAMIC_ROLES` | no | Allow the calling AI to define ad-hoc `quorum` roles inline (default `true`). |
+| `DISABLE_PRESETS` | no | Comma-separated preset slugs to **not** register as tools (e.g. `battle_royale,jury`). Applies to bundled and local presets alike; unknown names are ignored. Unset = all presets registered. |
 | `LOG_LEVEL` | no | `debug` \| `info` \| `warn` \| `error` (default `info`). |
 
 \* Every model must resolve a `baseUrl` and `apiKey` from its file or the

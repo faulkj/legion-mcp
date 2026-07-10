@@ -83,10 +83,6 @@ interface PromptTemplates {
 interface AppConfig {
    name: string
    version: string
-   modelsDir: string
-   rolesDir: string
-   toolsDir: string
-   presetsDir: string
    defaultBaseUrl?: string
    defaultApiKey?: string
    host: string
@@ -95,5 +91,6 @@ interface AppConfig {
    maxRounds: number
    tokenBudget?: number
    dynamicRoles: boolean
+   disabledPresets: string[]
    logLevel: LogLevel
 }

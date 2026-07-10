@@ -56,26 +56,26 @@ the `Caddyfile` with your domain, copy `.env.example` to `.env` (set
 
 ## Custom Config
 
-Legion resolves its `config/` directory from the current working directory
-first, falling back to the defaults bundled with the package. Unlike a per-file
-overlay, this is **all-or-nothing**: if a `config/` folder exists next to where
-the server runs, it **replaces the bundled config entirely** — the two are not
-merged.
+Legion's bundled defaults are **always the base layer**; a `config/` folder in
+the current working directory is **overlaid on top, per file**. A local file
+overrides the bundled file of the same name, a local-only file is added, and
+every bundled file you don't touch stays in place. The overlay can override or
+add — it can't delete a bundled entry (use `DISABLE_PRESETS` to turn off bundled
+presets).
 
-Because of that, every Dockerfile here copies a **complete** `config/` folder
-to `/app/config` and runs the server from `/app`, so Legion uses only the
-example's config. Each example therefore ships **at least one model file**
-(`config/models/<name>.json`) — the server fails fast at startup without one.
-Add roles, prompts, schema, errors, and a description alongside it as needed;
-anything you omit simply isn't present (there is no fallback to the bundle once
-a local `config/` exists).
+Because the overlay merges, each example ships only the files it actually
+customizes. Every example still ships **at least one model file**
+(`config/models/<name>.json`) — the bundle contributes zero real models (it
+carries only key-free `*.example.json`), so the server fails fast at startup
+without one. Everything else (roles, prompts, schema, errors, description,
+presets) falls back to the bundled defaults for anything you omit.
 
-One nuance: the *directory* is all-or-nothing, but the individual JSON text
-files (`prompts.json`, `errors.json`, `schema.json`) still merge **per key**
-over Legion's built-in defaults. So a partial `prompts.json` with just one key —
-as the kubernetes and reverse-proxy examples show — overrides only that key and
-leaves the rest at their defaults. Model files and role files, by contrast, are
-whole units: each file is one tool or one role.
+The single-file JSON text configs (`prompts.json`, `errors.json`,
+`schema.json`) merge **per key** over the built-in defaults, so a partial
+`prompts.json` with just one key — as the kubernetes and reverse-proxy examples
+show — overrides only that key and leaves the rest alone. Directory resources
+(model, role, preset, tool files) merge **per file**: each file is one whole
+unit (one tool, one role, one preset).
 
 **Secrets:** the example model files reference `DEFAULT_BASE_URL` /
 `DEFAULT_API_KEY` (passed as env vars) rather than embedding a per-model

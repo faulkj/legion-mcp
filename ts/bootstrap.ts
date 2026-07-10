@@ -28,7 +28,7 @@ export const makeServerFactory = (config: AppConfig): () => McpServer => {
             description === undefined ? {} : { instructions: description }
          ),
          models = loadModels(config),
-         roles = loadRoles(config),
+         roles = loadRoles(),
          schema = loadSchema(),
          templates = loadPrompts(),
          errors = loadErrors(),
@@ -37,7 +37,7 @@ export const makeServerFactory = (config: AppConfig): () => McpServer => {
          prompt: ReturnType<typeof createPrompt> = (def, input, override, tpl) => basePrompt(def, input, override ?? roles, tpl ?? templates)
 
       registerModelTools(server, models, roles, prompt, errors, schema)
-      registerQuorumTool(server, models, roles, prompt, config.maxRounds, config.dynamicRoles, templates, errors, config.tokenBudget, presets, loadToolDescription(config, 'quorum'), schema)
+      registerQuorumTool(server, models, roles, prompt, config.maxRounds, config.dynamicRoles, templates, errors, config.tokenBudget, presets, loadToolDescription('quorum'), schema)
       registerPresetTools(server, models, roles, prompt, config.maxRounds, config.dynamicRoles, templates, errors, config.tokenBudget, presets, schema)
 
       return server

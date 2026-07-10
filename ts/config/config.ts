@@ -1,13 +1,9 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import * as z from 'zod/v4'
-import { configDir, readOptional } from './text.js'
+import { bundledDir, csv, layeredFiles, localDir, readOptional, slugKey, slugify } from './text.js'
 
-export { configDir, fill, loadDescription, loadErrors, loadPrompts, loadSchema, loadToolDescription } from './text.js'
-
-/** Turn a model file name into a tool-name slug. */
-export const slugify = (name: string): string =>
-   name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+export { fill, loadDescription, loadErrors, loadPrompts, loadSchema, loadToolDescription, slugify } from './text.js'
 
 /** Parse and validate environment configuration, failing fast on any problem. */
 export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
@@ -15,47 +11,37 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
    if (!parsed.success)
       throw new Error(`Invalid configuration:\n${z.prettifyError(parsed.error)}`)
 
-   const { DEFAULT_BASE_URL, DEFAULT_API_KEY, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, TOKEN_BUDGET, DYNAMIC_ROLES, LOG_LEVEL } = parsed.data
+   const { DEFAULT_BASE_URL, DEFAULT_API_KEY, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, TOKEN_BUDGET, DYNAMIC_ROLES, DISABLE_PRESETS, LOG_LEVEL } = parsed.data
 
    return {
       ...readPackage(),
-      modelsDir: join(configDir, 'models'),
-      rolesDir: join(configDir, 'roles'),
-      toolsDir: join(configDir, 'tools'),
-      presetsDir: join(configDir, 'presets'),
       defaultBaseUrl: DEFAULT_BASE_URL?.replace(/\/+$/, ''),
       defaultApiKey: DEFAULT_API_KEY,
       host: HOST,
-      allowedHosts: ALLOWED_HOSTS?.split(',').map(h => h.trim()).filter(Boolean),
+      allowedHosts: csv(ALLOWED_HOSTS),
       port: PORT,
       maxRounds: MAX_ROUNDS,
       tokenBudget: TOKEN_BUDGET,
       dynamicRoles: DYNAMIC_ROLES === 'true',
+      disabledPresets: csv(DISABLE_PRESETS)?.map(slugify) ?? [],
       logLevel: LOG_LEVEL
    }
 }
 
-/** Scan config/roles/*.md; returns empty array when the directory does not exist. */
-export const loadRoles = (config: AppConfig): RoleDef[] => {
-   let files: string[]
-   try { files = readdirSync(config.rolesDir).filter(f => f.endsWith('.md')) }
-   catch { return [] }
-   const
-      roles = files.map(f => ({ name: slugify(basename(f, '.md')), instructions: readFileSync(join(config.rolesDir, f), 'utf8') })),
-      seen = new Set<string>()
-   roles.forEach(r => seen.has(r.name) ? (() => { throw new Error(`Role slug collision: "${r.name}". Rename one.`) })() : seen.add(r.name))
+/** Scan config/roles/*.md across both layers (local wins); returns empty array when none exist. */
+export const loadRoles = (): RoleDef[] => {
+   const roles = layeredFiles('roles', '.md', slugKey('.md'))
+      .map(({ key, dir, file }) => ({ name: key, instructions: readFileSync(join(dir, file), 'utf8') }))
    return roles
 }
 
-/** Scan the models directory: each `<name>.json` becomes a tool named after the slugified file name. */
+/** Scan config/models/*.json across both layers (local wins); each becomes a tool named after its slugified file name. */
 export const loadModels = (config: AppConfig): ModelDef[] => {
-   let files: string[]
-   try { files = readdirSync(config.modelsDir).filter(f => f.endsWith('.json') && !f.endsWith('.example.json')) }
-   catch { throw new Error(`Models directory "${config.modelsDir}" not found.`) }
+   const files = layeredFiles('models', '.json', slugKey('.json'), f => f.endsWith('.example.json'))
    if (!files.length)
-      throw new Error(`No model files found in "${config.modelsDir}". Add e.g. ${config.modelsDir}/fable.json`)
+      throw new Error(`No model files found in ${localDir ?? bundledDir}/models. Add e.g. models/fable.json`)
 
-   const models = files.map(f => parseModelFile(config.modelsDir, f))
+   const models = files.map(({ dir, file }) => parseModelFile(dir, file))
    assertNoSlugCollisions(models)
    assertResolvable(models, config.defaultBaseUrl, config.defaultApiKey)
    return models
@@ -79,6 +65,7 @@ const
       MAX_ROUNDS: z.coerce.number().int().positive().default(5),
       TOKEN_BUDGET: z.coerce.number().int().positive().optional(),
       DYNAMIC_ROLES: z.enum(['true', 'false']).default('true'),
+      DISABLE_PRESETS: z.string().optional(),
       LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info')
    }),
 

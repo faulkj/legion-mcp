@@ -1,46 +1,89 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { join, resolve } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 
-/**
- * The active config directory. A `config/` folder in the current working
- * directory wins (drop-in override for npm installs); otherwise the defaults
- * bundled alongside the package are used.
- */
-export const configDir: string = (() => {
+/** Turn a file/role/model name into a tool-name slug. */
+export const slugify = (name: string): string =>
+   name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+
+/** Split a comma-separated env value into trimmed, non-empty parts; undefined when unset. */
+export const csv = (value?: string): string[] | undefined =>
+   value?.split(',').map(s => s.trim()).filter(Boolean)
+
+/** The config bundled alongside the package — always present, always the base layer. */
+export const bundledDir: string = fileURLToPath(new URL('../config', import.meta.url))
+
+/** A `config/` folder in the current working directory, overlaid on top of the bundle; undefined when absent. */
+export const localDir: string | undefined = (() => {
    const local = resolve(process.cwd(), 'config')
-   return existsSync(local) ? local : fileURLToPath(new URL('../config', import.meta.url))
+   return existsSync(local) ? local : undefined
 })()
 
+/** Read a config file by relative path: local overlay wins, else the bundled base, else undefined. */
+export const readLayered = (rel: string): string | undefined =>
+   (localDir && readOptional(join(localDir, rel))) ?? readOptional(join(bundledDir, rel))
+
+/**
+ * Merge the bundled + local copies of a single JSON config file over hardcoded defaults,
+ * per key. Precedence: defaults < bundled < local. Missing files fall through; invalid
+ * JSON in either layer throws with the offending path.
+ */
+export const mergeJsonLayers = <T extends object>(rel: string, defaults: T): T => {
+   const layer = (dir?: string): Partial<T> => {
+      if (!dir) return {}
+      const raw = readOptional(join(dir, rel))
+      if (raw === undefined) return {}
+      try { return JSON.parse(raw) as Partial<T> }
+      catch { throw new Error(`${join(dir, rel)} is not valid JSON.`) }
+   }
+   return { ...defaults, ...layer(bundledDir), ...layer(localDir) }
+}
+
+/**
+ * Merge files in a subdir across both layers, keyed by a caller-supplied key (usually the
+ * slugified basename). Local files override bundled files of the same key; local-only files
+ * are added; bundled-only remain. Order is bundled-first, then local-only appended, so tool
+ * registration order stays stable. `skip` drops files (e.g. *.example.json) before keying.
+ */
+export const layeredFiles = (sub: string, ext: string, key: (file: string) => string, skip?: (file: string) => boolean): { key: string; dir: string; file: string }[] => {
+   const scan = (dir?: string): { key: string; dir: string; file: string }[] =>
+      !dir || !existsSync(join(dir, sub))
+         ? []
+         : readdirSync(join(dir, sub))
+            .filter(f => f.endsWith(ext) && !(skip?.(f) ?? false))
+            .map(f => ({ key: key(f), dir: join(dir, sub), file: f })),
+      bundled = scan(bundledDir),
+      local = scan(localDir),
+      localKeys = new Set(local.map(e => e.key))
+   return [...bundled.filter(e => !localKeys.has(e.key)), ...local]
+}
+
 /** Read config/description.md as the server MCP `instructions`; returns undefined when absent. */
-export const loadDescription = (): string | undefined => readOptional(join(configDir, 'description.md'))
+export const loadDescription = (): string | undefined => readLayered('description.md')
 
 /** Read config/tools/<tool>.md as a tool's description; returns undefined when absent. */
-export const loadToolDescription = (config: AppConfig, tool: string): string | undefined => readOptional(join(config.toolsDir, `${tool}.md`))
+export const loadToolDescription = (tool: string): string | undefined => readLayered(join('tools', `${tool}.md`))
 
-/** Read config/schema.json — sections of field descriptions, flattened to a single lookup. */
+/** Read config/schema.json — sections of field descriptions, flattened then overlaid (local over bundled). */
 export const loadSchema = (): SchemaDescriptions => {
-   const raw = readOptional(join(configDir, 'schema.json'))
-   if (raw === undefined) return {}
-   try { return Object.assign({}, ...Object.values(JSON.parse(raw) as Record<string, SchemaDescriptions>)) as SchemaDescriptions }
-   catch { throw new Error('config/schema.json is not valid JSON.') }
+   const flatten = (dir?: string): SchemaDescriptions => {
+      if (!dir) return {}
+      const raw = readOptional(join(dir, 'schema.json'))
+      if (raw === undefined) return {}
+      try { return Object.assign({}, ...Object.values(JSON.parse(raw) as Record<string, SchemaDescriptions>)) as SchemaDescriptions }
+      catch { throw new Error(`${join(dir, 'schema.json')} is not valid JSON.`) }
+   }
+   return { ...flatten(bundledDir), ...flatten(localDir) }
 }
 
-/** Read config/prompts.json prompt-shaping templates; missing file or keys fall back to defaults. */
-export const loadPrompts = (): PromptTemplates => {
-   const raw = readOptional(join(configDir, 'prompts.json'))
-   if (raw === undefined) return promptDefaults
-   try { return { ...promptDefaults, ...(JSON.parse(raw) as Partial<PromptTemplates>) } }
-   catch { throw new Error('config/prompts.json is not valid JSON.') }
-}
+/** Read config/prompts.json prompt-shaping templates; missing files or keys fall back to defaults. */
+export const loadPrompts = (): PromptTemplates => mergeJsonLayers('prompts.json', promptDefaults)
 
-/** Read config/errors.json runtime messages; missing file or keys fall back to defaults. */
-export const loadErrors = (): ErrorMessages => {
-   const raw = readOptional(join(configDir, 'errors.json'))
-   if (raw === undefined) return errorDefaults
-   try { return { ...errorDefaults, ...(JSON.parse(raw) as Partial<ErrorMessages>) } }
-   catch { throw new Error('config/errors.json is not valid JSON.') }
-}
+/** Read config/errors.json runtime messages; missing files or keys fall back to defaults. */
+export const loadErrors = (): ErrorMessages => mergeJsonLayers('errors.json', errorDefaults)
+
+/** Slugify a file's basename (drop extension) into a tool/role key. */
+export const slugKey = (ext: string) => (file: string): string => slugify(basename(file, ext))
 
 /** Fill {token} placeholders in a template. */
 export const fill = (template: string, vars: Record<string, string | number>): string =>
