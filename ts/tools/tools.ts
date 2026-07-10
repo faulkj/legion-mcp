@@ -61,8 +61,9 @@ export const registerQuorumTool = (
       quorumSchema = {
          ...quorumShape(schema, maxRounds, 2, `${d('models')} Available models: ${names.join(', ')}`),
          roles: z.record(z.string(), z.string()).optional().describe(d('roles')),
-         mode: z.enum(['sequential', 'parallel']).optional().describe(d('mode')),
-         synthesize: z.string().optional().describe(d('synthesize'))
+         mode: z.enum(['sequential', 'parallel', 'private', 'independent']).optional().describe(d('mode')),
+         synthesize: z.string().optional().describe(d('synthesize')),
+         synthesizeEvery: z.union([z.literal('end'), z.number().int().min(0)]).optional().describe(d('synthesizeEvery'))
       },
       fallback = 'Fan a prompt out to two or more models (see config/tools/quorum.md).'
 

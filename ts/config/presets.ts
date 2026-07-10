@@ -24,8 +24,9 @@ const
          min: z.number().int().min(0).optional(),
          max: z.number().int().min(1).nullable().optional()
       })).min(1),
-      mode: z.enum(['sequential', 'parallel']).optional(),
-      synthesizer: z.string().optional()
+      mode: z.enum(['sequential', 'parallel', 'private', 'independent']).optional(),
+      synthesizer: z.string().optional(),
+      synthesizeEvery: z.union([z.literal('end'), z.number().int().min(0)]).optional()
    }),
 
    effMin = (r: { min?: number }) => r.min ?? 1,
@@ -42,15 +43,19 @@ const
          throw new Error(`Invalid ${file}:\n${z.prettifyError(result.error)}`)
 
       const
-         { description, roles, mode, synthesizer } = result.data,
+         { description, roles, mode, synthesizer, synthesizeEvery } = result.data,
          bad = roles.find(r => effMin(r) > effMax(r))
       if (bad) throw new Error(`Invalid ${file}: role "${bad.role}" has min > max.`)
       if (roles.reduce((n, r) => n + effMin(r), 0) < 1)
          throw new Error(`Invalid ${file}: every role is optional (min 0) — a preset needs at least one speaker.`)
+      if (synthesizeEvery !== undefined && synthesizer === undefined)
+         throw new Error(`Invalid ${file}: "synthesizeEvery" only applies when "synthesizer" is set.`)
       if (synthesizer !== undefined) {
          const synth = roles.find(r => slugify(r.role) === slugify(synthesizer))
          if (!synth || effMin(synth) < 1)
             throw new Error(`Invalid ${file}: synthesizer role "${synthesizer}" must be a preset role with min >= 1.`)
+         if (roles.some(r => slugify(r.role) !== slugify(synthesizer) && effMin(r) >= 1) === false)
+            throw new Error(`Invalid ${file}: a preset with a synthesizer needs at least one other required role — the synthesizer no longer speaks in normal rounds.`)
       }
-      return { description: Array.isArray(description) ? description.join('\n') : description, roles, mode, synthesize: synthesizer }
+      return { description: Array.isArray(description) ? description.join('\n') : description, roles, mode, synthesize: synthesizer, synthesizeEvery }
    }

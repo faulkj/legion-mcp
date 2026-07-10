@@ -1,6 +1,6 @@
 {
    "description": "Diverge on ideas independently, then converge.",
-   "mode": "parallel",
+   "mode": "independent",
    "synthesizer": "curator",
    "roles": [
       { "role": "ideator", "description": "Generate bold, varied ideas. Quantity over caution; no self-censoring." },

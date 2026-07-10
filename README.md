@@ -30,7 +30,12 @@ flowchart LR
   as a separate content item. Supports roles via `model:role` selectors (the
   same model can appear multiple times with different roles), inline ad-hoc
   `roles`, multi-round discussion (`rounds`, `mode`), and an optional synthesis
-  turn (`synthesize`). The calling AI acts as moderator: feed
+  turn (`synthesize`, timed by `synthesizeEvery`). Transcript turns are labeled
+  by **role** (`builder`, `critic 1`), never by model, so models judge each
+  other's content rather than reputation. The four `mode`s form a 2×2 of
+  *see peers?* × *see own prior turns?* — `sequential` (both), `parallel`
+  (peers from earlier rounds only), `private` (own turns only), `independent`
+  (nothing but the prompt until synthesis). The calling AI acts as moderator: feed
   `structuredContent.transcript` back as `context` with new guidance to steer a
   live debate. An optional `tokenBudget` (or the `TOKEN_BUDGET` default) sets a
   **soft** cumulative budget for a run: once the running total crosses it,
@@ -182,16 +187,23 @@ staffed within its cardinality, else the result is an error saying what to fix.
 - **`description`** may be a plain string **or an array of strings** (joined with
   newlines) so multi-line prose stays clean without escaping. It is the preset
   tool's own MCP description, so it is **required**.
-- **`synthesizer`** (optional) names the role that runs a final synthesis turn
-  after all rounds — it must be one of the preset's roles.
+- **`synthesizer`** (optional) names the role that runs a synthesis turn — it
+  must be one of the preset's roles and does **not** speak in normal rounds.
+  **`synthesizeEvery`** times it: `"end"` (default), `"round"`, or a number `N`
+  (every Nth round, always the last). A preset with a synthesizer needs at least
+  one other required role, since the synthesizer is pulled out of the rotation.
 - **Cardinality** — each role may set `min` / `max` speakers (default exactly
-  one). `max: null` means unbounded. So the battle-royale `contestant` above is
-  `{ "min": 2, "max": null }` and the shipped `jury` uses `{ "min": 3, "max": 12 }`,
-  while a lone `judge` stays `{}`. The same role staffed by several `model:role`
-  selectors is several distinct speakers.
+  one). `max: null` means unbounded; `min: 0` makes a role **optional**
+  (staff it or don't). So the battle-royale `combatant` is
+  `{ "min": 2, "max": null }`, the shipped `jury` uses `{ "min": 3, "max": 12 }`,
+  `workshop`'s `researcher` is `{ "min": 0, "max": 1 }`, and a lone `judge` stays
+  `{}`. The same role staffed by several `model:role` selectors is several
+  distinct speakers, numbered in the transcript (`juror 1`, `juror 2`).
 
 This repo ships `code_review`, `debate`, `brainstorm`, `quick_take`, `tiebreak`,
-`battle_royale`, and `jury` — edit or delete freely.
+`battle_royale`, `jury`, `double_blind` (independent blind panel), `gauntlet`
+(private self-refinement race), `refine` (relay polish of an existing artifact),
+and `workshop` (differentiated creative team) — edit or delete freely.
 Empty/missing folder → no preset tools.
 
 > **Output length is model-driven, not enforced by role text.** A terse role

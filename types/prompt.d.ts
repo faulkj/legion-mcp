@@ -42,13 +42,20 @@ interface TurnRunner {
    skip(round: number, from?: number): void
 }
 
+/** Visibility policy for a quorum run: how much of the transcript each round speaker sees. */
+type QuorumMode = 'sequential' | 'parallel' | 'private' | 'independent'
+
+/** When the synthesizer runs: `'end'` (once, after all rounds) or a number N (every Nth round, always including the last). */
+type SynthesizeEvery = 'end' | number
+
 /** Arguments accepted by the quorum fan-out tool. */
 interface QuorumInput extends PromptInput {
    models: string[]
    roles?: Record<string, string>
    rounds?: number
-   mode?: 'sequential' | 'parallel'
+   mode?: QuorumMode
    synthesize?: string
+   synthesizeEvery?: SynthesizeEvery
    tokenBudget?: number
    preset?: string
 }

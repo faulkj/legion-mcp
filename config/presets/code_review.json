@@ -9,6 +9,7 @@
    "roles": [
       { "role": "builder" },
       { "role": "critic", "description": "Find flaws, edge cases, security and performance risks. Be specific and cite lines where possible.", "max": 5 },
+      { "role": "security", "description": "Optional dedicated security pass: authn/authz, injection, secrets, unsafe deserialization, supply-chain. Staff for security-sensitive changes.", "min": 0 },
       { "role": "judge" }
    ]
 }

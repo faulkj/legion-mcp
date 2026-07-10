@@ -4,7 +4,7 @@
       "",
       "Staff `juror` with 3-12 models (each gives an independent verdict with reasoning); a single `judge` tallies the panel and delivers the binding decision."
    ],
-   "mode": "parallel",
+   "mode": "independent",
    "synthesizer": "judge",
    "roles": [
       { "role": "juror", "description": "Give your own independent verdict with a short reason. Do not defer to the others.", "min": 3, "max": 12 },

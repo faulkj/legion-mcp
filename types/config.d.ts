@@ -34,8 +34,9 @@ interface PresetRole {
 interface Preset {
    description: string
    roles: PresetRole[]
-   mode?: 'sequential' | 'parallel'
+   mode?: QuorumMode
    synthesize?: string
+   synthesizeEvery?: SynthesizeEvery
 }
 
 /** Named preset recipes loaded from config/presets/*.json (hot-reloaded per request). */
@@ -74,6 +75,7 @@ interface PromptTemplates {
    transcriptBlock: string
    roundExploring: string
    roundFinal: string
+   roundSynthesis: string
    synthesis: string
 }
 
