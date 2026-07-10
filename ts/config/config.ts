@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import * as z from 'zod/v4'
-import { bundledDir, csv, layeredFiles, localDir, readOptional, slugKey, slugify } from './text.js'
+import { bundledDir, csv, layeredFiles, localDir, packageRoot, readOptional, slugKey, slugify } from './text.js'
 
 export { fill, loadDescription, loadErrors, loadPrompts, loadSchema, loadToolDescription, slugify } from './text.js'
 
@@ -70,7 +70,7 @@ const
    }),
 
    readPackage = (): { name: string; version: string } => {
-      const { name = 'mcp-server', version = '0.0.0' } = JSON.parse(readOptional(new URL('../package.json', import.meta.url)) ?? '{}')
+      const { name = 'mcp-server', version = '0.0.0' } = JSON.parse(readOptional(join(packageRoot, 'package.json')) ?? '{}')
       return { name, version }
    },
 

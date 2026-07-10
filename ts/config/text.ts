@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { basename, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 
 /** Turn a file/role/model name into a tool-name slug. */
 export const slugify = (name: string): string =>
@@ -10,8 +10,19 @@ export const slugify = (name: string): string =>
 export const csv = (value?: string): string[] | undefined =>
    value?.split(',').map(s => s.trim()).filter(Boolean)
 
+/**
+ * The package root — the nearest ancestor of this module holding a `package.json`.
+ * Walking up (rather than assuming a fixed depth) makes it correct whether the code
+ * runs bundled in `bin/` or straight from source in `ts/config/` under tsx.
+ */
+export const packageRoot: string = (() => {
+   let dir = dirname(fileURLToPath(import.meta.url))
+   while (!existsSync(join(dir, 'package.json')) && dirname(dir) !== dir) dir = dirname(dir)
+   return dir
+})()
+
 /** The config bundled alongside the package — always present, always the base layer. */
-export const bundledDir: string = fileURLToPath(new URL('../config', import.meta.url))
+export const bundledDir: string = join(packageRoot, 'config')
 
 /** A `config/` folder in the current working directory, overlaid on top of the bundle; undefined when absent. */
 export const localDir: string | undefined = (() => {
