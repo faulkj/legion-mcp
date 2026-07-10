@@ -35,15 +35,15 @@ flowchart LR
   other's content rather than reputation. The four `mode`s form a 2×2 of
   *see peers?* × *see own prior turns?* — `sequential` (both), `parallel`
   (peers from earlier rounds only), `private` (own turns only), `independent`
-  (nothing but the prompt until synthesis). The calling AI acts as moderator: feed
-  `structuredContent.transcript` back as `context` with new guidance to steer a
-  live debate. An optional `tokenBudget` (or the `TOKEN_BUDGET` default) sets a
-  **soft** cumulative budget for a run: once the running total crosses it,
-  remaining turns are skipped gracefully (recorded as `skipped: budget` in
-  telemetry, synthesis still runs), so the moderator can see what was dropped and
-  re-invoke with more headroom. It's soft, not a hard cap — sequential mode checks
-  between turns, parallel checks at round boundaries (so a round can overshoot),
-  and synthesis runs afterward by design.
+  (nothing but the prompt until synthesis). The calling AI acts as moderator:
+  feed `structuredContent.transcript` back as `context` with new guidance to
+  steer a live debate. An optional `tokenBudget` (or the `TOKEN_BUDGET` default)
+  sets a **soft** cumulative budget for a run: once the running total crosses
+  it, remaining turns are skipped gracefully (recorded as `skipped: budget` in
+  telemetry, synthesis still runs), so the moderator can see what was dropped
+  and re-invoke with more headroom. It's soft, not a hard cap — sequential mode
+  checks between turns, parallel checks at round boundaries (so a round can
+  overshoot), and synthesis runs afterward by design.
 - Identity and telemetry are returned in `structuredContent`, not embedded in
   answer text.
 - Returns the model's text response; on failure returns an MCP error result the
@@ -160,14 +160,14 @@ or using `"model:skeptic"` in `quorum.models`.
 
 ### Presets — `config/presets/*.json`
 
-Optional hot-droppable **council recipes**, one JSON file per preset (named after
-the slugified file name, like models). **Each preset becomes its own tool** — drop
-`config/presets/code_review.json` and a `code_review` tool appears on the next
-request. Each preset has a `description`, a `roles` list, and optional
-authoritative `mode` / `synthesizer` defaults. Each role defines its behavior
-**inline** — a role's `description` *is* its instructions (the behavior contract);
-a role with no `description` falls back to a matching `config/roles/<role>.md`
-file:
+Optional hot-droppable **council recipes**, one JSON file per preset (named
+after the slugified file name, like models). **Each preset becomes its own
+tool** — drop `config/presets/code_review.json` and a `code_review` tool appears
+on the next request. Each preset has a `description`, a `roles` list, and
+optional authoritative `mode` / `synthesizer` defaults. Each role defines its
+behavior **inline** — a role's `description` *is* its instructions (the behavior
+contract); a role with no `description` falls back to a matching
+`config/roles/<role>.md` file:
 
 ```json
 {
@@ -190,9 +190,9 @@ writes the `models` selectors, assigning any model to any preset role. Presets
 are **enforced**: every selector must use a preset role and every role must be
 staffed within its cardinality, else the result is an error saying what to fix.
 
-- **`description`** may be a plain string **or an array of strings** (joined with
-  newlines) so multi-line prose stays clean without escaping. It is the preset
-  tool's own MCP description, so it is **required**.
+- **`description`** may be a plain string **or an array of strings** (joined
+  with newlines) so multi-line prose stays clean without escaping. It is the
+  preset tool's own MCP description, so it is **required**.
 - **`synthesizer`** (optional) names the role that runs a synthesis turn — it
   must be one of the preset's roles and does **not** speak in normal rounds.
   **`synthesizeEvery`** times it: `"end"` (default), `"round"`, or a number `N`
@@ -201,10 +201,11 @@ staffed within its cardinality, else the result is an error saying what to fix.
 - **Cardinality** — each role may set `min` / `max` speakers (default exactly
   one). `max: null` means unbounded; `min: 0` makes a role **optional**
   (staff it or don't). So the battle-royale `combatant` is
-  `{ "min": 2, "max": null }`, the shipped `jury` uses `{ "min": 3, "max": 12 }`,
-  `workshop`'s `researcher` is `{ "min": 0, "max": 1 }`, and a lone `judge` stays
-  `{}`. The same role staffed by several `model:role` selectors is several
-  distinct speakers, numbered in the transcript (`juror 1`, `juror 2`).
+  `{ "min": 2, "max": null }`, the shipped `jury` uses
+  `{ "min": 3, "max": 12 }`, `workshop`'s `researcher` is
+  `{ "min": 0, "max": 1 }`, and a lone `judge` stays `{}`. The same role staffed
+  by several `model:role` selectors is several distinct speakers, numbered in
+  the transcript (`juror 1`, `juror 2`).
 
 This repo ships `code_review`, `debate`, `brainstorm`, `quick_take`, `tiebreak`,
 `battle_royale`, `jury`, `double_blind` (independent blind panel), `gauntlet`
