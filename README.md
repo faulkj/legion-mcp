@@ -2,15 +2,28 @@
 
 > "I am Legion, for we are many."
 
-An [MCP](https://modelcontextprotocol.io) server that exposes LLMs (Claude, GPT,
-Gemini, Llama, …) as individual tools. Each configured model becomes a tool,
-named after the model, that the calling AI can invoke to get a second opinion.
+An [MCP](https://modelcontextprotocol.io)-native model council. Legion exposes
+LLMs as individual tools and orchestrates them into debates, juries, blind
+panels, private refinement gauntlets, workshops, and custom multi-model
+deliberations.
 
-Every model is reached through the OpenAI **Responses API** wire format.
-Endpoints that speak it natively (OpenAI, Azure OpenAI / Foundry) are called
-directly; anything else routes through an OpenAI-compatible gateway such as a
-[LiteLLM](https://docs.litellm.ai) proxy. Nothing here depends on any particular
-gateway.
+Every model is reached through the OpenAI **Responses API** wire format. Use
+OpenAI or Azure directly, route other providers through a compatible gateway
+(such as a [LiteLLM](https://docs.litellm.ai) proxy), and configure the entire
+council through hot-reloadable files.
+
+## Contents
+
+- [How it works](#how-it-works)
+- [Design decisions](#design-decisions)
+- [Requirements](#requirements)
+- [Setup](#setup)
+- [Configuration](#configuration)
+- [Logging](#logging)
+- [Run](#run)
+- [Try it](#try-it)
+- [Use in VS Code](#use-in-vs-code)
+- [Deploy](#deploy)
 
 ## How it works
 
