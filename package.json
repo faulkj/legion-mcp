@@ -1,6 +1,6 @@
 {
    "name": "legion-mcp",
-   "version": "0.1.0",
+   "version": "0.2.0",
    "description": "I am Legion, for we are many ~ an MCP server for exposing LLMs as tools over the OpenAI Responses API.",
    "author": "Joshua Faulkenberry <j@joshuafaulkenberry.com> (https://joshuafaulkenberry.com/)",
    "license": "Kopimi",
