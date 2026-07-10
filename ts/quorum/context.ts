@@ -20,13 +20,15 @@ export const makeTurnLabels = (speakers: Speaker[]): string[] => {
    return labels
 }
 
-/** Build the transcript context block from prior turns (labeled by role), appended after any caller context. */
-export const toContext = (turns: QuorumTurn[], labels: string[], t: PromptTemplates, callerContext?: string): string | undefined => {
+/** Build the transcript context block from prior turns (labeled by role), appended after any caller context. When `selfIndex` is given, that speaker's own turns are marked so it can tell which turns were its own. */
+export const toContext = (turns: QuorumTurn[], labels: string[], t: PromptTemplates, callerContext?: string, selfIndex?: number): string | undefined => {
    if (!turns.length) return callerContext
    const
-      tag = (turn: QuorumTurn): string =>
+      phaseTag = (turn: QuorumTurn): string =>
          turn.phase === 'closing' ? 'closing' : turn.phase === 'synthesis' ? 'synthesis' : `round ${turn.round}`,
-      transcript = turns.map(turn => `[${tag(turn)} / ${labels[turn.index] ?? turn.selector}]\n${turn.text}`).join('\n\n'),
+      label = (turn: QuorumTurn): string =>
+         `${labels[turn.index] ?? turn.selector}${turn.index === selfIndex ? ' · you' : ''}`,
+      transcript = turns.map(turn => `[${phaseTag(turn)} / ${label(turn)}]\n${turn.text}`).join('\n\n'),
       block = fill(t.transcriptBlock, { transcript })
    return callerContext ? `${callerContext}\n\n${block}` : block
 }

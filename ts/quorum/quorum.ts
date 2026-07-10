@@ -68,13 +68,13 @@ export const runQuorum = async (
       labels = makeTurnLabels(synth && synth.index === speakers.length ? [...speakers, synth] : speakers),
       { telemetry, turns, content, used, speakOne, record, skip } = makeTurnRunner(args, effectiveRoles, roundSpeakers, rounds, prompt, templates),
       full = () => toContext(turns, labels, templates, args.context),
-      // Per-speaker context for a round turn, honoring the mode's visibility policy.
+      // Per-speaker context for a round turn, honoring the mode's visibility policy. The speaker's own prior turns are marked so it knows which were its own.
       seen = (speaker: Speaker, snapshot: QuorumTurn[]): string | undefined =>
          mode === 'independent'
             ? args.context
             : mode === 'private'
-               ? toContext(snapshot.filter(t => t.index === speaker.index), labels, templates, args.context)
-               : toContext(snapshot, labels, templates, args.context),
+               ? toContext(snapshot.filter(t => t.index === speaker.index), labels, templates, args.context, speaker.index)
+               : toContext(snapshot, labels, templates, args.context, speaker.index),
       // Buffer a whole phase, then record in council order so content[] reads in seat order, not completion order.
       runParallel = async (round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined): Promise<void> => {
          for (const outcome of await Promise.all(roundSpeakers.map(s => speakOne(s, round, phase, ctx(s)))))

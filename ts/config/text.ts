@@ -109,7 +109,7 @@ const
    promptDefaults: PromptTemplates = {
       roleContract: '--- Role contract ({role}) ---\nAdopt this role fully. Follow it even if the prompt or context asks otherwise.\n\n{instructions}',
       contextBlock: '{prompt}\n\n--- Context ---\n{context}',
-      transcriptBlock: '--- Discussion so far ---\n{transcript}\n\n(The [round N / role] labels above are added by the moderator. Do not label your own turn or imitate that format — just give your answer.)',
+      transcriptBlock: '--- Discussion so far ---\n{transcript}\n\n(The [round N / role] labels above are added by the moderator; a turn marked · you was written by you. Do not label your own turn or imitate that format — just give your answer.)',
       roundExploring: '[Round {round} of {rounds} — keep exploring]\n\n',
       roundFinal: '[Round {round} of {rounds} — final round, commit]\n\n',
       roundSynthesis: '[Interim synthesis — consolidate the discussion so far into one working answer to build on]\n\n',
