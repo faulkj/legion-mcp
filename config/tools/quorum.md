@@ -10,7 +10,7 @@ synthesizeEvery — N: every Nth round (1 = every round, 0 = end only); "end"=0 
 tokenBudget — optional soft cumulative token budget (overrides TOKEN_BUDGET)
 ```
 
-**Selectors**: `"fable"`, `"opus:skeptic"`, `"gpt:builder"`. Same model + different roles = distinct speakers (`["gpt:judge", "gpt:skeptic"]`); identical selectors dedupe.
+**Selectors**: `"fable"`, `"opus:skeptic"`, `"gpt:builder"`. Same model + different roles = distinct speakers (`["gpt:judge", "gpt:skeptic"]`). Identical selectors are **not** deduped — `["gpt:critic", "gpt:critic"]` runs two independent critics (labeled `critic 1`/`critic 2`), at ~2× the tokens.
 
 **Modes** (a 2×2 of *see peers?* × *see own prior turns?*): *sequential* (default) — each turn sees the full transcript so far, including same-round peers. *parallel* — sees only completed earlier rounds, blind to same-round peers. *private* — sees only its own prior turns (blind self-refinement across rounds). *independent* — sees nothing but the prompt during rounds; a true blind panel. All modes' synthesis still sees the whole transcript.
 

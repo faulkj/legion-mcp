@@ -1,34 +1,30 @@
 import { fill, slugify } from '../config/config.js'
-import { resolve } from './helpers.js'
 
 /**
- * Build a stable selector→display-label map for the run. Labels use the ROLE, not the
- * model, so the model-facing transcript never leaks model identity. Roles staffed by 2+
- * selectors are numbered (`critic 1`, `critic 2`); a lone role stays bare (`critic`).
- * Role-less selectors fall back to the model slug. Numbering is keyed by first-seen order
- * in `selectors` so it stays stable across rounds regardless of speak order.
+ * Build stable per-speaker display labels for the run, indexed by `Speaker.index`. Labels
+ * use the ROLE, not the model, so the model-facing transcript never leaks model identity.
+ * Roles staffed by 2+ speakers are numbered (`critic 1`, `critic 2`); a lone role stays
+ * bare (`critic`). Role-less speakers fall back to the model slug and are NOT numbered —
+ * numbering there would re-expose model identity. Numbering is keyed by first-seen order.
  */
-export const makeTurnLabels = (selectors: string[], models: ModelDef[], roles: RoleDef[]): Map<string, string> => {
+export const makeTurnLabels = (speakers: Speaker[]): string[] => {
    const
-      roleOf = (s: string) => resolve(s, models, roles)?.role ?? null,
-      counts = selectors.reduce((m, s) => {
-         const role = roleOf(s)
-         return role ? m.set(role, (m.get(role) ?? 0) + 1) : m
-      }, new Map<string, number>()),
-      seen = new Map<string, number>()
-   return new Map(selectors.map(s => {
-      const role = roleOf(s)
-      if (!role) return [s, slugify(s.split(':', 2)[0] ?? s)]
-      const n = (seen.set(role, (seen.get(role) ?? 0) + 1), seen.get(role)!)
-      return [s, counts.get(role)! > 1 ? `${role} ${n}` : role]
-   }))
+      counts = speakers.reduce((m, s) => s.role ? m.set(s.role, (m.get(s.role) ?? 0) + 1) : m, new Map<string, number>()),
+      seen = new Map<string, number>(),
+      labels: string[] = []
+   for (const s of speakers) {
+      if (!s.role) { labels[s.index] = slugify(s.selector.split(':', 2)[0] ?? s.selector); continue }
+      const n = (seen.set(s.role, (seen.get(s.role) ?? 0) + 1), seen.get(s.role)!)
+      labels[s.index] = counts.get(s.role)! > 1 ? `${s.role} ${n}` : s.role
+   }
+   return labels
 }
 
 /** Build the transcript context block from prior turns (labeled by role), appended after any caller context. */
-export const toContext = (turns: QuorumTurn[], labels: Map<string, string>, t: PromptTemplates, callerContext?: string): string | undefined => {
+export const toContext = (turns: QuorumTurn[], labels: string[], t: PromptTemplates, callerContext?: string): string | undefined => {
    if (!turns.length) return callerContext
    const
-      transcript = turns.map(turn => `[round ${turn.round} / ${labels.get(turn.selector) ?? turn.selector}]\n${turn.text}`).join('\n\n'),
+      transcript = turns.map(turn => `[round ${turn.round} / ${labels[turn.index] ?? turn.selector}]\n${turn.text}`).join('\n\n'),
       block = fill(t.transcriptBlock, { transcript })
    return callerContext ? `${callerContext}\n\n${block}` : block
 }

@@ -31,13 +31,21 @@ interface TurnOutcome {
    entry: TurnTelemetry
 }
 
+/** A resolved council seat: a selector at its original position in `models[]`, plus its model def and optional role. Duplicate selectors are distinct speakers with distinct indexes. */
+interface Speaker {
+   index: number
+   selector: string
+   def: ModelDef
+   role?: string
+}
+
 /** Stateful per-run turn engine: runs model calls and records outcomes/skips into shared collectors. */
 interface TurnRunner {
    readonly telemetry: TurnTelemetry[]
    readonly turns: QuorumTurn[]
    readonly content: { type: 'text'; text: string }[]
    used(): number
-   speakOne(selector: string, round: number, isSynthesis: boolean, extraContext?: string): Promise<TurnOutcome>
+   speakOne(speaker: Speaker, round: number, isSynthesis: boolean, extraContext?: string): Promise<TurnOutcome>
    record(outcome: TurnOutcome, round: number): void
    skip(round: number, from?: number): void
 }
@@ -60,8 +68,9 @@ interface QuorumInput extends PromptInput {
    preset?: string
 }
 
-/** Internal per-turn transcript entry for a quorum round. */
+/** Internal per-turn transcript entry for a quorum round. `index` is the speaker's stable identity (position in `models[]`). */
 interface QuorumTurn {
+   index: number
    selector: string
    round: number
    text: string
@@ -69,6 +78,7 @@ interface QuorumTurn {
 
 /** Per-turn telemetry emitted in quorum structuredContent. */
 interface TurnTelemetry {
+   index: number
    selector: string
    modelName: string
    modelId: string

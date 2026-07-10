@@ -1,13 +1,13 @@
 {
    "description": [
-      "Double-blind study: independent reviewers, then a blind synthesis.",
+      "Double-blind study: independent participants, then a blind synthesis.",
       "",
       "Staff `participant` with 2 or more models — each answers with ZERO visibility of the others (even across rounds), so no one anchors on anyone else. A `researcher` consolidates the findings. Because turns are labeled by role, the researcher weighs the answers on merit, not on which model wrote them."
    ],
    "mode": "independent",
    "synthesizer": "researcher",
    "roles": [
-      { "role": "participant", "description": "Give your own independent answer with a short rationale. You cannot see any other reviewer — do not speculate about them.", "min": 2, "max": null },
-      { "role": "researcher", "description": "Consolidate the reviewers' independent answers into one finding. Note where they agreed and where they diverged." }
+      { "role": "participant", "description": "Give your own independent answer with a short rationale. You cannot see any other participant — do not speculate about them.", "min": 2, "max": null },
+      { "role": "researcher", "description": "Consolidate the participants' independent answers into one finding. Note where they agreed and where they diverged." }
    ]
 }

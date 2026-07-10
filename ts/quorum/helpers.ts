@@ -10,9 +10,6 @@ export const resolve = (selector: string, models: ModelDef[], roles: RoleDef[]):
    return { def, role: rolePart }
 }
 
-/** Remove duplicate selectors, preserving first-seen order. */
-export const dedup = (selectors: string[]): string[] => [...new Set(selectors)]
-
 /** Round/synthesis banner prepended to a turn's prompt; empty for a single non-synthesis round. A per-round synthesis (round > 0) gets the interim banner, the final synthesis (round 0) the final one. */
 export const banner = (round: number, rounds: number, isSynthesis: boolean, t: PromptTemplates): string =>
    isSynthesis
@@ -61,7 +58,7 @@ export const validatePreset = (
       // Skip unknown models here; the generic unknown-selector check reports those with a clearer message.
       if (modelKnown && (rolePart === undefined || !roleSlugs.includes(slugify(rolePart)))) return { kind: 'roleNotInPreset', selector }
    }
-   // Count effective speakers per role (selectors already deduped upstream); enforce each role's [min, max].
+   // Count speakers per role — duplicate selectors are distinct speakers and each counts; enforce each role's [min, max].
    for (const r of preset.roles) {
       const
          slug = slugify(r.role),
