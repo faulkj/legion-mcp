@@ -33,7 +33,7 @@ export const makeTurnLabels = (speakers: Speaker[]): string[] => {
 export const toContext = (turns: QuorumTurn[], labels: string[], t: PromptTemplates, callerContext?: string, selfIndex?: number): string | undefined => {
    if (!turns.length) return callerContext
    const
-      eliminated = new Set(turns.filter(turn => turn.phase === 'elimination').map(turn => turn.index)),
+      eliminated = new Set(turns.filter(turn => turn.phase === 'elimination' && turn.text.endsWith(' eliminated')).map(turn => turn.index)),
       phaseTag = (turn: QuorumTurn): string =>
          turn.phase === 'round' ? `round ${turn.round}` : turn.phase,
       mark = (turn: QuorumTurn): string =>
