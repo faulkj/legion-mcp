@@ -191,7 +191,7 @@ staffed within its cardinality, else the result is an error saying what to fix.
   selectors is several distinct speakers.
 
 This repo ships `code_review`, `debate`, `brainstorm`, `quick_take`, `tiebreak`,
-`battle_royale`, and `jury` — edit or delete freely (they hold no secrets).
+`battle_royale`, and `jury` — edit or delete freely.
 Empty/missing folder → no preset tools.
 
 > **Output length is model-driven, not enforced by role text.** A terse role

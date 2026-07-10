@@ -4,7 +4,7 @@ import { fill, slugify } from '../config/config.js'
 import { runQuorum } from '../quorum/quorum.js'
 import { createPrompt } from '../core/llm.js'
 import { logPrompt, okStatus, promptEntry } from '../core/log.js'
-import { buildInputSchema, quorumShape, roleCardinality } from './schema.js'
+import { buildInputSchema, modelList, quorumShape, roleCardinality } from './schema.js'
 
 /** Register one tool per model definition on the given server. */
 export const registerModelTools = (
@@ -69,7 +69,7 @@ export const registerQuorumTool = (
    server.registerTool(
       'quorum',
       {
-         description: `${description ?? fallback}\n\nAvailable models: ${names.join(', ')}.`,
+         description: `${description ?? fallback}\n\nAvailable models: ${modelList(models)}.`,
          inputSchema: quorumSchema
       },
       (args: QuorumInput) => runQuorum(args, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget, presets)
@@ -109,7 +109,7 @@ export const registerPresetTools = (
       server.registerTool(
          toolName,
          {
-            description: `${preset.description}\n\nStaff via models[]: ${staffing}.${synthLine} Available models: ${names.join(', ')}.`,
+            description: `${preset.description}\n\nStaff via models[]: ${staffing}.${synthLine} Available models: ${modelList(models)}.`,
             inputSchema: presetSchema
          },
          (args: QuorumInput) => runQuorum({ ...args, preset: key }, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget, presets)

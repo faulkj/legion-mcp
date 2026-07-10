@@ -25,6 +25,10 @@ export const quorumShape = (schema: SchemaDescriptions, maxRounds: number, minMo
    }
 }
 
+/** Render the available models for a tool description: `slug — description` per model (bare slug when undescribed), semicolon-separated. */
+export const modelList = (models: ModelDef[]): string =>
+   models.map(m => m.description ? `${slugify(m.name)} — ${m.description}` : slugify(m.name)).join('; ')
+
 /** One-line staffing hint per preset role: `contestant (2+)`, `jury (3-12)`, `judge (one)`. */
 export const roleCardinality = (role: PresetRole): string => {
    const
