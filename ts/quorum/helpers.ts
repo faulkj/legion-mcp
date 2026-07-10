@@ -1,14 +1,16 @@
 import { fill, slugify } from '../config/config.js'
 import { makeTurnLabels } from './context.js'
+import { parseSelector } from './selectors.js'
 
-/** Resolve a `model` or `model:role` selector to its model def and optional role; null when unknown. */
-export const resolve = (selector: string, models: ModelDef[], roles: RoleDef[]): { def: ModelDef; role?: string } | null => {
+/** Resolve a `model[:role][@team]` selector to its model def, optional role, and optional (slugified) team; null when the model or role is unknown. */
+export const resolve = (selector: string, models: ModelDef[], roles: RoleDef[]): { def: ModelDef; role?: string; team?: string } | null => {
    const
-      [modelPart, rolePart] = selector.split(':', 2) as [string, string | undefined],
-      def = models.find(m => slugify(m.name) === modelPart)
+      { model, role, team } = parseSelector(selector),
+      def = models.find(m => slugify(m.name) === model)
    if (!def) return null
-   if (rolePart !== undefined && !roles.find(r => r.name === rolePart)) return null
-   return { def, role: rolePart }
+   if (role !== undefined && !roles.find(r => r.name === role)) return null
+   if (team !== undefined && !team) return null
+   return { def, role, team: team === undefined ? undefined : slugify(team) }
 }
 
 /**
@@ -22,7 +24,7 @@ export const resolveSpeakers = (selectors: string[], synthSelector: string | und
    for (const s of seats)
       if (s.r === null) return { speakers: [], roundSpeakers: [], labels: [], bad: s.selector }
    const
-      speakers: Speaker[] = seats.map(({ selector, index, r }) => ({ index, selector, def: r!.def, role: r!.role })),
+      speakers: Speaker[] = seats.map(({ selector, index, r }) => ({ index, selector, def: r!.def, role: r!.role, team: r!.team })),
       synthIndex = synthSelector === undefined ? -1 : speakers.findIndex(s => s.selector === synthSelector),
       external = synthSelector !== undefined && synthIndex === -1 ? resolve(synthSelector, models, roles) : null,
       synth: Speaker | undefined = synthSelector === undefined
@@ -84,16 +86,16 @@ export const validatePreset = (
    }
    for (const selector of selectors) {
       const
-         [modelPart, rolePart] = selector.split(':', 2),
-         modelKnown = models.some(m => slugify(m.name) === modelPart)
+         { model, role } = parseSelector(selector),
+         modelKnown = models.some(m => slugify(m.name) === model)
       // Skip unknown models here; the generic unknown-selector check reports those with a clearer message.
-      if (modelKnown && (rolePart === undefined || !roleSlugs.includes(slugify(rolePart)))) return { kind: 'roleNotInPreset', selector }
+      if (modelKnown && (role === undefined || !roleSlugs.includes(slugify(role)))) return { kind: 'roleNotInPreset', selector }
    }
    // Count speakers per role — duplicate selectors are distinct speakers and each counts; enforce each role's [min, max].
    for (const r of preset.roles) {
       const
          slug = slugify(r.role),
-         count = selectors.filter(s => slugify(s.split(':', 2)[1] ?? '') === slug).length,
+         count = selectors.filter(s => slugify(parseSelector(s).role ?? '') === slug).length,
          min = r.min ?? 1,
          max = r.max === null ? Infinity : (r.max ?? 1)
       if (count < min) return { kind: 'presetRoleUnderStaffed', role: slug, min, count }

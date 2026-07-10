@@ -2,6 +2,7 @@ import { fill, slugify } from '../config/config.js'
 import { createPrompt } from '../core/llm.js'
 import { log } from '../core/log.js'
 import { everyN, toContext } from './context.js'
+import { entrantFirst, entryDue, makeEntry, nextEntrant, objectiveError, recordEntry, withObjective } from './entry.js'
 import { eliminationDue, makeEliminator, makeSynthesizer } from './phases.js'
 import { mergePresetRoles, presetError, presetSynth, resolveSpeakers, validatePreset } from './helpers.js'
 import { makeTurnRunner } from './runner.js'
@@ -39,13 +40,12 @@ export const runQuorum = async (
       synthInterval = synthSelector === undefined ? Infinity : everyN(preset?.synthesizeEvery ?? args.synthesizeEvery),
       closing = (preset?.closingStatements ?? args.closingStatements) === true,
       eliminateEvery = preset?.eliminateEvery,
+      enterEvery = preset?.enterEvery,
       optional = preset?.eliminationsOptional === true
 
-   // Closing statements are a final speaker pass right before synthesis, so they only make sense with a synthesizer.
+   // Closing statements and eliminations both hinge on the synthesizer, so require one for either.
    if (closing && synthSelector === undefined)
       return err(errors.closingWithoutSynth)
-
-   // Eliminations are decided by the synthesizer, so they require one too.
    if (eliminateEvery !== undefined && eliminateEvery > 0 && synthSelector === undefined)
       return err(errors.eliminateWithoutSynth)
 
@@ -54,39 +54,44 @@ export const runQuorum = async (
 
    const { speakers, roundSpeakers, synth, labels, bad } = resolveSpeakers(args.models, synthSelector, models, effectiveRoles)
    if (bad) return err(fill(errors.unknownSelector, { selector: bad }))
+   if (synth?.team !== undefined) return err(errors.synthTeamed)
+   const objErr = objectiveError(roundSpeakers, args.objectives)
+   if (objErr) return err(objErr)
 
    const
-      { telemetry, turns, content, used, speakOne, record, note, skip } = makeTurnRunner(args, effectiveRoles, roundSpeakers, rounds, prompt, templates),
-      // An eliminated speaker is removed for good — no longer prompted, so it costs nothing after its cut. `live` shrinks as the synthesizer removes them.
+      { telemetry, turns, content, used, speakOne, record, note, skip, runParallel } = makeTurnRunner(args, effectiveRoles, roundSpeakers, rounds, prompt, templates),
+      // `live` shrinks as the synthesizer eliminates; `entered` grows as benched speakers join. Effective speakers = entered AND live — one seam rounds and the eliminator both read.
       live = new Set(roundSpeakers.map(s => s.index)),
-      liveSpeakers = (): Speaker[] => roundSpeakers.filter(s => live.has(s.index)),
+      entry = makeEntry(roundSpeakers, enterEvery),
+      liveSpeakers = (): Speaker[] => roundSpeakers.filter(s => entry.entered.has(s.index) && live.has(s.index)),
       full = () => toContext(turns, labels, templates, args.context),
-      // Per-speaker context for a round turn, honoring the mode's visibility policy. The speaker's own prior turns are marked so it knows which were its own.
+      // Per-speaker context for a round turn, honoring the mode's visibility policy. The speaker's own prior turns are marked so it knows which were its own; its team objective rides along.
       seen = (speaker: Speaker, snapshot: QuorumTurn[]): string | undefined =>
-         mode === 'independent'
-            ? args.context
-            : mode === 'private'
-               ? toContext(snapshot.filter(t => t.index === speaker.index), labels, templates, args.context, speaker.index)
-               : toContext(snapshot, labels, templates, args.context, speaker.index),
-      // Buffer a whole phase, then record in council order so content[] reads in seat order, not completion order.
-      runParallel = async (speakers: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined): Promise<void> => {
-         for (const outcome of await Promise.all(speakers.map(s => speakOne(s, round, phase, ctx(s)))))
-            record(outcome, round)
-      },
-      deps = { synth, synthSelector, labels, optional, templates, errors, live, liveSpeakers, full, telemetry, speakOne, record, note },
+         withObjective(speaker, args.objectives, false,
+            mode === 'independent'
+               ? args.context
+               : mode === 'private'
+                  ? toContext(snapshot.filter(t => t.index === speaker.index), labels, templates, args.context, speaker.index)
+                  : toContext(snapshot, labels, templates, args.context, speaker.index)),
+      // The ref/synth is neutral and sees every team's objective; wrap `full` so synthesis and elimination carry all objectives.
+      refFull = () => withObjective(synth, args.objectives, true, full()),
+      deps = { synth, synthSelector, labels, optional, templates, errors, live, liveSpeakers, full: refFull, telemetry, speakOne, record, note },
       runSynthesis = makeSynthesizer(deps),
       runElimination = makeEliminator(deps)
 
    for (let round = 1; round <= rounds; round++) {
       if (tokenBudget && used() >= tokenBudget) {
-         for (let r = round; r <= rounds; r++) skip(r)
+         for (let r = round; r <= rounds; r++) skip(r, 0, 'round', liveSpeakers())
          log('warn', `⚠️ token budget ${tokenBudget} exceeded (${used()}) — skipping remaining turns`)
          break
       }
-      const speaking = liveSpeakers()
+      // Staggered entry: a benched speaker joins on the cadence, announced by a neutral transcript note, and (sequential) speaks first this round.
+      const entrant = entryDue(entry, enterEvery, round) ? nextEntrant(entry) : undefined
+      if (entrant) recordEntry(note, entrant, round, labels[entrant.index] ?? entrant.selector)
+      const speaking = entrantFirst(liveSpeakers(), entrant)
       if (mode === 'sequential')
          for (let i = 0; i < speaking.length; i++) {
-            if (tokenBudget && used() >= tokenBudget) { skip(round, i); break }
+            if (tokenBudget && used() >= tokenBudget) { skip(round, i, 'round', speaking); break }
             record(await speakOne(speaking[i]!, round, 'round', seen(speaking[i]!, turns)), round)
          }
       else {

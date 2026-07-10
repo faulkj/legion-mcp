@@ -31,12 +31,13 @@ interface TurnOutcome {
    entry: TurnTelemetry
 }
 
-/** A resolved council seat: a selector at its original position in `models[]`, plus its model def and optional role. Duplicate selectors are distinct speakers with distinct indexes. */
+/** A resolved council seat: a selector at its original position in `models[]`, plus its model def, optional role, and optional team. Duplicate selectors are distinct speakers with distinct indexes. */
 interface Speaker {
    index: number
    selector: string
    def: ModelDef
    role?: string
+   team?: string
 }
 
 /** The resolved council: every seat, the round speakers (all but the synthesizer), the optional synthesizer, and per-seat display labels. `bad` names the first unresolvable selector instead. */
@@ -57,11 +58,12 @@ interface TurnRunner {
    speakOne(speaker: Speaker, round: number, phase: TurnPhase, extraContext?: string, promptOverride?: string): Promise<TurnOutcome>
    record(outcome: TurnOutcome, round: number): void
    note(turn: QuorumTurn, entry: TurnTelemetry): void
-   skip(round: number, from?: number, phase?: TurnPhase): void
+   skip(round: number, from?: number, phase?: TurnPhase, list?: Speaker[]): void
+   runParallel(list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined): Promise<void>
 }
 
-/** Which phase of a run a turn belongs to: a normal discussion round, a closing statement, a synthesis, or an elimination decision. */
-type TurnPhase = 'round' | 'closing' | 'synthesis' | 'elimination'
+/** Which phase of a run a turn belongs to: a normal discussion round, a staggered entry note, a closing statement, a synthesis, or an elimination decision. */
+type TurnPhase = 'round' | 'entry' | 'closing' | 'synthesis' | 'elimination'
 
 /** Visibility policy for a quorum run: how much of the transcript each round speaker sees. */
 type QuorumMode = 'sequential' | 'parallel' | 'private' | 'independent'
@@ -78,6 +80,7 @@ interface QuorumInput extends PromptInput {
    synthesize?: string
    synthesizeEvery?: SynthesizeEvery
    closingStatements?: boolean
+   objectives?: Record<string, string>
    tokenBudget?: number
    preset?: string
 }

@@ -1,0 +1,15 @@
+{
+   "description": [
+      "Final girl: a group is picked off one by one each round until a single survivor remains.",
+      "",
+      "Staff `survivor` with 3 or more models — each keeps making its case round after round, reacting to who was just cut. Every round the `slasher` eliminates one survivor until only the final girl is left standing. A slower burn pays off: use rounds >= 3. Feed the question or task via the prompt/context."
+   ],
+   "mode": "sequential",
+   "synthesizer": "slasher",
+   "eliminateEvery": 1,
+   "defaultRounds": 20,
+   "roles": [
+      { "role": "survivor", "description": "Make your case and keep it alive. Each round, react to who was just eliminated and sharpen why YOU should still be standing.", "min": 3, "max": null },
+      { "role": "slasher", "description": "Each round, cut the single weakest survivor and say why in one tight line. At the end, name the final girl and justify why they outlasted the rest." }
+   ]
+}

@@ -20,6 +20,7 @@ export const quorumShape = (schema: SchemaDescriptions, maxRounds: number, minMo
    return {
       models: z.array(z.string()).min(minModels).describe(modelsDescription),
       rounds: z.number().int().min(1).max(maxRounds).optional().describe(d('rounds')),
+      objectives: z.record(z.string(), z.string()).optional().describe(d('objectives')),
       tokenBudget: z.number().int().positive().optional().describe(d('tokenBudget')),
       ...buildInputSchema(schema).omit({ role: true }).shape
    }

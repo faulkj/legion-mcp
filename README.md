@@ -192,18 +192,23 @@ Keys:
 - **`roles`** — each with optional `description`, and `min`/`max` speakers
   (default exactly one; `max: null` = unbounded, `min: 0` = optional).
 - **`mode`, `synthesizer`, `synthesizeEvery`, `closingStatements`,
-  `eliminateEvery`, `eliminationsOptional`, `defaultRounds`** — optional
-  orchestration defaults. Most are overridable per call; `eliminateEvery`
+  `eliminateEvery`, `eliminationsOptional`, `enterEvery`, `defaultRounds`** —
+  optional orchestration defaults. Most are overridable per call; `eliminateEvery`
   (survivor mode: the synthesizer removes one speaker every Nth round — a removed
-  speaker is out for good and never prompted again) and `eliminationsOptional`
-  (let the synthesizer keep everyone in a given round) are preset-only. See a
-  shipped preset and the `quorum` tool description for what each does.
+  speaker is out for good and never prompted again), `eliminationsOptional` (let
+  the synthesizer keep everyone in a given round), and `enterEvery` (staggered
+  entry: with `@team`-tagged selectors, one combatant per team starts and one
+  more enters every Nth round) are preset-only. See a shipped preset and the
+  `quorum` tool description for what each does.
 
 This repo ships `code_review`, `debate`, `brainstorm`, `quick_take`, `tiebreak`,
 `battle_royale`, `jury`, `double_blind` (independent blind panel), `gauntlet`
 (private self-refinement race), `refine` (relay polish of an existing artifact),
-`workshop` (differentiated creative team), and `focus_group` (moderated panel
-that riffs off each other) — edit or delete freely.
+`workshop` (differentiated creative team), `focus_group` (moderated panel that
+riffs off each other), `final_girl` (survivors culled one per round until one
+remains), and `war_games` (a staggered-entry team cage match: `@team`-tagged
+combatants enter one at a time while a neutral ref calls fouls and names the
+winning team) — edit or delete freely.
 Empty/missing folder → no preset tools.
 
 > **Role text nudges output, it doesn't cap it** — use `maxTokens` for a hard

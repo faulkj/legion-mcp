@@ -40,6 +40,7 @@ interface Preset {
    closingStatements?: boolean
    eliminateEvery?: number
    eliminationsOptional?: boolean
+   enterEvery?: number
    defaultRounds?: number
 }
 
@@ -72,6 +73,7 @@ interface ErrorMessages {
    presetSynthUncovered: string
    closingWithoutSynth: string
    eliminateWithoutSynth: string
+   synthTeamed: string
 }
 
 /** Overridable prompt-shaping templates loaded from config/prompts.json. Tokens in {braces} are filled at runtime. */

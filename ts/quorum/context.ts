@@ -1,21 +1,25 @@
 import { fill, slugify } from '../config/config.js'
+import { parseSelector } from './selectors.js'
 
 /**
  * Build stable per-speaker display labels for the run, indexed by `Speaker.index`. Labels
  * use the ROLE, not the model, so the model-facing transcript never leaks model identity.
- * Roles staffed by 2+ speakers are numbered (`critic 1`, `critic 2`); a lone role stays
- * bare (`critic`). Role-less speakers fall back to the model slug and are NOT numbered —
+ * A role staffed by 2+ speakers WITHIN the same team is numbered (`combatant 1`, `combatant 2`);
+ * a lone role stays bare (`critic`). Team-tagged speakers get a `[team] ` prefix so allies and
+ * opponents are legible. Role-less speakers fall back to the model slug and are NOT numbered —
  * numbering there would re-expose model identity. Numbering is keyed by first-seen order.
  */
 export const makeTurnLabels = (speakers: Speaker[]): string[] => {
    const
-      counts = speakers.reduce((m, s) => s.role ? m.set(s.role, (m.get(s.role) ?? 0) + 1) : m, new Map<string, number>()),
+      key = (s: Speaker) => `${s.team ?? ''}|${s.role}`,
+      counts = speakers.reduce((m, s) => s.role ? m.set(key(s), (m.get(key(s)) ?? 0) + 1) : m, new Map<string, number>()),
       seen = new Map<string, number>(),
+      prefix = (s: Speaker) => s.team ? `[${s.team}] ` : '',
       labels: string[] = []
    for (const s of speakers) {
-      if (!s.role) { labels[s.index] = slugify(s.selector.split(':', 2)[0] ?? s.selector); continue }
-      const n = (seen.set(s.role, (seen.get(s.role) ?? 0) + 1), seen.get(s.role)!)
-      labels[s.index] = counts.get(s.role)! > 1 ? `${s.role} ${n}` : s.role
+      if (!s.role) { labels[s.index] = `${prefix(s)}${slugify(parseSelector(s.selector).model)}`; continue }
+      const n = (seen.set(key(s), (seen.get(key(s)) ?? 0) + 1), seen.get(key(s))!)
+      labels[s.index] = `${prefix(s)}${counts.get(key(s))! > 1 ? `${s.role} ${n}` : s.role}`
    }
    return labels
 }
@@ -37,7 +41,9 @@ export const toContext = (turns: QuorumTurn[], labels: string[], t: PromptTempla
                ? 'synthesis'
                : turn.phase === 'elimination'
                   ? 'elimination'
-                  : `round ${turn.round}`,
+                  : turn.phase === 'entry'
+                     ? 'entry'
+                     : `round ${turn.round}`,
       mark = (turn: QuorumTurn): string =>
          `${turn.index === selfIndex ? ' · you' : ''}${turn.phase !== 'elimination' && eliminated.has(turn.index) ? ' · eliminated' : ''}`,
       label = (turn: QuorumTurn): string => `${labels[turn.index] ?? turn.selector}${mark(turn)}`,

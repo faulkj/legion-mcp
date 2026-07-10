@@ -23,8 +23,8 @@ export const makeTurnRunner = (
       content: { type: 'text'; text: string }[] = []
    let used = 0
 
-   const skip = (round: number, from = 0, phase: TurnPhase = 'round'): void =>
-      speakers.slice(from).forEach(s =>
+   const skip = (round: number, from = 0, phase: TurnPhase = 'round', list: Speaker[] = speakers): void =>
+      list.slice(from).forEach(s =>
          telemetry.push({ index: s.index, selector: s.selector, modelName: s.def.name, modelId: s.def.model, role: s.role, round, phase, usage: {}, latencyMs: 0, status: 'skipped: budget' }))
 
    const record = ({ text, entry }: TurnOutcome, round: number): void => {
@@ -68,5 +68,10 @@ export const makeTurnRunner = (
       }
    }
 
-   return { telemetry, turns, content, used: () => used, speakOne, record, note, skip }
+   const runParallel = async (list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined): Promise<void> => {
+      for (const outcome of await Promise.all(list.map(s => speakOne(s, round, phase, ctx(s)))))
+         record(outcome, round)
+   }
+
+   return { telemetry, turns, content, used: () => used, speakOne, record, note, skip, runParallel }
 }

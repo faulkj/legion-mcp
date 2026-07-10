@@ -1,0 +1,17 @@
+{
+   "description": [
+      "War Games: two or more teams enter a staggered-entry cage match, one combatant at a time, while a neutral ref calls fouls and, at the bell, names the winning team.",
+      "",
+      "Staff `combatant` with team-tagged selectors — `model:combatant@blue`, `model:combatant@red` — and give each team a shared objective via `objectives` ({ \"blue\": \"…\", \"red\": \"…\" }). Round 1 starts with one combatant per team; every round after, one more enters (alternating teams) until the whole field is in — then it's a full brawl. The `ref` may eliminate a combatant for foul play (optional) and delivers a verdict naming the winning team and why it out-argued the others. Needs >= 2 teams. Raise rounds for bigger teams: rounds >= (total combatants - team count) + 2 leaves two brawl rounds."
+   ],
+   "mode": "sequential",
+   "synthesizer": "ref",
+   "enterEvery": 1,
+   "eliminateEvery": 1,
+   "eliminationsOptional": true,
+   "defaultRounds": 7,
+   "roles": [
+      { "role": "combatant", "description": "Fight for your team's objective. Advance your side's case, coordinate with teammates ([your team] labels), and dismantle the opposing team's arguments. When you enter mid-match, read the transcript and hit the ground running.", "min": 2, "max": null },
+      { "role": "ref", "description": "You are the neutral official — no team. Enforce a fair match: only eliminate a combatant for genuine foul play (bad faith, incoherence, ignoring the objective), otherwise keep everyone. At the final bell, name the winning TEAM and the decisive reason it collectively advanced its objective better than the others." }
+   ]
+}

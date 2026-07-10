@@ -9,13 +9,15 @@ mode    — "sequential" (default) | "parallel" | "private" | "independent"
 synthesize — selector for a synthesis turn (never speaks in normal rounds)
 synthesizeEvery — N: every Nth round (1 = every round, 0 = end only); "end"=0 default; needs synthesize
 closingStatements — true: one final statement per speaker before synthesis; needs synthesize
+objectives — optional { team: goal } map for team runs (see Teams)
 tokenBudget — optional soft cumulative token budget (overrides TOKEN_BUDGET)
 ```
 
 **Selectors**: `"fable"`, `"opus:skeptic"`, `"gpt:builder"`. Same model +
 different roles = distinct speakers (`["gpt:judge", "gpt:skeptic"]`). Identical
 selectors are **not** deduped — `["gpt:critic", "gpt:critic"]` runs two
-independent critics (labeled `critic 1`/`critic 2`), at ~2× the tokens.
+independent critics (labeled `critic 1`/`critic 2`), at ~2× the tokens. A
+trailing `@team` tags a speaker's side: `"gpt:combatant@blue"` (see **Teams**).
 
 **Modes** (a 2×2 of *see peers?* × *see own prior turns?*): *sequential*
 (default) — each turn sees the full transcript so far, including same-round
@@ -59,6 +61,20 @@ so it incurs no further tokens or cost, and its earlier turns stay in the
 transcript marked `· eliminated`. With `eliminationsOptional: true` the
 synthesizer may keep everyone that round (a `0) no elimination` menu choice).
 Requires a synthesizer.
+
+**Teams & staggered entry**: tag any selector with `@team`
+(`"gpt:combatant@blue"`, `"opus:combatant@red"`) to sort speakers into sides;
+labels become `[blue] combatant 1`, `[red] combatant 1`. Supply each team's
+shared goal via `objectives` (`{ "blue": "…", "red": "…" }`) — every member sees
+its own team's objective, a synthesizer sees all of them. A preset (or generic
+call via a preset) may set `enterEvery`: with teams present, round 1 starts one
+combatant per team and one more enters every `enterEvery` rounds (alternating
+teams) until the whole field is in — a Dusty Rhodes-style staggered cage match.
+The new entrant speaks first that round (sequential); entries appear as neutral
+`[entry]` transcript notes. A team run needs **>= 2 teams**, an objective per
+team, and a **teamless synthesizer** (the neutral official). No `@team` tags →
+`enterEvery` is a no-op and everything behaves as usual. See the `war_games`
+preset for the full mechanic.
 
 **You are the moderator** (the server is stateless — you hold the thread): call
 with `rounds: 1`, read `structuredContent.transcript`, then call again with
