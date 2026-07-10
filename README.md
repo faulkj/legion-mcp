@@ -42,10 +42,11 @@ flowchart LR
 - A `quorum` tool fans one prompt to two or more models and returns each answer
   as a separate content item. Supports roles via `model:role` selectors (the
   same model can appear multiple times with different roles), inline ad-hoc
-  `roles`, multi-round discussion (`rounds`, `mode`), and an optional synthesis
-  turn (`synthesize`, timed by `synthesizeEvery`). Transcript turns are labeled
-  by **role** (`builder`, `critic 1`), never by model, so models judge each
-  other's content rather than reputation. The four `mode`s form a 2×2 of
+  `roles`, multi-round discussion (`rounds`, `mode`), an optional synthesis turn
+  (`synthesize`, timed by `synthesizeEvery`), and optional `closingStatements`
+  (one final statement per speaker before synthesis). Transcript turns are
+  labeled by **role** (`builder`, `critic 1`), never by model, so models judge
+  each other's content rather than reputation. The four `mode`s form a 2×2 of
   *see peers?* × *see own prior turns?* — `sequential` (both), `parallel`
   (peers from earlier rounds only), `private` (own turns only), `independent`
   (nothing but the prompt until synthesis). The calling AI acts as moderator:
@@ -208,9 +209,12 @@ staffed within its cardinality, else the result is an error saying what to fix.
   preset tool's own MCP description, so it is **required**.
 - **`synthesizer`** (optional) names the role that runs a synthesis turn — it
   must be one of the preset's roles and does **not** speak in normal rounds.
-  **`synthesizeEvery`** times it: `"end"` (default), `"round"`, or a number `N`
-  (every Nth round, always the last). A preset with a synthesizer needs at least
-  one other required role, since the synthesizer is pulled out of the rotation.
+  **`synthesizeEvery`** times it: `"end"` (default / `0`) or a number `N` (every
+  Nth round, always the last). A preset with a synthesizer needs at least one
+  other required role, since the synthesizer is pulled out of the rotation.
+  **`closingStatements: true`** (requires a synthesizer) gives every other
+  speaker one final statement over the whole transcript right before the
+  synthesis.
 - **Cardinality** — each role may set `min` / `max` speakers (default exactly
   one). `max: null` means unbounded; `min: 0` makes a role **optional**
   (staff it or don't). So the battle-royale `combatant` is

@@ -14,6 +14,7 @@
       "mode": "How much of the transcript each round speaker sees: sequential (default; sees all prior turns), parallel (sees only completed earlier rounds, blind to same-round peers), private (sees only its own prior turns), independent (sees nothing but the prompt until synthesis).",
       "synthesize": "Selector for a synthesis turn. The synthesizer never speaks in normal rounds — only in its synthesis slot(s).",
       "synthesizeEvery": "When the synthesizer runs (only matters when synthesize is set): a number N synthesizes after every Nth round (and always the last); 1 = every round; 0 = only at the end. \"end\" is an alias for 0 (the default).",
+      "closingStatements": "When true, every round speaker gives one final parallel statement over the whole transcript right before the synthesis. Requires synthesize.",
       "tokenBudget": "Optional SOFT cumulative token budget for the whole run (overrides TOKEN_BUDGET). Sequential mode checks it between turns; parallel mode checks at round boundaries, so a round can overshoot before it trips. Once crossed, remaining turns are skipped gracefully but synthesis still runs. Not a hard cap. See structuredContent.budget."
    }
 }

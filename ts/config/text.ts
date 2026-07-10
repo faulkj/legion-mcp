@@ -113,6 +113,7 @@ const
       roundExploring: '[Round {round} of {rounds} — keep exploring]\n\n',
       roundFinal: '[Round {round} of {rounds} — final round, commit]\n\n',
       roundSynthesis: '[Interim synthesis — consolidate the discussion so far into one working answer to build on]\n\n',
+      closingStatement: '[Closing statement — give your final position after reading the whole discussion. Do not introduce a new format; be concise and decisive.]\n\n',
       synthesis: '[Final synthesis — consolidate the discussion above into one answer]\n\n'
    },
    errorDefaults: ErrorMessages = {
@@ -127,5 +128,6 @@ const
       presetRoleUnderStaffed: 'Preset "{preset}" role "{role}" needs at least {min} speaker(s), got {count} — add a selector like "model:{role}".',
       presetRoleOverStaffed: 'Preset "{preset}" role "{role}" allows at most {max} speaker(s), got {count} — remove a "model:{role}" selector.',
       presetRoleMissingFile: 'Preset "{preset}" references role "{role}" which has no config/roles/{role}.md file.',
-      presetSynthUncovered: 'Preset "{preset}" synthesizes with role "{role}" — add a selector like "model:{role}" to staff it.'
+      presetSynthUncovered: 'Preset "{preset}" synthesizes with role "{role}" — add a selector like "model:{role}" to staff it.',
+      closingWithoutSynth: 'Closing statements require a synthesizer — set "synthesize" (or use a preset with a synthesizer).'
    }

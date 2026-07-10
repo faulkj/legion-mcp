@@ -35,7 +35,12 @@ export const runQuorum = async (
       rounds = Math.min(maxRounds, Math.max(1, args.rounds ?? 1)),
       mode = preset?.mode ?? args.mode ?? 'sequential',
       synthSelector = preset ? presetSynth(preset, args.models, models, effectiveRoles) : args.synthesize,
-      synthInterval = synthSelector === undefined ? Infinity : everyN(preset?.synthesizeEvery ?? args.synthesizeEvery)
+      synthInterval = synthSelector === undefined ? Infinity : everyN(preset?.synthesizeEvery ?? args.synthesizeEvery),
+      closing = (preset?.closingStatements ?? args.closingStatements) === true
+
+   // Closing statements are a final speaker pass right before synthesis, so they only make sense with a synthesizer.
+   if (closing && synthSelector === undefined)
+      return err(errors.closingWithoutSynth)
 
    const presetFailure = args.preset === undefined ? null : presetError(validatePreset(args.preset, args.models, presets, models, roles), args.preset, presets, errors)
    if (presetFailure) return err(presetFailure)
@@ -70,13 +75,18 @@ export const runQuorum = async (
             : mode === 'private'
                ? toContext(snapshot.filter(t => t.index === speaker.index), labels, templates, args.context)
                : toContext(snapshot, labels, templates, args.context),
+      // Buffer a whole phase, then record in council order so content[] reads in seat order, not completion order.
+      runParallel = async (round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined): Promise<void> => {
+         for (const outcome of await Promise.all(roundSpeakers.map(s => speakOne(s, round, phase, ctx(s)))))
+            record(outcome, round)
+      },
       runSynthesis = async (round: number): Promise<void> => {
          if (synthSelector === undefined) return
          if (synth === undefined) {
-            telemetry.push({ index: -1, selector: synthSelector, modelName: '', modelId: '', round, isSynthesis: true, usage: {}, latencyMs: 0, status: errors.unresolvableSelector })
+            telemetry.push({ index: -1, selector: synthSelector, modelName: '', modelId: '', round, phase: 'synthesis', usage: {}, latencyMs: 0, status: errors.unresolvableSelector })
             return
          }
-         record(await speakOne(synth, round, true, full()), round)
+         record(await speakOne(synth, round, 'synthesis', full()), round)
          telemetry[telemetry.length - 1]?.status.includes('reasoning-heavy') &&
             log('warn', `⚠️ synthesis (${synthSelector}) spent most of its budget reasoning — raise maxTokens or use a lighter model for synthesize`)
       }
@@ -90,21 +100,25 @@ export const runQuorum = async (
       if (mode === 'sequential')
          for (let i = 0; i < roundSpeakers.length; i++) {
             if (tokenBudget && used() >= tokenBudget) { skip(round, i); break }
-            record(await speakOne(roundSpeakers[i]!, round, false, seen(roundSpeakers[i]!, turns)), round)
+            record(await speakOne(roundSpeakers[i]!, round, 'round', seen(roundSpeakers[i]!, turns)), round)
          }
       else {
-         // Buffer the whole round, then record in council order so content[] reads in seat order, not completion order.
          const snapshot = [...turns]
-         for (const outcome of await Promise.all(roundSpeakers.map(s => speakOne(s, round, false, seen(s, snapshot)))))
-            record(outcome, round)
+         await runParallel(round, 'round', s => seen(s, snapshot))
       }
-      // Per-round synthesis: on the interval, and always on the final round so a run never ends unconsolidated.
-      if ((round % synthInterval === 0 || round === rounds) && synthInterval !== Infinity)
+      // Per-round synthesis on the interval — but when closing is on, skip the final round's so there's one synthesis, after closing.
+      if (synthInterval !== Infinity && (round % synthInterval === 0 || round === rounds) && !(closing && round === rounds))
          await runSynthesis(round)
    }
 
-   // End-mode synthesis runs once after all rounds (round 0). Per-round mode already synthesized the final round.
-   if (synthInterval === Infinity)
+   // Closing statements: one final parallel pass over the whole transcript, right before the final synthesis.
+   if (closing && !(tokenBudget && used() >= tokenBudget))
+      await runParallel(rounds + 1, 'closing', full)
+   else if (closing)
+      skip(rounds + 1, 0, 'closing')
+
+   // End-only synthesis, or the single synthesis that follows closing statements, runs once after all rounds (round 0).
+   if (synthInterval === Infinity || closing)
       await runSynthesis(0)
 
    return {

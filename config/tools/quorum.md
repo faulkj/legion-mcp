@@ -8,6 +8,7 @@ rounds  — discussion rounds (default 1; max set by MAX_ROUNDS)
 mode    — "sequential" (default) | "parallel" | "private" | "independent"
 synthesize — selector for a synthesis turn (never speaks in normal rounds)
 synthesizeEvery — N: every Nth round (1 = every round, 0 = end only); "end"=0 default; needs synthesize
+closingStatements — true: one final statement per speaker before synthesis; needs synthesize
 tokenBudget — optional soft cumulative token budget (overrides TOKEN_BUDGET)
 ```
 
@@ -29,6 +30,13 @@ panel. All modes' synthesis still sees the whole transcript.
 (feeding forward, always including the last; `1` = every round, `0` = end only).
 `end` is an alias for `0` and is the default. Interim per-round syntheses get an
 interim banner, not the "final" one.
+
+**Closing statements**: set `closingStatements: true` (requires `synthesize`) to
+give every round speaker one final parallel statement over the whole transcript,
+right before the synthesis — labeled `[closing / role]`. They run in parallel
+regardless of `mode`, and the synthesis sees them. When `synthesizeEvery` is a
+number, the final round's interim synthesis is skipped so there's exactly one
+synthesis, after the closings.
 
 **Transcript labels**: turns are labeled by **role** (`builder`, `critic 1`,
 `critic 2`), never by model — so models judge each other's content, not

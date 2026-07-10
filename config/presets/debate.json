@@ -2,6 +2,8 @@
    "description": "Adversarial pressure-test of a proposal.",
    "mode": "sequential",
    "synthesizer": "moderator",
+   "synthesizeEvery": 1,
+   "closingStatements": true,
    "roles": [
       { "role": "proponent", "description": "Argue forcefully FOR the proposal. Make the strongest possible case." },
       { "role": "opponent", "description": "Argue forcefully AGAINST it. Attack the weakest assumptions." },

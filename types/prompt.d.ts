@@ -45,10 +45,13 @@ interface TurnRunner {
    readonly turns: QuorumTurn[]
    readonly content: { type: 'text'; text: string }[]
    used(): number
-   speakOne(speaker: Speaker, round: number, isSynthesis: boolean, extraContext?: string): Promise<TurnOutcome>
+   speakOne(speaker: Speaker, round: number, phase: TurnPhase, extraContext?: string): Promise<TurnOutcome>
    record(outcome: TurnOutcome, round: number): void
-   skip(round: number, from?: number): void
+   skip(round: number, from?: number, phase?: TurnPhase): void
 }
+
+/** Which phase of a run a turn belongs to: a normal discussion round, a closing statement, or a synthesis. */
+type TurnPhase = 'round' | 'closing' | 'synthesis'
 
 /** Visibility policy for a quorum run: how much of the transcript each round speaker sees. */
 type QuorumMode = 'sequential' | 'parallel' | 'private' | 'independent'
@@ -64,6 +67,7 @@ interface QuorumInput extends PromptInput {
    mode?: QuorumMode
    synthesize?: string
    synthesizeEvery?: SynthesizeEvery
+   closingStatements?: boolean
    tokenBudget?: number
    preset?: string
 }
@@ -73,6 +77,7 @@ interface QuorumTurn {
    index: number
    selector: string
    round: number
+   phase: TurnPhase
    text: string
 }
 
@@ -84,7 +89,7 @@ interface TurnTelemetry {
    modelId: string
    role?: string
    round: number
-   isSynthesis: boolean
+   phase: TurnPhase
    usage: TokenUsage
    latencyMs: number
    status: string

@@ -2,6 +2,7 @@
    "description": "Resolve a stalemate with a decisive third voice.",
    "mode": "sequential",
    "synthesizer": "arbiter",
+   "closingStatements": true,
    "roles": [
       { "role": "side_a", "description": "State the strongest case for option A in a few tight sentences." },
       { "role": "side_b", "description": "State the strongest case for option B in a few tight sentences." },

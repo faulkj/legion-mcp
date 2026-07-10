@@ -37,6 +37,7 @@ interface Preset {
    mode?: QuorumMode
    synthesize?: string
    synthesizeEvery?: SynthesizeEvery
+   closingStatements?: boolean
 }
 
 /** Named preset recipes loaded from config/presets/*.json (hot-reloaded per request). */
@@ -66,6 +67,7 @@ interface ErrorMessages {
    presetRoleOverStaffed: string
    presetRoleMissingFile: string
    presetSynthUncovered: string
+   closingWithoutSynth: string
 }
 
 /** Overridable prompt-shaping templates loaded from config/prompts.json. Tokens in {braces} are filled at runtime. */
@@ -76,6 +78,7 @@ interface PromptTemplates {
    roundExploring: string
    roundFinal: string
    roundSynthesis: string
+   closingStatement: string
    synthesis: string
 }
 

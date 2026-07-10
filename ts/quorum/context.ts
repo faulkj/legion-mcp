@@ -24,7 +24,9 @@ export const makeTurnLabels = (speakers: Speaker[]): string[] => {
 export const toContext = (turns: QuorumTurn[], labels: string[], t: PromptTemplates, callerContext?: string): string | undefined => {
    if (!turns.length) return callerContext
    const
-      transcript = turns.map(turn => `[round ${turn.round} / ${labels[turn.index] ?? turn.selector}]\n${turn.text}`).join('\n\n'),
+      tag = (turn: QuorumTurn): string =>
+         turn.phase === 'closing' ? 'closing' : turn.phase === 'synthesis' ? 'synthesis' : `round ${turn.round}`,
+      transcript = turns.map(turn => `[${tag(turn)} / ${labels[turn.index] ?? turn.selector}]\n${turn.text}`).join('\n\n'),
       block = fill(t.transcriptBlock, { transcript })
    return callerContext ? `${callerContext}\n\n${block}` : block
 }

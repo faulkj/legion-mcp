@@ -23,25 +23,25 @@ export const makeTurnRunner = (
       content: { type: 'text'; text: string }[] = []
    let used = 0
 
-   const skip = (round: number, from = 0): void =>
+   const skip = (round: number, from = 0, phase: TurnPhase = 'round'): void =>
       speakers.slice(from).forEach(s =>
-         telemetry.push({ index: s.index, selector: s.selector, modelName: s.def.name, modelId: s.def.model, role: s.role, round, isSynthesis: false, usage: {}, latencyMs: 0, status: 'skipped: budget' }))
+         telemetry.push({ index: s.index, selector: s.selector, modelName: s.def.name, modelId: s.def.model, role: s.role, round, phase, usage: {}, latencyMs: 0, status: 'skipped: budget' }))
 
    const record = ({ text, entry }: TurnOutcome, round: number): void => {
       if (text !== null) {
          entry.contentIndex = content.length
          content.push({ type: 'text', text })
-         turns.push({ index: entry.index, selector: entry.selector, round, text })
+         turns.push({ index: entry.index, selector: entry.selector, round, phase: entry.phase, text })
       }
       telemetry.push(entry)
    }
 
-   const speakOne = async (speaker: Speaker, round: number, isSynthesis: boolean, extraContext?: string): Promise<TurnOutcome> => {
+   const speakOne = async (speaker: Speaker, round: number, phase: TurnPhase, extraContext?: string): Promise<TurnOutcome> => {
       const
          { index, selector, def, role } = speaker,
-         base = { index, selector, modelName: def.name, modelId: def.model, role, round, isSynthesis },
+         base = { index, selector, modelName: def.name, modelId: def.model, role, round, phase },
          roleInput: PromptInput = {
-            prompt: banner(round, rounds, isSynthesis, templates) + args.prompt,
+            prompt: banner(round, rounds, phase, templates) + args.prompt,
             system: args.system,
             temperature: args.temperature,
             maxTokens: args.maxTokens,
