@@ -14,29 +14,30 @@ export const resolve = (selector: string, models: ModelDef[], roles: RoleDef[]):
 }
 
 /**
- * Resolve `selectors` into council seats. One Speaker per selector keeps order and duplicates —
- * position is the stable identity. The synthesizer never speaks in normal rounds: if its selector
- * is in the list the FIRST match synthesizes (later duplicates stay round speakers); an external
- * synth selector appends one seat past the list. Returns `{ bad }` for the first unknown selector.
+ * Resolve `selectors` into council seats (one Speaker each, keeping order and duplicates —
+ * position is the stable identity). Neutral voices (synthesizer, framer) never speak in normal
+ * rounds: an in-list neutral fills its slot from the FIRST match, an external one appends a seat.
+ * Returns `{ bad }` for the first unknown selector.
  */
-export const resolveSpeakers = (selectors: string[], synthSelector: string | undefined, models: ModelDef[], roles: RoleDef[]): ResolvedCouncil => {
+export const resolveSpeakers = (selectors: string[], synthSelector: string | undefined, models: ModelDef[], roles: RoleDef[], frameSelector?: string): ResolvedCouncil => {
    const seats = selectors.map((selector, index) => ({ selector, index, r: resolve(selector, models, roles) }))
    for (const s of seats)
       if (s.r === null) return { speakers: [], roundSpeakers: [], labels: [], bad: s.selector }
    const
       speakers: Speaker[] = seats.map(({ selector, index, r }) => ({ index, selector, def: r!.def, role: r!.role, team: r!.team })),
-      synthIndex = synthSelector === undefined ? -1 : speakers.findIndex(s => s.selector === synthSelector),
-      external = synthSelector !== undefined && synthIndex === -1 ? resolve(synthSelector, models, roles) : null,
-      synth: Speaker | undefined = synthSelector === undefined
-         ? undefined
-         : synthIndex !== -1
-            ? speakers[synthIndex]
-            : external
-               ? { index: speakers.length, selector: synthSelector, def: external.def, role: external.role }
-               : undefined,
-      roundSpeakers = synth === undefined ? speakers : speakers.filter(s => s.index !== synth.index),
-      labels = makeTurnLabels(synth && synth.index === speakers.length ? [...speakers, synth] : speakers)
-   return { speakers, roundSpeakers, synth, labels }
+      // Resolve a neutral (synth/frame): reuse an in-list seat, else append past the list at `at`.
+      pick = (sel: string | undefined, at: number): Speaker | undefined => {
+         if (sel === undefined) return undefined
+         const ext = resolve(sel, models, roles)
+         return speakers.find(s => s.selector === sel) ?? (ext ? { index: at, selector: sel, def: ext.def, role: ext.role, team: ext.team } : undefined)
+      },
+      synth = pick(synthSelector, speakers.length),
+      frame = pick(frameSelector, synth && synth.index >= speakers.length ? speakers.length + 1 : speakers.length),
+      neutral = new Set([synth?.index, frame?.index].filter(i => i !== undefined)),
+      roundSpeakers = speakers.filter(s => !neutral.has(s.index)),
+      extras = [synth, frame].filter((s): s is Speaker => s !== undefined && s.index >= speakers.length),
+      labels = makeTurnLabels([...speakers, ...extras])
+   return { speakers, roundSpeakers, synth, frame, labels }
 }
 
 /** Banner prepended to a turn's prompt, chosen by phase: closing statements, eliminations, and syntheses (interim for round > 0, final for round 0) get their own banner; a normal round gets the exploring/final banner, or nothing for a lone round. */
@@ -68,6 +69,12 @@ export const presetSynth = (preset: Preset, selectors: string[], models: ModelDe
    preset.synthesize === undefined
       ? undefined
       : selectors.find(s => resolve(s, models, roles)?.role === slugify(preset.synthesize!))
+
+/** The `models[]` selector whose role matches a preset's framer role, or undefined if unstaffed (framer is optional). */
+export const presetFrame = (preset: Preset, selectors: string[], models: ModelDef[], roles: RoleDef[]): string | undefined =>
+   preset.frame === undefined
+      ? undefined
+      : selectors.find(s => resolve(s, models, roles)?.role === slugify(preset.frame!))
 
 /** Validate a quorum call's selectors against a chosen preset; `ok` when every role is staffed within its cardinality. */
 export const validatePreset = (

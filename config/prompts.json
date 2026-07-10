@@ -7,5 +7,8 @@
    "roundSynthesis": "[Interim synthesis — consolidate the discussion so far into one working answer to build on]\n\n",
    "closingStatement": "[Closing statement — give your final position after reading the whole discussion. Do not introduce a new format; be concise and decisive.]\n\n",
    "elimination": "[Elimination — weigh the discussion and reply with ONLY the number of the participant to eliminate. Candidates:\n{menu}]\n\n",
+   "entrant": "[You are entering the discussion now — a fresh voice. Read what came before, then bring something NEW: a fresh angle, an overlooked point, or a sharper case. Do not just restate or echo what has already been said.]\n\n",
+   "frame": "[Framing — you are the neutral chair. Set the stakes and shape the question the others will address. Be brief and concrete; do not take a side.]\n\n",
+   "reframe": "[Reframe — you are the neutral chair. Read the discussion so far and steer it: sharpen the question, raise the stakes, or redirect. Be brief; do not take a side.]\n\n",
    "synthesis": "[Final synthesis — consolidate the discussion above into one answer]\n\n"
 }

@@ -6,7 +6,8 @@
    ],
    "mode": "sequential",
    "synthesizer": "facilitator",
-   "synthesizeEvery": 1,
+   "framer": "facilitator",
+   "reframeEvery": 1,
    "roles": [
       { "role": "panelist", "description": "React candidly in your own distinct voice. Say what you like, dislike, and would change — and respond to points earlier panelists raised (agree, push back, build on them).", "min": 2, "max": null },
       { "role": "contrarian", "description": "Optional dissenting voice: challenge the emerging consensus and surface what the group is glossing over.", "min": 0, "max": null },

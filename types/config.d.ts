@@ -37,6 +37,8 @@ interface Preset {
    mode?: QuorumMode
    synthesize?: string
    synthesizeEvery?: SynthesizeEvery
+   frame?: string
+   reframeEvery?: SynthesizeEvery
    closingStatements?: boolean
    eliminateEvery?: number
    eliminationsOptional?: boolean
@@ -74,6 +76,7 @@ interface ErrorMessages {
    closingWithoutSynth: string
    eliminateWithoutSynth: string
    synthTeamed: string
+   frameTeamed: string
 }
 
 /** Overridable prompt-shaping templates loaded from config/prompts.json. Tokens in {braces} are filled at runtime. */
@@ -86,6 +89,9 @@ interface PromptTemplates {
    roundSynthesis: string
    closingStatement: string
    elimination: string
+   entrant: string
+   frame: string
+   reframe: string
    synthesis: string
 }
 

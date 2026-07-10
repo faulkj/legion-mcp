@@ -191,9 +191,11 @@ Keys:
   own MCP description.
 - **`roles`** — each with optional `description`, and `min`/`max` speakers
   (default exactly one; `max: null` = unbounded, `min: 0` = optional).
-- **`mode`, `synthesizer`, `synthesizeEvery`, `closingStatements`,
-  `eliminateEvery`, `eliminationsOptional`, `enterEvery`, `defaultRounds`** —
-  optional orchestration defaults. Most are overridable per call; `eliminateEvery`
+- **`mode`, `synthesizer`, `synthesizeEvery`, `framer`, `reframeEvery`,
+  `closingStatements`, `eliminateEvery`, `eliminationsOptional`, `enterEvery`,
+  `defaultRounds`** — optional orchestration defaults. `framer` is the mirror of
+  `synthesizer`: a neutral voice that opens the discussion (and re-steers every
+  `reframeEvery` rounds) instead of closing it. Most are overridable per call; `eliminateEvery`
   (survivor mode: the synthesizer removes one speaker every Nth round — a removed
   speaker is out for good and never prompted again), `eliminationsOptional` (let
   the synthesizer keep everyone in a given round), and `enterEvery` (staggered
@@ -208,7 +210,8 @@ This repo ships `code_review`, `debate`, `brainstorm`, `quick_take`, `tiebreak`,
 riffs off each other), `final_girl` (survivors culled one per round until one
 remains), and `war_games` (a staggered-entry team cage match: `@team`-tagged
 combatants enter one at a time while a neutral ref calls fouls and names the
-winning team) — edit or delete freely.
+winning team, with an optional `booker` who sets the match) — edit or delete
+freely.
 Empty/missing folder → no preset tools.
 
 > **Role text nudges output, it doesn't cap it** — use `maxTokens` for a hard

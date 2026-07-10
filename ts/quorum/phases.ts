@@ -2,27 +2,25 @@ import { fill } from '../config/config.js'
 import { log } from '../core/log.js'
 import { everyN } from './context.js'
 
-/** Dependencies the synthesizer-driven phases (synthesis, elimination) borrow from the running quorum. */
-interface PhaseDeps {
-   synth: Speaker | undefined
-   synthSelector: string | undefined
-   labels: string[]
-   optional: boolean
-   templates: PromptTemplates
-   errors: ErrorMessages
-   live: Set<number>
-   liveSpeakers: () => Speaker[]
-   full: () => string | undefined
-   telemetry: TurnTelemetry[]
-   speakOne: TurnRunner['speakOne']
-   record: TurnRunner['record']
-   note: TurnRunner['note']
-}
-
 /** Whether an elimination is due this round: a positive `eliminateEvery` cadence, hit on its interval (including the final round). */
 export const eliminationDue = (eliminateEvery: number | undefined, round: number): boolean => {
    const interval = everyN(eliminateEvery)
    return interval !== Infinity && round % interval === 0
+}
+
+/** Whether a frame is due this round: always the opening (round 1), then every `reframeEvery` rounds after it (so N=2 → rounds 1, 3, 5…). */
+export const frameDue = (reframeEvery: SynthesizeEvery | undefined, round: number): boolean => {
+   const interval = everyN(reframeEvery)
+   return round === 1 || (interval !== Infinity && (round - 1) % interval === 0)
+}
+
+/** Build the framer step: a neutral voice sets the stakes on the opening round and re-steers on later fires. Recorded as content (phase 'frame') so the field reacts to it. */
+export const makeFramer = (deps: PhaseDeps): ((round: number) => Promise<void>) => {
+   const { frame, full, speakOne, record, templates } = deps
+   return async (round: number): Promise<void> => {
+      if (frame === undefined) return
+      record(await speakOne(frame, round, 'frame', full(), (round === 1 ? templates.frame : templates.reframe)), round)
+   }
 }
 
 /** Build the synthesis step: the synthesizer consolidates the whole transcript into one answer (an interim answer on round > 0, the final one on round 0). */

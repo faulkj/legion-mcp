@@ -1,8 +1,5 @@
-import { createPrompt } from '../core/llm.js'
 import { logPrompt, okStatus, promptEntry } from '../core/log.js'
 import { banner } from './helpers.js'
-
-type Prompt = ReturnType<typeof createPrompt>
 
 /**
  * Build the stateful turn engine for one quorum run. Owns the telemetry/turns/content
@@ -68,8 +65,8 @@ export const makeTurnRunner = (
       }
    }
 
-   const runParallel = async (list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined): Promise<void> => {
-      for (const outcome of await Promise.all(list.map(s => speakOne(s, round, phase, ctx(s)))))
+   const runParallel = async (list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined, override?: (s: Speaker) => string | undefined): Promise<void> => {
+      for (const outcome of await Promise.all(list.map(s => speakOne(s, round, phase, ctx(s), override?.(s)))))
          record(outcome, round)
    }
 

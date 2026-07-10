@@ -1,3 +1,6 @@
+/** The bound per-run prompt function returned by `createPrompt`. */
+type Prompt = ReturnType<typeof import('../ts/core/llm.js').createPrompt>
+
 /** Arguments accepted by every model tool. */
 interface PromptInput {
    prompt: string
@@ -6,6 +9,38 @@ interface PromptInput {
    system?: string
    temperature?: number
    maxTokens?: number
+}
+
+/** Parsed parts of a council selector: `model`, `model:role`, `model@team`, or `model:role@team`. */
+interface Selector {
+   model: string
+   role?: string
+   team?: string
+}
+
+/** Staggered-entry state for a run: which seats have entered and the team-ordered bench queue. */
+interface Entry {
+   entered: Set<number>
+   queue: Speaker[]
+   active: boolean
+}
+
+/** Dependencies the neutral phases (frame, synthesis, elimination) borrow from the running quorum. */
+interface PhaseDeps {
+   synth: Speaker | undefined
+   synthSelector: string | undefined
+   frame: Speaker | undefined
+   labels: string[]
+   optional: boolean
+   templates: PromptTemplates
+   errors: ErrorMessages
+   live: Set<number>
+   liveSpeakers: () => Speaker[]
+   full: () => string | undefined
+   telemetry: TurnTelemetry[]
+   speakOne: TurnRunner['speakOne']
+   record: TurnRunner['record']
+   note: TurnRunner['note']
 }
 
 /** Token usage reported by the Responses API. */
@@ -45,6 +80,7 @@ interface ResolvedCouncil {
    speakers: Speaker[]
    roundSpeakers: Speaker[]
    synth?: Speaker
+   frame?: Speaker
    labels: string[]
    bad?: string
 }
@@ -59,11 +95,11 @@ interface TurnRunner {
    record(outcome: TurnOutcome, round: number): void
    note(turn: QuorumTurn, entry: TurnTelemetry): void
    skip(round: number, from?: number, phase?: TurnPhase, list?: Speaker[]): void
-   runParallel(list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined): Promise<void>
+   runParallel(list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined, override?: (s: Speaker) => string | undefined): Promise<void>
 }
 
-/** Which phase of a run a turn belongs to: a normal discussion round, a staggered entry note, a closing statement, a synthesis, or an elimination decision. */
-type TurnPhase = 'round' | 'entry' | 'closing' | 'synthesis' | 'elimination'
+/** Which phase of a run a turn belongs to: an opening/steering frame, a normal discussion round, a staggered entry note, a closing statement, a synthesis, or an elimination decision. */
+type TurnPhase = 'frame' | 'round' | 'entry' | 'closing' | 'synthesis' | 'elimination'
 
 /** Visibility policy for a quorum run: how much of the transcript each round speaker sees. */
 type QuorumMode = 'sequential' | 'parallel' | 'private' | 'independent'
@@ -79,6 +115,8 @@ interface QuorumInput extends PromptInput {
    mode?: QuorumMode
    synthesize?: string
    synthesizeEvery?: SynthesizeEvery
+   frame?: string
+   reframeEvery?: SynthesizeEvery
    closingStatements?: boolean
    objectives?: Record<string, string>
    tokenBudget?: number

@@ -6,6 +6,7 @@
    ],
    "mode": "sequential",
    "synthesizer": "editor",
+   "framer": "architect",
    "defaultRounds": 3,
    "roles": [
       { "role": "architect", "description": "Shape the overall approach and structure before anyone builds. Set direction, don't produce the final work." },

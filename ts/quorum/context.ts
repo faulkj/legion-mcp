@@ -35,15 +35,7 @@ export const toContext = (turns: QuorumTurn[], labels: string[], t: PromptTempla
    const
       eliminated = new Set(turns.filter(turn => turn.phase === 'elimination').map(turn => turn.index)),
       phaseTag = (turn: QuorumTurn): string =>
-         turn.phase === 'closing'
-            ? 'closing'
-            : turn.phase === 'synthesis'
-               ? 'synthesis'
-               : turn.phase === 'elimination'
-                  ? 'elimination'
-                  : turn.phase === 'entry'
-                     ? 'entry'
-                     : `round ${turn.round}`,
+         turn.phase === 'round' ? `round ${turn.round}` : turn.phase,
       mark = (turn: QuorumTurn): string =>
          `${turn.index === selfIndex ? ' · you' : ''}${turn.phase !== 'elimination' && eliminated.has(turn.index) ? ' · eliminated' : ''}`,
       label = (turn: QuorumTurn): string => `${labels[turn.index] ?? turn.selector}${mark(turn)}`,
@@ -51,6 +43,27 @@ export const toContext = (turns: QuorumTurn[], labels: string[], t: PromptTempla
       block = fill(t.transcriptBlock, { transcript })
    return callerContext ? `${callerContext}\n\n${block}` : block
 }
+
+/**
+ * Build the per-speaker round-context function for a mode: `independent` sees only caller context,
+ * `private` sees only its own prior turns, others see the whole snapshot. The speaker's own turns
+ * are self-marked and its team objective (via `withObjective`) is prepended.
+ */
+export const makeSeen = (
+   mode: QuorumMode,
+   labels: string[],
+   templates: PromptTemplates,
+   callerContext: string | undefined,
+   objectives: Record<string, string> | undefined,
+   withObjective: (s: Speaker | undefined, o: Record<string, string> | undefined, isRef: boolean, ctx?: string) => string | undefined
+): ((speaker: Speaker, snapshot: QuorumTurn[]) => string | undefined) =>
+   (speaker, snapshot) =>
+      withObjective(speaker, objectives, false,
+         mode === 'independent'
+            ? callerContext
+            : mode === 'private'
+               ? toContext(snapshot.filter(t => t.index === speaker.index), labels, templates, callerContext, speaker.index)
+               : toContext(snapshot, labels, templates, callerContext, speaker.index))
 
 /** Normalize `synthesizeEvery` to a round interval: a positive number→itself, `0`/`end`/undefined→Infinity (last round only). */
 export const everyN = (v: SynthesizeEvery | undefined): number =>

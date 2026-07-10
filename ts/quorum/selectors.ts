@@ -1,10 +1,3 @@
-/** The parts of a council selector: `model`, `model:role`, `model@team`, or `model:role@team`. */
-interface Selector {
-   model: string
-   role?: string
-   team?: string
-}
-
 /**
  * Parse a selector into its `model`, optional `role`, and optional `team`. The team tag is
  * split on the first `@`, then the remaining left side is split on the first `:` into model

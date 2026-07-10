@@ -8,6 +8,8 @@ rounds  — discussion rounds (default 1; max set by MAX_ROUNDS)
 mode    — "sequential" (default) | "parallel" | "private" | "independent"
 synthesize — selector for a synthesis turn (never speaks in normal rounds)
 synthesizeEvery — N: every Nth round (1 = every round, 0 = end only); "end"=0 default; needs synthesize
+frame — selector for a neutral framer that opens/steers (mirror of synthesize)
+reframeEvery — N: re-frame every Nth round; 0/"end" = opening frame only; needs frame
 closingStatements — true: one final statement per speaker before synthesis; needs synthesize
 objectives — optional { team: goal } map for team runs (see Teams)
 tokenBudget — optional soft cumulative token budget (overrides TOKEN_BUDGET)
@@ -61,6 +63,15 @@ so it incurs no further tokens or cost, and its earlier turns stay in the
 transcript marked `· eliminated`. With `eliminationsOptional: true` the
 synthesizer may keep everyone that round (a `0) no elimination` menu choice).
 Requires a synthesizer.
+
+**Framer** (mirror of the synthesizer): `frame` names a neutral voice that opens
+the discussion — it speaks first on round 1, setting the stakes and shaping the
+question, labeled `[frame / role]`. It's real content the field reacts to (it
+rides `mode` visibility like any turn). `reframeEvery: N` re-fires the framer
+every Nth round after the opener (rounds 1, N+1, 2N+1…) so it can steer, sharpen,
+or swerve mid-run; `0`/`end` (default) = opening frame only. Like the synth, the
+framer never speaks in normal rounds and is neutral — it cannot carry a `@team`
+tag. See the `war_games` preset's optional `booker` for the archetype.
 
 **Teams & staggered entry**: tag any selector with `@team`
 (`"gpt:combatant@blue"`, `"opus:combatant@red"`) to sort speakers into sides;

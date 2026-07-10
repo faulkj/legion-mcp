@@ -13,5 +13,6 @@
    "presetSynthUncovered": "Preset \"{preset}\" synthesizes with role \"{role}\" — add a selector like \"model:{role}\" to staff it.",
    "closingWithoutSynth": "Closing statements require a synthesizer — set \"synthesize\" (or use a preset with a synthesizer).",
    "eliminateWithoutSynth": "Elimination rounds require a synthesizer — the synthesizer decides who leaves.",
-   "synthTeamed": "The synthesizer is a neutral official and cannot carry a team tag — drop the \"@team\" from the synthesize selector."
+   "synthTeamed": "The synthesizer is a neutral official and cannot carry a team tag — drop the \"@team\" from the synthesize selector.",
+   "frameTeamed": "The framer is a neutral chair and cannot carry a team tag — drop the \"@team\" from the frame selector."
 }

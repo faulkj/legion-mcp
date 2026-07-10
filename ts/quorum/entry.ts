@@ -1,16 +1,9 @@
-/** The staggered-entry state for a run: which seats have entered and the team-ordered bench queue. */
-interface Entry {
-   entered: Set<number>
-   queue: Speaker[]
-   active: boolean
-}
-
 /**
  * Set up staggered entry for a run. When `enterEvery` is positive AND the round speakers carry
- * team tags, the field starts with one speaker per team (first-seen team order) and the rest are
- * benched in round-robin team order so entries alternate sides. Otherwise entry is inactive and
- * every speaker is entered from round 1 (today's behavior). Returns the entered set, bench queue,
- * and whether entry is active.
+ * team tags, the field starts with one speaker per team (first-seen team order) plus any teamless
+ * neutrals (e.g. a framer), and the rest are benched in round-robin team order so entries alternate
+ * sides. Otherwise entry is inactive and every speaker is entered from round 1 (today's behavior).
+ * Returns the entered set, bench queue, and whether entry is active.
  */
 export const makeEntry = (roundSpeakers: Speaker[], enterEvery: number | undefined): Entry => {
    const teams = [...new Set(roundSpeakers.map(s => s.team).filter((t): t is string => t !== undefined))]
@@ -18,7 +11,8 @@ export const makeEntry = (roundSpeakers: Speaker[], enterEvery: number | undefin
       return { entered: new Set(roundSpeakers.map(s => s.index)), queue: [], active: false }
    const
       byTeam = teams.map(t => roundSpeakers.filter(s => s.team === t)),
-      starters = byTeam.map(members => members[0]!),
+      neutral = roundSpeakers.filter(s => s.team === undefined),
+      starters = [...neutral, ...byTeam.map(members => members[0]!)],
       benched = roundRobin(byTeam.map(members => members.slice(1)))
    return { entered: new Set(starters.map(s => s.index)), queue: benched, active: true }
 }
