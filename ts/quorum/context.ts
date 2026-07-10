@@ -20,14 +20,27 @@ export const makeTurnLabels = (speakers: Speaker[]): string[] => {
    return labels
 }
 
-/** Build the transcript context block from prior turns (labeled by role), appended after any caller context. When `selfIndex` is given, that speaker's own turns are marked so it can tell which turns were its own. */
+/**
+ * Build the transcript context block from prior turns (labeled by role), appended after any
+ * caller context. When `selfIndex` is given, that speaker's own turns are marked so it can
+ * tell which were its own. A speaker's turns gain an `· eliminated` marker once an elimination
+ * turn for that speaker appears in the same snapshot — so earlier snapshots stay unmarked.
+ */
 export const toContext = (turns: QuorumTurn[], labels: string[], t: PromptTemplates, callerContext?: string, selfIndex?: number): string | undefined => {
    if (!turns.length) return callerContext
    const
+      eliminated = new Set(turns.filter(turn => turn.phase === 'elimination').map(turn => turn.index)),
       phaseTag = (turn: QuorumTurn): string =>
-         turn.phase === 'closing' ? 'closing' : turn.phase === 'synthesis' ? 'synthesis' : `round ${turn.round}`,
-      label = (turn: QuorumTurn): string =>
-         `${labels[turn.index] ?? turn.selector}${turn.index === selfIndex ? ' · you' : ''}`,
+         turn.phase === 'closing'
+            ? 'closing'
+            : turn.phase === 'synthesis'
+               ? 'synthesis'
+               : turn.phase === 'elimination'
+                  ? 'elimination'
+                  : `round ${turn.round}`,
+      mark = (turn: QuorumTurn): string =>
+         `${turn.index === selfIndex ? ' · you' : ''}${turn.phase !== 'elimination' && eliminated.has(turn.index) ? ' · eliminated' : ''}`,
+      label = (turn: QuorumTurn): string => `${labels[turn.index] ?? turn.selector}${mark(turn)}`,
       transcript = turns.map(turn => `[${phaseTag(turn)} / ${label(turn)}]\n${turn.text}`).join('\n\n'),
       block = fill(t.transcriptBlock, { transcript })
    return callerContext ? `${callerContext}\n\n${block}` : block

@@ -51,7 +51,14 @@ Shadows a file role of the same name; disabled when `DYNAMIC_ROLES=false`.
 `code_review`, `debate`) — call those directly instead of `quorum` when you want
 an enforced, pre-staffed council. Each preset tool self-documents which roles to
 staff via `models` selectors. Some presets set a `defaultRounds` (used when you
-omit `rounds`); pass `rounds` explicitly to override it.
+omit `rounds`); pass `rounds` explicitly to override it. A preset may also set
+`eliminateEvery` (survivor mode): every Nth round the synthesizer removes one
+speaker until one remains — the cut is a neutral transcript note (labeled
+`[elimination]`). A removed speaker is out for good: it is never prompted again,
+so it incurs no further tokens or cost, and its earlier turns stay in the
+transcript marked `· eliminated`. With `eliminationsOptional: true` the
+synthesizer may keep everyone that round (a `0) no elimination` menu choice).
+Requires a synthesizer.
 
 **You are the moderator** (the server is stateless — you hold the thread): call
 with `rounds: 1`, read `structuredContent.transcript`, then call again with

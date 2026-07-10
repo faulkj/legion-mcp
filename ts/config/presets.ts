@@ -27,6 +27,8 @@ const
       synthesizer: z.string().optional(),
       synthesizeEvery: z.union([z.literal('end'), z.number().int().min(0)]).optional(),
       closingStatements: z.boolean().optional(),
+      eliminateEvery: z.number().int().min(0).optional(),
+      eliminationsOptional: z.boolean().optional(),
       defaultRounds: z.number().int().min(1).optional()
    }),
 
@@ -44,7 +46,7 @@ const
          throw new Error(`Invalid ${file}:\n${z.prettifyError(result.error)}`)
 
       const
-         { description, roles, mode, synthesizer, synthesizeEvery, closingStatements, defaultRounds } = result.data,
+         { description, roles, mode, synthesizer, synthesizeEvery, closingStatements, eliminateEvery, eliminationsOptional, defaultRounds } = result.data,
          bad = roles.find(r => effMin(r) > effMax(r))
       if (bad) throw new Error(`Invalid ${file}: role "${bad.role}" has min > max.`)
       if (roles.reduce((n, r) => n + effMin(r), 0) < 1)
@@ -53,6 +55,8 @@ const
          throw new Error(`Invalid ${file}: "synthesizeEvery" only applies when "synthesizer" is set.`)
       if (closingStatements === true && synthesizer === undefined)
          throw new Error(`Invalid ${file}: "closingStatements" requires a "synthesizer" — they run right before the final synthesis.`)
+      if (eliminateEvery !== undefined && eliminateEvery > 0 && synthesizer === undefined)
+         throw new Error(`Invalid ${file}: "eliminateEvery" requires a "synthesizer" — the synthesizer decides who leaves.`)
       if (synthesizer !== undefined) {
          const synth = roles.find(r => slugify(r.role) === slugify(synthesizer))
          if (!synth || effMin(synth) < 1)
@@ -60,5 +64,5 @@ const
          if (roles.some(r => slugify(r.role) !== slugify(synthesizer) && effMin(r) >= 1) === false)
             throw new Error(`Invalid ${file}: a preset with a synthesizer needs at least one other required role — the synthesizer no longer speaks in normal rounds.`)
       }
-      return { description: Array.isArray(description) ? description.join('\n') : description, roles, mode, synthesize: synthesizer, synthesizeEvery, closingStatements, defaultRounds }
+      return { description: Array.isArray(description) ? description.join('\n') : description, roles, mode, synthesize: synthesizer, synthesizeEvery, closingStatements, eliminateEvery, eliminationsOptional, defaultRounds }
    }

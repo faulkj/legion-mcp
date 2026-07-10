@@ -192,8 +192,12 @@ Keys:
 - **`roles`** — each with optional `description`, and `min`/`max` speakers
   (default exactly one; `max: null` = unbounded, `min: 0` = optional).
 - **`mode`, `synthesizer`, `synthesizeEvery`, `closingStatements`,
-  `defaultRounds`** — optional orchestration defaults, all overridable per call.
-  See a shipped preset and the `quorum` tool description for what each does.
+  `eliminateEvery`, `eliminationsOptional`, `defaultRounds`** — optional
+  orchestration defaults. Most are overridable per call; `eliminateEvery`
+  (survivor mode: the synthesizer removes one speaker every Nth round — a removed
+  speaker is out for good and never prompted again) and `eliminationsOptional`
+  (let the synthesizer keep everyone in a given round) are preset-only. See a
+  shipped preset and the `quorum` tool description for what each does.
 
 This repo ships `code_review`, `debate`, `brainstorm`, `quick_take`, `tiebreak`,
 `battle_royale`, `jury`, `double_blind` (independent blind panel), `gauntlet`

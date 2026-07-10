@@ -38,6 +38,8 @@ interface Preset {
    synthesize?: string
    synthesizeEvery?: SynthesizeEvery
    closingStatements?: boolean
+   eliminateEvery?: number
+   eliminationsOptional?: boolean
    defaultRounds?: number
 }
 
@@ -69,6 +71,7 @@ interface ErrorMessages {
    presetRoleMissingFile: string
    presetSynthUncovered: string
    closingWithoutSynth: string
+   eliminateWithoutSynth: string
 }
 
 /** Overridable prompt-shaping templates loaded from config/prompts.json. Tokens in {braces} are filled at runtime. */
@@ -80,6 +83,7 @@ interface PromptTemplates {
    roundFinal: string
    roundSynthesis: string
    closingStatement: string
+   elimination: string
    synthesis: string
 }
 

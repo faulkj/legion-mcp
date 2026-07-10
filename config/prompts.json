@@ -6,5 +6,6 @@
    "roundFinal": "[Round {round} of {rounds} — final round, commit]\n\n",
    "roundSynthesis": "[Interim synthesis — consolidate the discussion so far into one working answer to build on]\n\n",
    "closingStatement": "[Closing statement — give your final position after reading the whole discussion. Do not introduce a new format; be concise and decisive.]\n\n",
+   "elimination": "[Elimination — weigh the discussion and reply with ONLY the number of the participant to eliminate. Candidates:\n{menu}]\n\n",
    "synthesis": "[Final synthesis — consolidate the discussion above into one answer]\n\n"
 }

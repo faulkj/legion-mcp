@@ -1,4 +1,5 @@
 import { fill, slugify } from '../config/config.js'
+import { makeTurnLabels } from './context.js'
 
 /** Resolve a `model` or `model:role` selector to its model def and optional role; null when unknown. */
 export const resolve = (selector: string, models: ModelDef[], roles: RoleDef[]): { def: ModelDef; role?: string } | null => {
@@ -10,15 +11,43 @@ export const resolve = (selector: string, models: ModelDef[], roles: RoleDef[]):
    return { def, role: rolePart }
 }
 
-/** Banner prepended to a turn's prompt, chosen by phase: closing statements and syntheses (interim for round > 0, final for round 0) get their own banner; a normal round gets the exploring/final banner, or nothing for a lone round. */
+/**
+ * Resolve `selectors` into council seats. One Speaker per selector keeps order and duplicates —
+ * position is the stable identity. The synthesizer never speaks in normal rounds: if its selector
+ * is in the list the FIRST match synthesizes (later duplicates stay round speakers); an external
+ * synth selector appends one seat past the list. Returns `{ bad }` for the first unknown selector.
+ */
+export const resolveSpeakers = (selectors: string[], synthSelector: string | undefined, models: ModelDef[], roles: RoleDef[]): ResolvedCouncil => {
+   const seats = selectors.map((selector, index) => ({ selector, index, r: resolve(selector, models, roles) }))
+   for (const s of seats)
+      if (s.r === null) return { speakers: [], roundSpeakers: [], labels: [], bad: s.selector }
+   const
+      speakers: Speaker[] = seats.map(({ selector, index, r }) => ({ index, selector, def: r!.def, role: r!.role })),
+      synthIndex = synthSelector === undefined ? -1 : speakers.findIndex(s => s.selector === synthSelector),
+      external = synthSelector !== undefined && synthIndex === -1 ? resolve(synthSelector, models, roles) : null,
+      synth: Speaker | undefined = synthSelector === undefined
+         ? undefined
+         : synthIndex !== -1
+            ? speakers[synthIndex]
+            : external
+               ? { index: speakers.length, selector: synthSelector, def: external.def, role: external.role }
+               : undefined,
+      roundSpeakers = synth === undefined ? speakers : speakers.filter(s => s.index !== synth.index),
+      labels = makeTurnLabels(synth && synth.index === speakers.length ? [...speakers, synth] : speakers)
+   return { speakers, roundSpeakers, synth, labels }
+}
+
+/** Banner prepended to a turn's prompt, chosen by phase: closing statements, eliminations, and syntheses (interim for round > 0, final for round 0) get their own banner; a normal round gets the exploring/final banner, or nothing for a lone round. */
 export const banner = (round: number, rounds: number, phase: TurnPhase, t: PromptTemplates): string =>
    phase === 'closing'
       ? t.closingStatement
-      : phase === 'synthesis'
-         ? round === 0 ? t.synthesis : t.roundSynthesis
-         : rounds < 2
-            ? ''
-            : fill(round < rounds ? t.roundExploring : t.roundFinal, { round, rounds })
+      : phase === 'elimination'
+         ? t.elimination
+         : phase === 'synthesis'
+            ? round === 0 ? t.synthesis : t.roundSynthesis
+            : rounds < 2
+               ? ''
+               : fill(round < rounds ? t.roundExploring : t.roundFinal, { round, rounds })
 
 /** Turn a preset's inline roles into RoleDefs, using each role's description as its instructions (slug-keyed). */
 export const presetRoles = (preset: Preset): RoleDef[] =>

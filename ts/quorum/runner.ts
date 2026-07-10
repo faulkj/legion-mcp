@@ -36,12 +36,17 @@ export const makeTurnRunner = (
       telemetry.push(entry)
    }
 
-   const speakOne = async (speaker: Speaker, round: number, phase: TurnPhase, extraContext?: string): Promise<TurnOutcome> => {
+   const note = (turn: QuorumTurn, entry: TurnTelemetry): void => {
+      turns.push(turn)
+      telemetry.push(entry)
+   }
+
+   const speakOne = async (speaker: Speaker, round: number, phase: TurnPhase, extraContext?: string, promptOverride?: string): Promise<TurnOutcome> => {
       const
          { index, selector, def, role } = speaker,
          base = { index, selector, modelName: def.name, modelId: def.model, role, round, phase },
          roleInput: PromptInput = {
-            prompt: banner(round, rounds, phase, templates) + args.prompt,
+            prompt: promptOverride ?? banner(round, rounds, phase, templates) + args.prompt,
             system: args.system,
             temperature: args.temperature,
             maxTokens: args.maxTokens,
@@ -63,5 +68,5 @@ export const makeTurnRunner = (
       }
    }
 
-   return { telemetry, turns, content, used: () => used, speakOne, record, skip }
+   return { telemetry, turns, content, used: () => used, speakOne, record, note, skip }
 }

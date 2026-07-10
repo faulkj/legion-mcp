@@ -39,19 +39,29 @@ interface Speaker {
    role?: string
 }
 
+/** The resolved council: every seat, the round speakers (all but the synthesizer), the optional synthesizer, and per-seat display labels. `bad` names the first unresolvable selector instead. */
+interface ResolvedCouncil {
+   speakers: Speaker[]
+   roundSpeakers: Speaker[]
+   synth?: Speaker
+   labels: string[]
+   bad?: string
+}
+
 /** Stateful per-run turn engine: runs model calls and records outcomes/skips into shared collectors. */
 interface TurnRunner {
    readonly telemetry: TurnTelemetry[]
    readonly turns: QuorumTurn[]
    readonly content: { type: 'text'; text: string }[]
    used(): number
-   speakOne(speaker: Speaker, round: number, phase: TurnPhase, extraContext?: string): Promise<TurnOutcome>
+   speakOne(speaker: Speaker, round: number, phase: TurnPhase, extraContext?: string, promptOverride?: string): Promise<TurnOutcome>
    record(outcome: TurnOutcome, round: number): void
+   note(turn: QuorumTurn, entry: TurnTelemetry): void
    skip(round: number, from?: number, phase?: TurnPhase): void
 }
 
-/** Which phase of a run a turn belongs to: a normal discussion round, a closing statement, or a synthesis. */
-type TurnPhase = 'round' | 'closing' | 'synthesis'
+/** Which phase of a run a turn belongs to: a normal discussion round, a closing statement, a synthesis, or an elimination decision. */
+type TurnPhase = 'round' | 'closing' | 'synthesis' | 'elimination'
 
 /** Visibility policy for a quorum run: how much of the transcript each round speaker sees. */
 type QuorumMode = 'sequential' | 'parallel' | 'private' | 'independent'
@@ -94,4 +104,5 @@ interface TurnTelemetry {
    latencyMs: number
    status: string
    contentIndex?: number
+   eliminatedIndex?: number
 }
