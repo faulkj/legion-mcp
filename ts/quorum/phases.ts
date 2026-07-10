@@ -16,10 +16,10 @@ export const frameDue = (reframeEvery: SynthesizeEvery | undefined, round: numbe
 
 /** Build the framer step: a neutral voice sets the stakes on the opening round and re-steers on later fires. Recorded as content (phase 'frame') so the field reacts to it. */
 export const makeFramer = (deps: PhaseDeps): ((round: number) => Promise<void>) => {
-   const { frame, full, speakOne, record, templates } = deps
+   const { frame, prompt, full, speakOne, record, templates } = deps
    return async (round: number): Promise<void> => {
       if (frame === undefined) return
-      record(await speakOne(frame, round, 'frame', full(), (round === 1 ? templates.frame : templates.reframe)), round)
+      record(await speakOne(frame, round, 'frame', full(), (round === 1 ? templates.frame : templates.reframe) + prompt), round)
    }
 }
 

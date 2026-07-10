@@ -68,7 +68,7 @@ export const runQuorum = async (
       seen = makeSeen(mode, labels, templates, args.context, args.objectives, withObjective),
       // The neutral synth sees every team's objective; wrap `full` so synthesis/elimination carry all objectives.
       refFull = () => withObjective(synth, args.objectives, true, full()),
-      deps = { synth, synthSelector, frame, labels, optional, templates, errors, live, liveSpeakers, full: refFull, telemetry, speakOne, record, note },
+      deps = { synth, synthSelector, frame, prompt: args.prompt, labels, optional, templates, errors, live, liveSpeakers, full: refFull, telemetry, speakOne, record, note },
       runSynthesis = makeSynthesizer(deps),
       runElimination = makeEliminator(deps),
       runFrame = makeFramer(deps)

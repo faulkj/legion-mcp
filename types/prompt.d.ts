@@ -30,6 +30,7 @@ interface PhaseDeps {
    synth: Speaker | undefined
    synthSelector: string | undefined
    frame: Speaker | undefined
+   prompt: string
    labels: string[]
    optional: boolean
    templates: PromptTemplates
