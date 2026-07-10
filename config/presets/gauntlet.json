@@ -6,6 +6,7 @@
    ],
    "mode": "private",
    "synthesizer": "judge",
+   "defaultRounds": 3,
    "roles": [
       { "role": "solver", "description": "Answer the task, then in each later round sharpen and strengthen YOUR previous answer. You cannot see the other solvers.", "min": 2, "max": null },
       { "role": "judge", "description": "Compare the solvers' final answers and crown the single best one. Name it and justify the pick in a few tight sentences." }

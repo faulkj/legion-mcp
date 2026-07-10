@@ -32,7 +32,7 @@ export const runQuorum = async (
       preset = args.preset === undefined ? undefined : presets[args.preset],
       baseRoles = [...roles.filter(r => !adHoc.some(a => a.name === r.name)), ...adHoc],
       effectiveRoles = preset ? mergePresetRoles(baseRoles, preset) : baseRoles,
-      rounds = Math.min(maxRounds, Math.max(1, args.rounds ?? 1)),
+      rounds = Math.min(maxRounds, Math.max(1, args.rounds ?? preset?.defaultRounds ?? 1)),
       mode = preset?.mode ?? args.mode ?? 'sequential',
       synthSelector = preset ? presetSynth(preset, args.models, models, effectiveRoles) : args.synthesize,
       synthInterval = synthSelector === undefined ? Infinity : everyN(preset?.synthesizeEvery ?? args.synthesizeEvery),

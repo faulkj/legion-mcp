@@ -50,7 +50,8 @@ Shadows a file role of the same name; disabled when `DYNAMIC_ROLES=false`.
 **Presets**: named council recipes are exposed as their own tools (e.g.
 `code_review`, `debate`) — call those directly instead of `quorum` when you want
 an enforced, pre-staffed council. Each preset tool self-documents which roles to
-staff via `models` selectors.
+staff via `models` selectors. Some presets set a `defaultRounds` (used when you
+omit `rounds`); pass `rounds` explicitly to override it.
 
 **You are the moderator** (the server is stateless — you hold the thread): call
 with `rounds: 1`, read `structuredContent.transcript`, then call again with

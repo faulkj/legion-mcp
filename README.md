@@ -35,35 +35,17 @@ flowchart LR
    GW --> Claude & Gemini & Llama
 ```
 
-- One tool per model, named after the slugified model name (e.g. `Claude` →
-  `claude`, `GPT 4o` → `gpt_4o`).
-- Each tool accepts a `prompt` plus optional `context`, `role`, `system`,
+- **One tool per model**, named after the slugified model name (e.g. `Claude` →
+  `claude`). Each accepts a `prompt` plus optional `context`, `role`, `system`,
   `temperature`, and `maxTokens`.
-- A `quorum` tool fans one prompt to two or more models and returns each answer
-  as a separate content item. Supports roles via `model:role` selectors (the
-  same model can appear multiple times with different roles), inline ad-hoc
-  `roles`, multi-round discussion (`rounds`, `mode`), an optional synthesis turn
-  (`synthesize`, timed by `synthesizeEvery`), and optional `closingStatements`
-  (one final statement per speaker before synthesis). Transcript turns are
-  labeled by **role** (`builder`, `critic 1`), never by model, so models judge
-  each other's content rather than reputation. The four `mode`s form a 2×2 of
-  *see peers?* × *see own prior turns?* — `sequential` (both), `parallel`
-  (peers from earlier rounds only), `private` (own turns only), `independent`
-  (nothing but the prompt until synthesis). The calling AI acts as moderator:
-  feed `structuredContent.transcript` back as `context` with new guidance to
-  steer a live debate. An optional `tokenBudget` (or the `TOKEN_BUDGET` default)
-  sets a **soft** cumulative budget for a run: once the running total crosses
-  it, remaining turns are skipped gracefully (recorded as `skipped: budget` in
-  telemetry, synthesis still runs), so the moderator can see what was dropped
-  and re-invoke with more headroom. It's soft, not a hard cap — sequential mode
-  checks between turns, parallel checks at round boundaries (so a round can
-  overshoot), and synthesis runs afterward by design.
-- Identity and telemetry are returned in `structuredContent`, not embedded in
-  answer text.
-- Returns the model's text response; on failure returns an MCP error result the
-  AI can react to.
-- Colored, level-gated logging goes to **stderr** (safe for stdio), with a
-  pluggable sink for future DB/API logging.
+- **A `quorum` tool** fans one prompt out to several models — with roles,
+  multi-round discussion, visibility modes, and synthesis — and returns each
+  answer separately. See [Presets](#presets--configpresetsjson) for the
+  orchestration options.
+- **Presets** are named, pre-staffed councils (debate, jury, code review, …),
+  each exposed as its own tool.
+- Identity and telemetry ride in `structuredContent`, not the answer text.
+  Logging goes to **stderr** (safe for stdio).
 
 ## Design decisions
 
@@ -117,9 +99,8 @@ bundled presets you don't want, use `DISABLE_PRESETS` (see below).
 > config ships only key-free `*.example.json` model files, which the scanner
 > deliberately ignores — so the bundle contributes **zero** real models. With no
 > real model file the server **fails fast at startup** (`No model files found
-> in ...`). Just drop one `config/models/<name>.json` next to where you run the
-> server (see below); you no longer need to copy the whole `config/` — the rest
-> falls back to the bundled defaults.
+> in ...`). Drop one `config/models/<name>.json` next to where you run the
+> server (see below) — the rest falls back to the bundled defaults.
 
 The layout below is identical either way, and everything hot-reloads per
 request.
@@ -204,25 +185,15 @@ writes the `models` selectors, assigning any model to any preset role. Presets
 are **enforced**: every selector must use a preset role and every role must be
 staffed within its cardinality, else the result is an error saying what to fix.
 
-- **`description`** may be a plain string **or an array of strings** (joined
-  with newlines) so multi-line prose stays clean without escaping. It is the
-  preset tool's own MCP description, so it is **required**.
-- **`synthesizer`** (optional) names the role that runs a synthesis turn — it
-  must be one of the preset's roles and does **not** speak in normal rounds.
-  **`synthesizeEvery`** times it: `"end"` (default / `0`) or a number `N` (every
-  Nth round, always the last). A preset with a synthesizer needs at least one
-  other required role, since the synthesizer is pulled out of the rotation.
-  **`closingStatements: true`** (requires a synthesizer) gives every other
-  speaker one final statement over the whole transcript right before the
-  synthesis.
-- **Cardinality** — each role may set `min` / `max` speakers (default exactly
-  one). `max: null` means unbounded; `min: 0` makes a role **optional**
-  (staff it or don't). So the battle-royale `combatant` is
-  `{ "min": 2, "max": null }`, the shipped `jury` uses
-  `{ "min": 3, "max": 12 }`, `workshop`'s `researcher` is
-  `{ "min": 0, "max": 1 }`, and a lone `judge` stays `{}`. The same role staffed
-  by several `model:role` selectors is several distinct speakers, numbered in
-  the transcript (`juror 1`, `juror 2`).
+Keys:
+
+- **`description`** (required) — string or array of strings; the preset tool's
+  own MCP description.
+- **`roles`** — each with optional `description`, and `min`/`max` speakers
+  (default exactly one; `max: null` = unbounded, `min: 0` = optional).
+- **`mode`, `synthesizer`, `synthesizeEvery`, `closingStatements`,
+  `defaultRounds`** — optional orchestration defaults, all overridable per call.
+  See a shipped preset and the `quorum` tool description for what each does.
 
 This repo ships `code_review`, `debate`, `brainstorm`, `quick_take`, `tiebreak`,
 `battle_royale`, `jury`, `double_blind` (independent blind panel), `gauntlet`
@@ -231,12 +202,8 @@ This repo ships `code_review`, `debate`, `brainstorm`, `quick_take`, `tiebreak`,
 that riffs off each other) — edit or delete freely.
 Empty/missing folder → no preset tools.
 
-> **Output length is model-driven, not enforced by role text.** A terse role
-> nudges but doesn't cap output — use each tool's `maxTokens` for a hard limit.
-> Budget generously for reasoning models (thinking tokens count against it) and
-> for multi-round quorums (the transcript grows each round, so a ceiling that's
-> fine in round 1 can truncate by round 3). The shipped `short` role shows the
-> pattern for coaxing brevity: "answer immediately, no deliberation."
+> **Role text nudges output, it doesn't cap it** — use `maxTokens` for a hard
+> limit, and budget generously for reasoning models and multi-round quorums.
 
 ### AI guidance — `config/description.md`
 
@@ -271,7 +238,7 @@ config file can't live inside it.)
 | `ALLOWED_HOSTS` | no | Comma-separated hostnames for DNS-rebinding protection on non-localhost binds. |
 | `PORT` | no | HTTP port (default `5000`; ignored by stdio). |
 | `MAX_ROUNDS` | no | Max discussion rounds the `quorum` tool accepts (default `5`). |
-| `TOKEN_BUDGET` | no | Default **soft** cumulative token budget for a whole `quorum` run (sequential checks between turns, parallel at round boundaries so a round can overshoot; synthesis still runs). Unset = no limit. A per-call `tokenBudget` overrides it. |
+| `TOKEN_BUDGET` | no | Default **soft** cumulative token budget for a `quorum` run (unset = no limit; per-call `tokenBudget` overrides). |
 | `DYNAMIC_ROLES` | no | Allow the calling AI to define ad-hoc `quorum` roles inline (default `true`). |
 | `DISABLE_PRESETS` | no | Comma-separated preset slugs to **not** register as tools (e.g. `battle_royale,jury`). Applies to bundled and local presets alike; unknown names are ignored. Unset = all presets registered. |
 | `LOG_LEVEL` | no | `debug` \| `info` \| `warn` \| `error` (default `info`). |
@@ -285,13 +252,11 @@ slugify to the same tool.
 
 ### Routing
 
-Every tool call is a stateless, one-shot Responses API request (`store: false`
-— nothing is persisted anywhere). Models whose endpoints natively support the
-Responses API (OpenAI, Azure OpenAI / Foundry) set `baseUrl` (and optionally
-`apiKey`) to be called **directly**; models that don't (Claude, Gemini, Llama,
-…) fall back to the defaults — typically an OpenAI-compatible gateway like
-LiteLLM that bridges Responses to their native APIs. Because nothing multi-turn
-is used, such a gateway needs **no database** for this workload.
+Every tool call is a stateless, one-shot Responses API request. Models whose
+endpoints natively speak Responses (OpenAI, Azure OpenAI / Foundry) set a
+`baseUrl` to be called **directly**; the rest fall back to the defaults —
+typically an OpenAI-compatible gateway like LiteLLM that bridges to their native
+APIs.
 
 ## Logging
 
@@ -358,14 +323,10 @@ For the HTTP transport, point your client at `http://<host>:<PORT>/mcp`.
   loaded. Returns `{ status: "ok", name, version, models }` (a count). Makes no
   external calls. This is what container `HEALTHCHECK`s and Kubernetes
   liveness/readiness probes should hit.
-- `GET /health?deep` — optional **connectivity** check: fans a tiny one-token
-  prompt to every model and returns a per-model `{ name, model, ok, latencyMs }`
-  array. `200` when all reachable, `503` (`status: "degraded"`) if any fail.
-  Every model reaching its endpoint counts as reachable — even reasoning models
-  that spend the whole budget thinking and emit no text. **Do not** wire this to
-  an automatic probe: it makes a real (billable) request per model on every hit,
-  and a downstream outage would needlessly restart a perfectly healthy
-  container. Use it manually or from a monitoring dashboard.
+- `GET /health?deep` — optional **connectivity** check: sends a tiny prompt to
+  every model and reports per-model reachability (`503` if any fail). Makes a
+  real billable call per model, so use it manually — **don't** wire it to an
+  automatic probe.
 
 ## Deploy
 

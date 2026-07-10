@@ -7,6 +7,7 @@
    "mode": "sequential",
    "synthesizer": "polisher",
    "synthesizeEvery": 1,
+   "defaultRounds": 4,
    "roles": [
       { "role": "improver", "description": "Take the current draft and make it materially better. Fix flaws, tighten, and raise quality — do not rewrite from scratch or change the intent.", "min": 2, "max": null },
       { "role": "polisher", "description": "Merge this round's improvements into one clean, coherent version of the artifact. Resolve conflicts and keep the best of each." }

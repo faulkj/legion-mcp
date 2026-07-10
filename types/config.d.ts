@@ -38,6 +38,7 @@ interface Preset {
    synthesize?: string
    synthesizeEvery?: SynthesizeEvery
    closingStatements?: boolean
+   defaultRounds?: number
 }
 
 /** Named preset recipes loaded from config/presets/*.json (hot-reloaded per request). */
