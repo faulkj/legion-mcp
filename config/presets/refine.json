@@ -1,0 +1,14 @@
+{
+   "description": [
+      "Relay polish of an existing artifact: pass it down a line of improvers, consolidating each round.",
+      "",
+      "Supply the idea, code, or text to improve via the prompt/context — this preset improves what exists, it does not create from scratch. Staff `improver` with 2 or more models; each takes the current draft and makes it better. A `polisher` consolidates at the end of every round, so each round builds on the last polished version. Use rounds >= 2 to keep iterating."
+   ],
+   "mode": "sequential",
+   "synthesizer": "polisher",
+   "synthesizeEvery": 1,
+   "roles": [
+      { "role": "improver", "description": "Take the current draft and make it materially better. Fix flaws, tighten, and raise quality — do not rewrite from scratch or change the intent.", "min": 2, "max": null },
+      { "role": "polisher", "description": "Merge this round's improvements into one clean, coherent version of the artifact. Resolve conflicts and keep the best of each." }
+   ]
+}

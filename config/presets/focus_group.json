@@ -1,0 +1,15 @@
+{
+   "description": [
+      "Focus group: a moderated panel reacts to something and riffs off each other, then a facilitator reports the themes.",
+      "",
+      "Staff `panelist` with 2 or more models — each reacts in their own voice AND builds on what earlier panelists said (real cross-talk, unlike a blind panel). Optionally add one or more `contrarian` to keep the group honest. A `facilitator` distills the discussion into themes, points of consensus, and dissent. Feed the thing under discussion via the prompt/context."
+   ],
+   "mode": "sequential",
+   "synthesizer": "facilitator",
+   "synthesizeEvery": 1,
+   "roles": [
+      { "role": "panelist", "description": "React candidly in your own distinct voice. Say what you like, dislike, and would change — and respond to points earlier panelists raised (agree, push back, build on them).", "min": 2, "max": null },
+      { "role": "contrarian", "description": "Optional dissenting voice: challenge the emerging consensus and surface what the group is glossing over.", "min": 0, "max": null },
+      { "role": "facilitator", "description": "Guide the discussion: the main themes, where the panel agreed, where it split, and the most actionable takeaways." }
+   ]
+}

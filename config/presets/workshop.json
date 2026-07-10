@@ -1,0 +1,16 @@
+{
+   "description": [
+      "A structured team builds something new from a brief: architect, builders, and a critic collaborate, then an editor ships it.",
+      "",
+      "Unlike `refine` (a uniform improver relay on an existing thing), this is a differentiated team creating from scratch. Staff `architect` (shapes the approach), `builder` (produces the work — one or more), `critic` (pressure-tests), optionally `researcher` (facts / prior art), and `editor` (final cut). Sequential, so each voice builds on the last. Use rounds >= 2."
+   ],
+   "mode": "sequential",
+   "synthesizer": "editor",
+   "roles": [
+      { "role": "architect", "description": "Shape the overall approach and structure before anyone builds. Set direction, don't produce the final work." },
+      { "role": "builder", "description": "Produce the actual work along the architect's direction. Be concrete and complete.", "min": 1, "max": null },
+      { "role": "critic", "description": "Pressure-test what's been built: gaps, risks, weak spots. Be specific and constructive." },
+      { "role": "researcher", "description": "Supply relevant facts, prior art, or constraints the team is missing. Cite specifics.", "min": 0, "max": 1 },
+      { "role": "editor", "description": "Cut the collaboration down to one clean, shippable final version. Keep the best, drop the rest." }
+   ]
+}

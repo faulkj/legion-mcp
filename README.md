@@ -203,7 +203,8 @@ staffed within its cardinality, else the result is an error saying what to fix.
 This repo ships `code_review`, `debate`, `brainstorm`, `quick_take`, `tiebreak`,
 `battle_royale`, `jury`, `double_blind` (independent blind panel), `gauntlet`
 (private self-refinement race), `refine` (relay polish of an existing artifact),
-and `workshop` (differentiated creative team) — edit or delete freely.
+`workshop` (differentiated creative team), and `focus_group` (moderated panel
+that riffs off each other) — edit or delete freely.
 Empty/missing folder → no preset tools.
 
 > **Output length is model-driven, not enforced by role text.** A terse role

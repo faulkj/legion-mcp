@@ -1,0 +1,13 @@
+{
+   "description": [
+      "Run several solvers through a gauntlet: each privately refines its own answer over multiple rounds, then a judge crowns the best.",
+      "",
+      "Staff `solver` with 2 or more models — each sees only its OWN prior attempts (blind to rivals) and improves across rounds. A single `judge` picks the strongest final answer. Best with rounds >= 2, where the private self-refinement pays off."
+   ],
+   "mode": "private",
+   "synthesizer": "judge",
+   "roles": [
+      { "role": "solver", "description": "Answer the task, then in each later round sharpen and strengthen YOUR previous answer. You cannot see the other solvers.", "min": 2, "max": null },
+      { "role": "judge", "description": "Compare the solvers' final answers and crown the single best one. Name it and justify the pick in a few tight sentences." }
+   ]
+}
