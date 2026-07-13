@@ -59,6 +59,7 @@ interface QuorumInput extends PromptInput {
    vote?: string
    voteEvery?: SynthesizeEvery
    voteVisibility?: VoteVisibility
+   allowSelfVote?: boolean
    tokenBudget?: number
    preset?: string
 }

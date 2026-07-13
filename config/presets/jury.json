@@ -8,7 +8,7 @@
    ],
    "mode": "independent",
    "synthesizer": "judge",
-   "vote": "Cast your secret verdict in one short line (e.g. your ruling / which option / guilty or not). No one sees who voted for what — only the totals reach the judge.",
+   "vote": "Cast your secret verdict: pick the number of the position you find most persuasive from the menu below (0 to abstain). No one sees who voted for what — only the totals reach the judge.",
    "voteVisibility": "ballots",
    "roles": [
       { "role": "juror", "description": "Give your own independent verdict with a short reason. Do not defer to the others.", "min": 3, "max": 12 },

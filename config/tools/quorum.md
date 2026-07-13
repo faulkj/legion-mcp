@@ -68,22 +68,24 @@ synthesizer may keep everyone that round (a `0) no elimination` menu choice).
 Requires a synthesizer.
 
 **Anonymous voting**: set `vote` to a ballot instruction and every live round
-speaker casts one **hidden freeform ballot** in parallel — each seeing the
-transcript through its own `mode` context, like a normal round. Only an
-anonymous **tally** is added to the transcript (`[vote / anonymous vote]`); the
-individual ballots never appear in content, and per-voter telemetry carries only
-a sanitized status (`vote recorded` / `abstained` / `error`), so who voted for
-what is never recoverable. Ballots normalizing to `abstain`/`none`/`no vote` are
-counted separately. **You** choose the target through the ballot wording (a
-speaker, a team, an idea, a direction); the engine is **advisory** — it never
-eliminates or picks a winner on its own, so tell the synthesizer/ref to act on
-the tally if you want it binding. `voteEvery: N` votes every Nth round (always
-including the last); `0`/`end` (default) = one final vote before synthesis.
-`voteVisibility: "ballots"` also appends the anonymized ballot texts (still no
-voter identities). Each ballot is a full model call, so `voteEvery: 1` adds
-~voters × rounds hidden calls against the token budget. Neutral voices (synth,
-framer, benched speakers) don't vote; narrow the electorate further by telling
-ineligible speakers to answer `ABSTAIN`.
+speaker casts one **hidden ballot** in parallel — each seeing the transcript
+through its own `mode` context, like a normal round. Each voter chooses a number
+from a **menu of the candidates** — its own seat included (a voter may back
+itself, as in a real election), or `0` to abstain. Set `allowSelfVote: false`
+for peer-judgment ballots where self-voting is gaming (e.g. "vote the weakest
+peer"), and the voter's own seat is dropped from its menu. Only an anonymous
+**tally** by candidate label is added to the
+transcript (`[vote / anonymous vote]`); the individual ballots never appear in
+content, are **redacted from debug logs**, and per-voter telemetry carries only
+a sanitized status (`ballot cast` / `error`), so who voted for what is never
+recoverable. The engine is **advisory** — it never eliminates or picks a winner
+on its own, so tell the synthesizer/ref to act on the tally if you want it
+binding. `voteEvery: N` votes every Nth round (always including the last);
+`0`/`end` (default) = one final vote before synthesis. `voteVisibility:
+"ballots"` also appends the anonymized winning labels (still no voter
+identities). Each ballot is a full model call, so `voteEvery: 1` adds ~voters ×
+rounds hidden calls against the token budget. A silent electorate role votes
+without campaigning; neutral voices (synth, framer) don't vote.
 
 **Framer** (mirror of the synthesizer): `frame` names a neutral voice that opens
 the discussion — it speaks first on round 1, setting the stakes and shaping the

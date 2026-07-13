@@ -54,7 +54,8 @@ export const makeTurnRunner = (
       try {
          const result = await prompt(def, roleInput, effectiveRoles, templates)
          used += result.usage.totalTokens ?? 0
-         logPrompt(promptEntry(def, roleInput, { response: result.text, usage: result.usage, latencyMs: result.latencyMs }, selector))
+         // A vote ballot is secret: never log its text (debug logs would otherwise reconstruct who voted for what by selector).
+         logPrompt(promptEntry(def, roleInput, { response: phase === 'vote' ? '(anonymous ballot — redacted)' : result.text, usage: result.usage, latencyMs: result.latencyMs }, selector))
          return { text: result.text, entry: { ...base, usage: result.usage, latencyMs: result.latencyMs, status: okStatus(result) } }
       } catch (err) {
          const

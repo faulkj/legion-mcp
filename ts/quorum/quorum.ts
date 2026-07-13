@@ -55,7 +55,8 @@ export const runQuorum = async (
       runSynthesis = makeSynthesizer(deps),
       runElimination = makeEliminator(deps),
       runFrame = makeFramer(deps),
-      runVote = makeVoter({ args, preset, rounds, budgetOk: () => !(tokenBudget && used() >= tokenBudget), liveSpeakers: voters, seen, runHidden, note, telemetry, templates })
+      // voters = everyone who casts (incl. silent electorate); candidates = the non-silent field they vote FOR.
+      runVote = makeVoter({ args, preset, rounds, budgetOk: () => !(tokenBudget && used() >= tokenBudget), liveSpeakers: voters, candidates: liveSpeakers, labels, seen, runHidden, note, telemetry, templates })
 
    for (let round = 1; round <= rounds; round++) {
       if (tokenBudget && used() >= tokenBudget) {

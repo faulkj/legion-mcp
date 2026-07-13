@@ -43,13 +43,15 @@ interface PhaseDeps {
    note: TurnRunner['note']
 }
 
-/** Dependencies the anonymous peer vote borrows from the running quorum. `seen` gives each voter its mode-appropriate context, exactly like a round speaker. */
+/** Dependencies the anonymous peer vote borrows from the running quorum. `seen` gives each voter its mode-appropriate context; `candidates` is the votable field (labels are the only ballot choices, so self-votes are structurally impossible). */
 interface VoteDeps {
    args: QuorumInput
    preset: Preset | undefined
    rounds: number
    budgetOk: () => boolean
    liveSpeakers: () => Speaker[]
+   candidates: () => Speaker[]
+   labels: string[]
    seen: (s: Speaker, snapshot: QuorumTurn[]) => string | undefined
    runHidden: TurnRunner['runHidden']
    note: TurnRunner['note']

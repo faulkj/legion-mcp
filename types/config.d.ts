@@ -47,6 +47,7 @@ interface Preset {
    vote?: string
    voteEvery?: SynthesizeEvery
    voteVisibility?: VoteVisibility
+   allowSelfVote?: boolean
    defaultRounds?: number
 }
 

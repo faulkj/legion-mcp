@@ -6,7 +6,7 @@
    ],
    "mode": "sequential",
    "synthesizer": "returning_officer",
-   "vote": "Cast your secret ballot for the SINGLE strongest position in the field (by its label, e.g. 'candidate 2') — you may not vote for yourself. One line. Your ballot is anonymous; only the totals are published.",
+   "vote": "Vote for the SINGLE strongest position in the field — you may vote for your own if you truly believe it is best. Pick the number from the menu below; your ballot is anonymous, so only the totals are published.",
    "voteVisibility": "ballots",
    "defaultRounds": 2,
    "roles": [
