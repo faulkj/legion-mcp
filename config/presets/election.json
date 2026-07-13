@@ -2,7 +2,7 @@
    "description": [
       "Hold an election: candidates campaign, then the field decides by secret ballot — the vote IS the verdict, not a judge's opinion.",
       "",
-      "Staff `candidate` with 2 or more models — each makes its case and, over rounds, responds to rivals. Optionally add one `incumbent` (a candidate defending their record) and an `electorate` of silent voters who read every round but never campaign. After the final round the candidates AND the electorate cast one anonymous ballot for the strongest position (not their own), and a neutral `returning_officer` certifies the tally WITHOUT overruling it. Unlike battle_royale or jury, no authority picks the winner — the voters do. Use rounds >= 2 so campaigns can react."
+      "Staff `candidate` with 2 or more models — each makes its case and, over rounds, responds to rivals. Optionally add one `incumbent` (a candidate defending their record) and an `electorate` of silent voters who read every round but never campaign. After the final round the candidates AND the electorate cast one anonymous ballot for the strongest position — candidates may back their own, as in a real election — and a neutral `returning_officer` certifies the tally WITHOUT overruling it. Unlike battle_royale or jury, no authority picks the winner — the voters do. Use rounds >= 2 so campaigns can react."
    ],
    "mode": "sequential",
    "synthesizer": "returning_officer",
