@@ -1,10 +1,12 @@
-import { fill, slugify } from '../config/config.js'
+import { fill } from '../config/config.js'
 import { log } from '../core/log.js'
-import { everyN, makeSeen, toContext } from './context.js'
+import { makeSeen, toContext } from './context.js'
 import { entrantFirst, entryDue, makeEntry, nextEntrant, objectiveError, recordEntry, withObjective } from './entry.js'
 import { eliminationDue, frameDue, makeEliminator, makeFramer, makeSynthesizer } from './phases.js'
-import { mergePresetRoles, presetError, presetFrame, presetSynth, resolveSpeakers, validatePreset } from './helpers.js'
+import { presetError, resolveSpeakers, validatePreset } from './helpers.js'
 import { makeTurnRunner } from './runner.js'
+import { resolveConfig } from './setup.js'
+import { makeVoter } from './voting.js'
 
 export const runQuorum = async (
    args: QuorumInput,
@@ -23,35 +25,15 @@ export const runQuorum = async (
    if (args.roles && Object.keys(args.roles).length && !dynamicRoles)
       return err(errors.adhocDisabled)
 
-   const adHoc = Object.entries(args.roles ?? {}).map(([name, instructions]) => ({ name: slugify(name), instructions }))
-   if (adHoc.some(r => !r.name))
-      return err(errors.adhocEmptyName)
-
    const
-      preset = args.preset === undefined ? undefined : presets[args.preset],
-      baseRoles = [...roles.filter(r => !adHoc.some(a => a.name === r.name)), ...adHoc],
-      effectiveRoles = preset ? mergePresetRoles(baseRoles, preset) : baseRoles,
-      rounds = Math.min(maxRounds, Math.max(1, args.rounds ?? preset?.defaultRounds ?? 1)),
-      mode = preset?.mode ?? args.mode ?? 'sequential',
-      synthSelector = preset ? presetSynth(preset, args.models, models, effectiveRoles) : args.synthesize,
-      synthInterval = synthSelector === undefined ? Infinity : everyN(preset?.synthesizeEvery ?? args.synthesizeEvery),
-      frameSelector = preset ? presetFrame(preset, args.models, models, effectiveRoles) : args.frame,
-      reframeEvery = preset?.reframeEvery ?? args.reframeEvery,
-      closing = (preset?.closingStatements ?? args.closingStatements) === true,
-      eliminateEvery = preset?.eliminateEvery,
-      enterEvery = preset?.enterEvery,
-      optional = preset?.eliminationsOptional === true
-
-   // Closing statements and eliminations both hinge on the synthesizer, so require one for either.
-   if (closing && synthSelector === undefined)
-      return err(errors.closingWithoutSynth)
-   if (eliminateEvery !== undefined && eliminateEvery > 0 && synthSelector === undefined)
-      return err(errors.eliminateWithoutSynth)
+      { preset, effectiveRoles, adHocEmpty, rounds, mode, synthSelector, synthInterval, frameSelector, reframeEvery, closing, eliminateEvery, enterEvery, optional, silentRoles, error } = resolveConfig(args, models, roles, presets, maxRounds)
+   if (adHocEmpty) return err(errors.adhocEmptyName)
+   if (error) return err(errors[error])
 
    const presetFailure = args.preset === undefined ? null : presetError(validatePreset(args.preset, args.models, presets, models, roles), args.preset, presets, errors)
    if (presetFailure) return err(presetFailure)
 
-   const { speakers, roundSpeakers, synth, frame, labels, bad } = resolveSpeakers(args.models, synthSelector, models, effectiveRoles, frameSelector)
+   const { speakers, roundSpeakers, synth, frame, labels, bad } = resolveSpeakers(args.models, synthSelector, models, effectiveRoles, frameSelector, silentRoles)
    if (bad) return err(fill(errors.unknownSelector, { selector: bad }))
    if (synth?.team !== undefined) return err(errors.synthTeamed)
    if (frame?.team !== undefined) return err(errors.frameTeamed)
@@ -59,19 +41,21 @@ export const runQuorum = async (
    if (setupErr) return err(setupErr)
 
    const
-      { telemetry, turns, content, used, speakOne, record, note, skip, runParallel } = makeTurnRunner(args, effectiveRoles, roundSpeakers, rounds, prompt, templates),
+      { telemetry, turns, content, used, speakOne, record, note, skip, runParallel, runHidden } = makeTurnRunner(args, effectiveRoles, roundSpeakers, rounds, prompt, templates),
       // `live` shrinks on elimination, `entered` grows on entry; effective = entered AND live (one seam rounds + eliminator read).
       live = new Set(roundSpeakers.map(s => s.index)),
       entry = makeEntry(roundSpeakers, enterEvery),
-      liveSpeakers = (): Speaker[] => roundSpeakers.filter(s => entry.entered.has(s.index) && live.has(s.index)),
+      // voters = every effective seat (incl. a silent electorate); liveSpeakers (rounds/elimination) drops silent.
+      voters = (): Speaker[] => roundSpeakers.filter(s => entry.entered.has(s.index) && live.has(s.index)),
+      liveSpeakers = (): Speaker[] => voters().filter(s => !s.silent),
       full = () => toContext(turns, labels, templates, args.context),
       seen = makeSeen(mode, labels, templates, args.context, args.objectives, withObjective),
-      // The neutral synth sees every team's objective; wrap `full` so synthesis/elimination carry all objectives.
-      refFull = () => withObjective(synth, args.objectives, true, full()),
+      refFull = () => withObjective(synth, args.objectives, true, full()), // neutral synth sees every team's objective
       deps = { synth, synthSelector, frame, prompt: args.prompt, labels, optional, templates, errors, live, liveSpeakers, full: refFull, telemetry, speakOne, record, note },
       runSynthesis = makeSynthesizer(deps),
       runElimination = makeEliminator(deps),
-      runFrame = makeFramer(deps)
+      runFrame = makeFramer(deps),
+      runVote = makeVoter({ args, preset, rounds, budgetOk: () => !(tokenBudget && used() >= tokenBudget), liveSpeakers: voters, seen, runHidden, note, telemetry, templates })
 
    for (let round = 1; round <= rounds; round++) {
       if (tokenBudget && used() >= tokenBudget) {
@@ -97,6 +81,7 @@ export const runQuorum = async (
          const snapshot = [...turns]
          await runParallel(speaking, round, 'round', s => seen(s, snapshot), entrantPrompt)
       }
+      if (runVote) await runVote(round, [...turns]) // anonymous peer vote after field turns, before synthesis/elimination
       // Per-round synthesis on the interval — but when closing is on, skip the final round's so there's one synthesis, after closing.
       if (synthInterval !== Infinity && (round % synthInterval === 0 || round === rounds) && !(closing && round === rounds))
          await runSynthesis(round)

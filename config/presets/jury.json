@@ -2,10 +2,14 @@
    "description": [
       "Weigh a question before a panel: several jurors deliberate, one judge rules.",
       "",
-      "Staff `juror` with 3-12 models (each gives an independent verdict with reasoning); a single `judge` tallies the panel and delivers the binding decision."
+      "Staff `juror` with 3-12 models (each gives an independent verdict with reasoning); a single `judge` tallies the panel and delivers the binding decision.",
+      "",
+      "Before the judge rules, the jurors cast a secret ballot — the anonymous tally is on the record, but the judge decides (it is advisory, not a headcount)."
    ],
    "mode": "independent",
    "synthesizer": "judge",
+   "vote": "Cast your secret verdict in one short line (e.g. your ruling / which option / guilty or not). No one sees who voted for what — only the totals reach the judge.",
+   "voteVisibility": "ballots",
    "roles": [
       { "role": "juror", "description": "Give your own independent verdict with a short reason. Do not defer to the others.", "min": 3, "max": 12 },
       { "role": "judge", "description": "Weigh the jurors' verdicts, resolve disagreement, and deliver the binding decision." }

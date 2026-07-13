@@ -12,6 +12,9 @@ frame — selector for a neutral framer that opens/steers (mirror of synthesize)
 reframeEvery — N: re-frame every Nth round; 0/"end" = opening frame only; needs frame
 closingStatements — true: one final statement per speaker before synthesis; needs synthesize
 objectives — optional { team: goal } map for team runs (see Teams)
+vote — optional anonymous peer-vote ballot instructions (see Anonymous voting)
+voteEvery — N: vote every Nth round (always the last); 0/"end" = one final vote; needs vote
+voteVisibility — "aggregate" (default, counts only) | "ballots" (also anonymized ballot texts)
 tokenBudget — optional soft cumulative token budget (overrides TOKEN_BUDGET)
 ```
 
@@ -63,6 +66,24 @@ so it incurs no further tokens or cost, and its earlier turns stay in the
 transcript marked `· eliminated`. With `eliminationsOptional: true` the
 synthesizer may keep everyone that round (a `0) no elimination` menu choice).
 Requires a synthesizer.
+
+**Anonymous voting**: set `vote` to a ballot instruction and every live round
+speaker casts one **hidden freeform ballot** in parallel — each seeing the
+transcript through its own `mode` context, like a normal round. Only an
+anonymous **tally** is added to the transcript (`[vote / anonymous vote]`); the
+individual ballots never appear in content, and per-voter telemetry carries only
+a sanitized status (`vote recorded` / `abstained` / `error`), so who voted for
+what is never recoverable. Ballots normalizing to `abstain`/`none`/`no vote` are
+counted separately. **You** choose the target through the ballot wording (a
+speaker, a team, an idea, a direction); the engine is **advisory** — it never
+eliminates or picks a winner on its own, so tell the synthesizer/ref to act on
+the tally if you want it binding. `voteEvery: N` votes every Nth round (always
+including the last); `0`/`end` (default) = one final vote before synthesis.
+`voteVisibility: "ballots"` also appends the anonymized ballot texts (still no
+voter identities). Each ballot is a full model call, so `voteEvery: 1` adds
+~voters × rounds hidden calls against the token budget. Neutral voices (synth,
+framer, benched speakers) don't vote; narrow the electorate further by telling
+ineligible speakers to answer `ABSTAIN`.
 
 **Framer** (mirror of the synthesizer): `frame` names a neutral voice that opens
 the discussion — it speaks first on round 1, setting the stakes and shaping the

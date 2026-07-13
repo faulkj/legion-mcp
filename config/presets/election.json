@@ -1,0 +1,18 @@
+{
+   "description": [
+      "Hold an election: candidates campaign, then the field decides by secret ballot — the vote IS the verdict, not a judge's opinion.",
+      "",
+      "Staff `candidate` with 2 or more models — each makes its case and, over rounds, responds to rivals. Optionally add one `incumbent` (a candidate defending their record) and an `electorate` of silent voters who read every round but never campaign. After the final round the candidates AND the electorate cast one anonymous ballot for the strongest position (not their own), and a neutral `returning_officer` certifies the tally WITHOUT overruling it. Unlike battle_royale or jury, no authority picks the winner — the voters do. Use rounds >= 2 so campaigns can react."
+   ],
+   "mode": "sequential",
+   "synthesizer": "returning_officer",
+   "vote": "Cast your secret ballot for the SINGLE strongest position in the field (by its label, e.g. 'candidate 2') — you may not vote for yourself. One line. Your ballot is anonymous; only the totals are published.",
+   "voteVisibility": "ballots",
+   "defaultRounds": 2,
+   "roles": [
+      { "role": "candidate", "description": "Make your case and campaign for it. Each round, sharpen your position and answer the strongest rival arguments — you are trying to win the votes of the field, not a judge's.", "min": 2, "max": null },
+      { "role": "incumbent", "description": "You hold the seat: defend your record and why it should continue, then campaign against the challengers' alternatives. You campaign and are voted on like any candidate.", "min": 0, "max": 1 },
+      { "role": "electorate", "description": "You are a silent voter: read every round closely but do NOT campaign or post. Your only act is your secret ballot at the end — weigh who made the strongest case.", "min": 0, "max": null, "silent": true },
+      { "role": "returning_officer", "description": "Certify the election: report the anonymous vote tally and declare the winner it produced. Do NOT substitute your own judgment — if the vote tied or split, say so plainly rather than breaking it yourself." }
+   ]
+}

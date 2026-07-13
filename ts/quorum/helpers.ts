@@ -17,14 +17,15 @@ export const resolve = (selector: string, models: ModelDef[], roles: RoleDef[]):
  * Resolve `selectors` into council seats (one Speaker each, keeping order and duplicates —
  * position is the stable identity). Neutral voices (synthesizer, framer) never speak in normal
  * rounds: an in-list neutral fills its slot from the FIRST match, an external one appends a seat.
- * Returns `{ bad }` for the first unknown selector.
+ * A seat whose role is in `silentRoles` is flagged `silent` (it hears everything and votes, but
+ * takes no round/elimination turn — e.g. an electorate). Returns `{ bad }` for the first unknown selector.
  */
-export const resolveSpeakers = (selectors: string[], synthSelector: string | undefined, models: ModelDef[], roles: RoleDef[], frameSelector?: string): ResolvedCouncil => {
+export const resolveSpeakers = (selectors: string[], synthSelector: string | undefined, models: ModelDef[], roles: RoleDef[], frameSelector?: string, silentRoles?: Set<string>): ResolvedCouncil => {
    const seats = selectors.map((selector, index) => ({ selector, index, r: resolve(selector, models, roles) }))
    for (const s of seats)
       if (s.r === null) return { speakers: [], roundSpeakers: [], labels: [], bad: s.selector }
    const
-      speakers: Speaker[] = seats.map(({ selector, index, r }) => ({ index, selector, def: r!.def, role: r!.role, team: r!.team })),
+      speakers: Speaker[] = seats.map(({ selector, index, r }) => ({ index, selector, def: r!.def, role: r!.role, team: r!.team, silent: r!.role !== undefined && silentRoles?.has(r!.role) })),
       // Resolve a neutral (synth/frame): reuse an in-list seat, else append past the list at `at`.
       pick = (sel: string | undefined, at: number): Speaker | undefined => {
          if (sel === undefined) return undefined

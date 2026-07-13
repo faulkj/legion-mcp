@@ -28,6 +28,7 @@ interface PresetRole {
    description?: string
    min?: number
    max?: number | null
+   silent?: boolean
 }
 
 /** A named council recipe: roles to staff plus optional authoritative mode/synthesizer defaults. The config-facing `synthesizer` key maps to this internal `synthesize` field at load. */
@@ -43,6 +44,9 @@ interface Preset {
    eliminateEvery?: number
    eliminationsOptional?: boolean
    enterEvery?: number
+   vote?: string
+   voteEvery?: SynthesizeEvery
+   voteVisibility?: VoteVisibility
    defaultRounds?: number
 }
 
@@ -92,6 +96,7 @@ interface PromptTemplates {
    entrant: string
    frame: string
    reframe: string
+   vote: string
    synthesis: string
 }
 

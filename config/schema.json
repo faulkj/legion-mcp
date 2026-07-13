@@ -18,6 +18,9 @@
       "objectives": "Optional per-team objectives for team runs: a map of team tag to that team's shared goal. Tag speakers with model:role@team; each tagged team must have an objective here. Every teammate sees its own team's objective; a synthesizer sees all of them.",
       "frame": "Optional selector for a neutral framer: a chair that opens the discussion (round 1) by setting the stakes and shaping the question. Never takes a side and cannot carry a team tag. Mirror of synthesize (which closes); the framer opens.",
       "reframeEvery": "When the framer re-fires (only matters when frame is set): a number N re-frames every Nth round to steer/redirect; 0 or \"end\" (default) means opening frame only.",
+      "vote": "Optional anonymous peer-vote ballot instructions. When set, every live round speaker casts a hidden freeform ballot; only an anonymous tally is added to the transcript (never who voted for what). The engine is advisory — it does not eliminate or pick a winner; instruct the synthesizer/ref in your prompt if you want it acted on. You choose the target (a speaker, team, idea, direction).",
+      "voteEvery": "When the anonymous vote fires (only matters when vote is set): a number N votes every Nth round (always including the last); 0 or \"end\" (default) means one final vote only.",
+      "voteVisibility": "How much of a vote is shown: \"aggregate\" (default) shows only counts; \"ballots\" also shows the anonymized ballot texts (never voter identities).",
       "tokenBudget": "Optional SOFT cumulative token budget for the whole run (overrides TOKEN_BUDGET). Sequential mode checks it between turns; parallel mode checks at round boundaries, so a round can overshoot before it trips. Once crossed, remaining turns are skipped gracefully but synthesis still runs. Not a hard cap. See structuredContent.budget."
    }
 }

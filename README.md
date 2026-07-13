@@ -193,25 +193,55 @@ Keys:
   (default exactly one; `max: null` = unbounded, `min: 0` = optional).
 - **`mode`, `synthesizer`, `synthesizeEvery`, `framer`, `reframeEvery`,
   `closingStatements`, `eliminateEvery`, `eliminationsOptional`, `enterEvery`,
-  `defaultRounds`** — optional orchestration defaults. `framer` is the mirror of
-  `synthesizer`: a neutral voice that opens the discussion (and re-steers every
-  `reframeEvery` rounds) instead of closing it. Most are overridable per call; `eliminateEvery`
+  `vote`, `voteEvery`, `voteVisibility`, `defaultRounds`** — optional
+  orchestration defaults. `framer` is the mirror of `synthesizer`: a neutral
+  voice that opens the discussion (and re-steers every `reframeEvery` rounds)
+  instead of closing it. Most are overridable per call; `eliminateEvery`
   (survivor mode: the synthesizer removes one speaker every Nth round — a removed
   speaker is out for good and never prompted again), `eliminationsOptional` (let
   the synthesizer keep everyone in a given round), and `enterEvery` (staggered
   entry: with `@team`-tagged selectors, one combatant per team starts and one
-  more enters every Nth round) are preset-only. See a shipped preset and the
-  `quorum` tool description for what each does.
+  more enters every Nth round) are preset-only. `vote` turns on **anonymous peer
+  voting**: every live speaker casts a hidden freeform ballot and only an
+  anonymous tally reaches the transcript (advisory — the synthesizer/ref decides
+  whether to act on it); `voteEvery`/`voteVisibility` tune it. See a shipped
+  preset and the `quorum` tool description for what each does.
 
-This repo ships `code_review`, `debate`, `brainstorm`, `quick_take`, `tiebreak`,
-`battle_royale`, `jury`, `double_blind` (independent blind panel), `gauntlet`
-(private self-refinement race), `refine` (relay polish of an existing artifact),
-`workshop` (differentiated creative team), `focus_group` (moderated panel that
-riffs off each other), `final_girl` (survivors culled one per round until one
-remains), and `war_games` (a staggered-entry team cage match: `@team`-tagged
-combatants enter one at a time while a neutral ref calls fouls and names the
-winning team, with an optional `booker` who sets the match) — edit or delete
-freely.
+This repo ships these presets — edit or delete freely:
+
+<dl>
+<dt><code>code_review</code></dt>
+<dd>Structured multi-model code review.</dd>
+<dt><code>debate</code></dt>
+<dd>Opposing sides argue a question to a synthesis.</dd>
+<dt><code>brainstorm</code></dt>
+<dd>Divergent idea generation across models.</dd>
+<dt><code>quick_take</code></dt>
+<dd>Fast one-shot reactions from several models.</dd>
+<dt><code>tiebreak</code></dt>
+<dd>A decisive third voice resolves a stalemate.</dd>
+<dt><code>battle_royale</code></dt>
+<dd>Free-for-all contest; an overseer crowns a winner.</dd>
+<dt><code>jury</code></dt>
+<dd>Independent verdicts plus a secret jury ballot the judge weighs.</dd>
+<dt><code>election</code></dt>
+<dd>Candidates campaign, then the field decides by secret ballot — the anonymous vote is the verdict, not a judge's call. Optional <code>incumbent</code> defends a record; an optional silent <code>electorate</code> reads every round and votes without campaigning.</dd>
+<dt><code>double_blind</code></dt>
+<dd>Independent blind panel — no one sees the others.</dd>
+<dt><code>gauntlet</code></dt>
+<dd>Private self-refinement race across rounds.</dd>
+<dt><code>refine</code></dt>
+<dd>Relay polish of an existing artifact.</dd>
+<dt><code>workshop</code></dt>
+<dd>Differentiated creative team.</dd>
+<dt><code>focus_group</code></dt>
+<dd>Moderated panel that riffs off each other.</dd>
+<dt><code>final_girl</code></dt>
+<dd>Survivors culled one per round until one remains.</dd>
+<dt><code>war_games</code></dt>
+<dd>A staggered-entry team cage match: <code>@team</code>-tagged combatants enter one at a time while a neutral ref calls fouls and names the winning team, with an optional <code>booker</code> who sets the match.</dd>
+</dl>
+
 Empty/missing folder → no preset tools.
 
 > **Role text nudges output, it doesn't cap it** — use `maxTokens` for a hard

@@ -11,6 +11,7 @@ export const promptDefaults: PromptTemplates = {
    entrant: '[You are entering the discussion now — a fresh voice. Read what came before, then bring something NEW: a fresh angle, an overlooked point, or a sharper case. Do not just restate or echo what has already been said.]\n\n',
    frame: '[Framing — you are the neutral chair. Set the stakes and shape the question the others will address. Be brief and concrete; do not take a side.]\n\n',
    reframe: '[Reframe — you are the neutral chair. Read the discussion so far and steer it: sharpen the question, raise the stakes, or redirect. Be brief; do not take a side.]\n\n',
+   vote: '[Anonymous vote — your ballot is secret; no one sees who voted for what, only the totals. Cast ONE short ballot in a single line, or reply ABSTAIN. Do not explain at length.]\n\n',
    synthesis: '[Final synthesis — consolidate the discussion above into one answer]\n\n'
 }
 

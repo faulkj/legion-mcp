@@ -70,5 +70,8 @@ export const makeTurnRunner = (
          record(outcome, round)
    }
 
-   return { telemetry, turns, content, used: () => used, speakOne, record, note, skip, runParallel }
+   const runHidden = (list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined, override?: (s: Speaker) => string | undefined): Promise<TurnOutcome[]> =>
+      Promise.all(list.map(s => speakOne(s, round, phase, ctx(s), override?.(s))))
+
+   return { telemetry, turns, content, used: () => used, speakOne, record, note, skip, runParallel, runHidden }
 }

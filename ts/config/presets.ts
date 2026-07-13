@@ -21,7 +21,8 @@ const
          role: z.string().min(1),
          description: z.string().optional(),
          min: z.number().int().min(0).optional(),
-         max: z.number().int().min(1).nullable().optional()
+         max: z.number().int().min(1).nullable().optional(),
+         silent: z.boolean().optional()
       })).min(1),
       mode: z.enum(['sequential', 'parallel', 'private', 'independent']).optional(),
       synthesizer: z.string().optional(),
@@ -32,6 +33,9 @@ const
       eliminateEvery: z.number().int().min(0).optional(),
       eliminationsOptional: z.boolean().optional(),
       enterEvery: z.number().int().min(0).optional(),
+      vote: z.string().optional(),
+      voteEvery: z.union([z.literal('end'), z.number().int().min(0)]).optional(),
+      voteVisibility: z.enum(['aggregate', 'ballots']).optional(),
       defaultRounds: z.number().int().min(1).optional()
    }),
 
@@ -49,7 +53,7 @@ const
          throw new Error(`Invalid ${file}:\n${z.prettifyError(result.error)}`)
 
       const
-         { description, roles, mode, synthesizer, synthesizeEvery, framer, reframeEvery, closingStatements, eliminateEvery, eliminationsOptional, enterEvery, defaultRounds } = result.data,
+         { description, roles, mode, synthesizer, synthesizeEvery, framer, reframeEvery, closingStatements, eliminateEvery, eliminationsOptional, enterEvery, vote, voteEvery, voteVisibility, defaultRounds } = result.data,
          bad = roles.find(r => effMin(r) > effMax(r))
       if (bad) throw new Error(`Invalid ${file}: role "${bad.role}" has min > max.`)
       if (roles.reduce((n, r) => n + effMin(r), 0) < 1)
@@ -62,6 +66,8 @@ const
          throw new Error(`Invalid ${file}: "eliminateEvery" requires a "synthesizer" — the synthesizer decides who leaves.`)
       if (reframeEvery !== undefined && framer === undefined)
          throw new Error(`Invalid ${file}: "reframeEvery" only applies when "framer" is set.`)
+      if ((voteEvery !== undefined || voteVisibility !== undefined) && vote === undefined)
+         throw new Error(`Invalid ${file}: "voteEvery"/"voteVisibility" only apply when "vote" is set.`)
       if (framer !== undefined && !roles.find(r => slugify(r.role) === slugify(framer)))
          throw new Error(`Invalid ${file}: framer role "${framer}" must be a preset role.`)
       if (synthesizer !== undefined) {
@@ -71,5 +77,5 @@ const
          if (roles.some(r => slugify(r.role) !== slugify(synthesizer) && effMin(r) >= 1) === false)
             throw new Error(`Invalid ${file}: a preset with a synthesizer needs at least one other required role — the synthesizer no longer speaks in normal rounds.`)
       }
-      return { description: Array.isArray(description) ? description.join('\n') : description, roles, mode, synthesize: synthesizer, synthesizeEvery, frame: framer, reframeEvery, closingStatements, eliminateEvery, eliminationsOptional, enterEvery, defaultRounds }
+      return { description: Array.isArray(description) ? description.join('\n') : description, roles, mode, synthesize: synthesizer, synthesizeEvery, frame: framer, reframeEvery, closingStatements, eliminateEvery, eliminationsOptional, enterEvery, vote, voteEvery, voteVisibility, defaultRounds }
    }

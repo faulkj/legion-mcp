@@ -66,7 +66,10 @@ export const registerQuorumTool = (
          synthesizeEvery: z.union([z.literal('end'), z.number().int().min(0)]).optional().describe(d('synthesizeEvery')),
          frame: z.string().optional().describe(d('frame')),
          reframeEvery: z.union([z.literal('end'), z.number().int().min(0)]).optional().describe(d('reframeEvery')),
-         closingStatements: z.boolean().optional().describe(d('closingStatements'))
+         closingStatements: z.boolean().optional().describe(d('closingStatements')),
+         vote: z.string().optional().describe(d('vote')),
+         voteEvery: z.union([z.literal('end'), z.number().int().min(0)]).optional().describe(d('voteEvery')),
+         voteVisibility: z.enum(['aggregate', 'ballots']).optional().describe(d('voteVisibility'))
       },
       fallback = 'Fan a prompt out to two or more models (see config/tools/quorum.md).'
 
