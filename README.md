@@ -42,7 +42,7 @@ flowchart LR
   multi-round discussion, visibility modes, and synthesis — and returns each
   answer separately. See [Presets](#presets--configpresetsjson) for the
   orchestration options.
-- **Presets** are named, pre-staffed councils (debate, jury, code review, …),
+- **Presets** are named, pre-staffed councils (debate, courtroom, code review, …),
   each exposed as its own tool.
 - Identity and telemetry ride in `structuredContent`, not the answer text.
   Logging goes to **stderr** (safe for stdio).
@@ -88,7 +88,7 @@ is **overlaid on top of them, per file**:
   `config/presets/refine.json` overrides just that preset — the other bundled
   presets remain.
 - **Single-file text** (`prompts.json`, `errors.json`, `schema.json`): merged
-  **per key** — defaults < bundled < local. A partial local file overrides only
+  **per key** — bundled < local. A partial local file overrides only
   the keys it sets.
 - **`description.md`**: local wins whole if present, else bundled.
 
@@ -187,25 +187,61 @@ staffed within its cardinality, else the result is an error saying what to fix.
 
 Keys:
 
-- **`description`** (required) — string or array of strings; the preset tool's
-  own MCP description.
-- **`roles`** — each with optional `description`, and `min`/`max` speakers
-  (default exactly one; `max: null` = unbounded, `min: 0` = optional).
-- **`mode`, `synthesizer`, `synthesizeEvery`, `framer`, `reframeEvery`,
-  `closingStatements`, `eliminateEvery`, `eliminationsOptional`, `enterEvery`,
-  `vote`, `voteEvery`, `voteVisibility`, `defaultRounds`** — optional
-  orchestration defaults. `framer` is the mirror of `synthesizer`: a neutral
-  voice that opens the discussion (and re-steers every `reframeEvery` rounds)
-  instead of closing it. Most are overridable per call; `eliminateEvery`
-  (survivor mode: the synthesizer removes one speaker every Nth round — a removed
-  speaker is out for good and never prompted again), `eliminationsOptional` (let
-  the synthesizer keep everyone in a given round), and `enterEvery` (staggered
-  entry: with `@team`-tagged selectors, one combatant per team starts and one
-  more enters every Nth round) are preset-only. `vote` turns on **anonymous peer
-  voting**: every live speaker casts a hidden freeform ballot and only an
-  anonymous tally reaches the transcript (advisory — the synthesizer/ref decides
-  whether to act on it); `voteEvery`/`voteVisibility` tune it. See a shipped
-  preset and the `quorum` tool description for what each does.
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `description` | `string \| string[]` | required | MCP description for the preset tool. |
+| `roles` | `PresetRole[]` | required | Roles accepted by the preset. |
+| `mode` | `"sequential" \| "parallel" \| "private" \| "independent"` | `"sequential"` | Controls which prior turns each round speaker sees. |
+| `defaultRounds` | positive integer | `1` | Rounds used when the call omits `rounds`. |
+| `synthesizer` | `string` | none | Neutral role that produces synthesis turns. |
+| `synthesizeEvery` | `"end" \| non-negative integer` | `"end"` | Runs synthesis at the end or every Nth round. |
+| `framer` | `string` | none | Neutral role that opens and redirects the discussion. |
+| `reframeEvery` | `"end" \| non-negative integer` | `"end"` | Reframes only at opening or every Nth round after opening. |
+| `closingStatements` | `boolean` | `false` | Runs a closing phase before final synthesis. |
+| `eliminateEvery` | non-negative integer | `0` | Lets the synthesizer remove one speaker every Nth round. Preset-only. |
+| `eliminationsOptional` | `boolean` | `false` | Lets the synthesizer decline an elimination. Preset-only. |
+| `enterEvery` | non-negative integer | `0` | Starts one speaker per team, then adds one benched speaker every Nth round. Preset-only. |
+| `vote` | `string` | none | Ballot instructions; enables anonymous voting. |
+| `voteEvery` | `"end" \| non-negative integer` | `"end"` | Votes at the end or every Nth round. |
+| `voteVisibility` | `"aggregate" \| "ballots"` | `"aggregate"` | Includes only totals or also anonymized ballot choices in the transcript. |
+| `allowSelfVote` | `boolean` | `true` | Includes each voter's own seat in its candidate menu. |
+| `voteByTeam` | `boolean` | `false` | Presents one choice per `@team` and aggregates votes by team. |
+
+Role object keys:
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `role` | `string` | required | Role name used in `model:role` selectors. |
+| `description` | `string \| string[]` | matching role file | Inline instructions; arrays are joined with newlines. Otherwise `config/roles/<role>.md` must exist. |
+| `min` | non-negative integer | `1` | Minimum speakers; `0` makes the role optional. |
+| `max` | positive integer or `null` | `1` | Maximum speakers; `null` is unbounded. |
+| `silent` | `boolean` | `false` | Lets the role observe and vote without speaking in normal rounds. |
+| `voter` | `boolean` | all eligible roles | Restricts anonymous ballots to marked roles when any role is marked. |
+| `candidate` | `boolean` | all eligible roles | Restricts ballot choices to marked roles when any role is marked. |
+| `closing` | `boolean` | all eligible roles | Restricts closings to marked roles; only the first marked speaker per team or unteamed role closes. |
+| `closingLast` | `boolean` | `false` | Runs this closer after parallel closings with their statements in context; requires `closing: true`. |
+| `tagTeam` | `boolean` | `false` | Rotates one marked speaker per `@team` into each normal round. Cannot combine with `enterEvery`. |
+
+For example, a courtroom call assigns lawyers to sides with `@team` tags. The
+first lawyer listed for each side gives that side's closing statement:
+
+```json
+{
+   "models": [
+      "gpt:lawyer@prosecution",
+      "grok:lawyer@prosecution",
+      "claude:lawyer@defense",
+      "kimi:juror",
+      "llama:juror",
+      "mistral:juror",
+      "opus:judge"
+   ],
+   "objectives": {
+      "prosecution": "Prove liability.",
+      "defense": "Defeat liability."
+   }
+}
+```
 
 This repo ships these presets — edit or delete freely:
 
@@ -222,8 +258,8 @@ This repo ships these presets — edit or delete freely:
 <dd>A decisive third voice resolves a stalemate.</dd>
 <dt><code>battle_royale</code></dt>
 <dd>Free-for-all contest; an overseer crowns a winner.</dd>
-<dt><code>jury</code></dt>
-<dd>Independent verdicts plus a secret jury ballot the judge weighs.</dd>
+<dt><code>courtroom</code></dt>
+<dd>Team-tagged lawyers argue opposing sides, jurors vote by side, and a judge rules.</dd>
 <dt><code>election</code></dt>
 <dd>Candidates campaign, then the field decides by secret ballot — the anonymous vote is the verdict, not a judge's call. Optional <code>incumbent</code> defends a record; an optional silent <code>electorate</code> reads every round and votes without campaigning.</dd>
 <dt><code>double_blind</code></dt>
@@ -255,7 +291,7 @@ models and when the AI should use each. See this repo's copy for a template.
 ### Tool, field & message text — `config/*.json` and `config/tools/*.md`
 
 All user-facing text lives in config, not code, and hot-reloads per request.
-Each file merges over built-in defaults per key, so override only what you want;
+Each file merges over the bundled JSON base per key, so override only what you want;
 open the shipped copies to see the full key set and `{token}` placeholders:
 
 - `config/tools/<tool>.md` — a tool's description (e.g. `quorum.md`). Delete to
@@ -282,7 +318,7 @@ config file can't live inside it.)
 | `MAX_ROUNDS` | no | Max discussion rounds the `quorum` tool accepts (default `5`). |
 | `TOKEN_BUDGET` | no | Default **soft** cumulative token budget for a `quorum` run (unset = no limit; per-call `tokenBudget` overrides). |
 | `DYNAMIC_ROLES` | no | Allow the calling AI to define ad-hoc `quorum` roles inline (default `true`). |
-| `DISABLE_PRESETS` | no | Comma-separated preset slugs to **not** register as tools (e.g. `battle_royale,jury`). Applies to bundled and local presets alike; unknown names are ignored. Unset = all presets registered. |
+| `DISABLE_PRESETS` | no | Comma-separated preset slugs to **not** register as tools (e.g. `battle_royale,courtroom`). Applies to bundled and local presets alike; unknown names are ignored. Unset = all presets registered. |
 | `LOG_LEVEL` | no | `debug` \| `info` \| `warn` \| `error` (default `info`). |
 
 \* Every model must resolve a `baseUrl` and `apiKey` from its file or the

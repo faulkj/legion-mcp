@@ -1,4 +1,4 @@
-import { fill } from '../config/config.js'
+import { fill, slugify } from '../config/config.js'
 import { log } from '../core/log.js'
 import { everyN } from './context.js'
 
@@ -35,6 +35,32 @@ export const makeSynthesizer = (deps: PhaseDeps): ((round: number) => Promise<vo
       record(await speakOne(synth, round, 'synthesis', full()), round)
       telemetry[telemetry.length - 1]?.status.includes('reasoning-heavy') &&
          log('warn', `⚠️ synthesis (${synthSelector}) spent most of its budget reasoning — raise maxTokens or use a lighter model for synthesize`)
+   }
+}
+
+/** Build the closing phase: one marked closer per team or unteamed role speaks in parallel, then `closingLast` roles respond in sequence. */
+export const makeCloser = (deps: ClosingDeps): (() => Promise<void>) => {
+   const
+   { roles, rounds, budgetOk, speakers, context, runParallel, speakOne, record, skip } = deps,
+      marked = (key: 'closing' | 'closingLast'): Set<string> => new Set(roles.filter(r => r[key]).map(r => slugify(r.role))),
+      closingRoles = marked('closing'),
+      finalRoles = marked('closingLast'),
+      selected = (): Speaker[] => {
+         if (!closingRoles.size) return speakers()
+         const groups = new Set<string>()
+         return speakers().filter(s => {
+            if (s.role === undefined || !closingRoles.has(s.role)) return false
+            const group = s.team === undefined ? `role:${s.role}` : `team:${s.team}`
+            return !groups.has(group) && (groups.add(group), true)
+         })
+      }
+   return async (): Promise<void> => {
+      const closers = selected()
+      if (!budgetOk()) { skip(rounds + 1, 0, 'closing', closers); return }
+      const final = closers.filter(s => s.role !== undefined && finalRoles.has(s.role))
+      await runParallel(closers.filter(s => !final.includes(s)), rounds + 1, 'closing', context)
+      for (const speaker of final)
+         record(await speakOne(speaker, rounds + 1, 'closing', context(speaker)), rounds + 1)
    }
 }
 

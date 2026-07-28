@@ -11,7 +11,7 @@ import { everyN } from './context.js'
  */
 export const makeVoter = (deps: VoteDeps): ((round: number, snapshot: QuorumTurn[]) => Promise<void>) | undefined => {
    const
-      { args, preset, rounds, budgetOk, liveSpeakers, candidates, labels, seen, runHidden, note, telemetry, templates } = deps,
+      { args, preset, rounds, budgetOk, liveSpeakers, candidates, voteByTeam, labels, seen, runHidden, note, telemetry, templates } = deps,
       ballot = preset?.vote ?? args.vote,
       voteEvery = preset?.voteEvery ?? args.voteEvery,
       visibility = preset?.voteVisibility ?? args.voteVisibility ?? 'aggregate',
@@ -20,27 +20,33 @@ export const makeVoter = (deps: VoteDeps): ((round: number, snapshot: QuorumTurn
    return async (round: number, snapshot: QuorumTurn[]): Promise<void> => {
       const
          voters = liveSpeakers(),
-         field = candidates()
+         field = voteByTeam ? uniqueTeams(candidates()) : candidates()
       if (!voteDue(voteEvery, round, rounds) || voters.length === 0 || !budgetOk()) return
       const
          menuFor = (voter: Speaker): Speaker[] => selfVote ? field : field.filter(c => c.index !== voter.index),
-         outcomes = await runHidden(voters, round, 'vote', s => seen(s, snapshot), voter => templates.vote + ballot + '\n\n' + voteMenu(menuFor(voter), labels)),
-         picks = voters.map((voter, i) => parseVote(outcomes[i]!.text, menuFor(voter), labels))
+         outcomes = await runHidden(voters, round, 'vote', s => seen(s, snapshot), voter => templates.vote + ballot + '\n\n' + voteMenu(menuFor(voter), labels, voteByTeam)),
+         picks = voters.map((voter, i) => parseVote(outcomes[i]!.text, menuFor(voter), labels, voteByTeam))
       for (const o of outcomes) telemetry.push(sanitizeBallot(o.entry))
       note(...tally(picks, round, visibility))
    }
 }
 
 const
-   voteMenu = (menu: Speaker[], labels: string[]): string =>
-      ['0) abstain', ...menu.map((s, i) => `${i + 1}) ${labels[s.index] ?? s.selector}`)].join('\n'),
+   uniqueTeams = (speakers: Speaker[]): Speaker[] =>
+      speakers.filter((s, i) => s.team === undefined || speakers.findIndex(candidate => candidate.team === s.team) === i),
+
+   voteLabel = (speaker: Speaker, labels: string[], byTeam: boolean): string =>
+      byTeam && speaker.team !== undefined ? `[${speaker.team}]` : (labels[speaker.index] ?? speaker.selector),
+
+   voteMenu = (menu: Speaker[], labels: string[], byTeam: boolean): string =>
+      ['0) abstain', ...menu.map((s, i) => `${i + 1}) ${voteLabel(s, labels, byTeam)}`)].join('\n'),
 
    // Parse a ballot to a canonical candidate label (or null = abstain). The first integer indexes the voter's OWN menu.
-   parseVote = (reply: string | null, menu: Speaker[], labels: string[]): string | null => {
+   parseVote = (reply: string | null, menu: Speaker[], labels: string[], byTeam: boolean): string | null => {
       const match = reply?.match(/\d+/)
       if (!match) return null
       const pick = Number(match[0])
-      return pick >= 1 && pick <= menu.length ? (labels[menu[pick - 1]!.index] ?? menu[pick - 1]!.selector) : null
+      return pick >= 1 && pick <= menu.length ? voteLabel(menu[pick - 1]!, labels, byTeam) : null
    },
 
    voteDue = (voteEvery: SynthesizeEvery | undefined, round: number, rounds: number): boolean => {

@@ -25,10 +25,15 @@ type SchemaDescriptions = Record<string, string>
  */
 interface PresetRole {
    role: string
-   description?: string
+   description?: string | string[]
    min?: number
    max?: number | null
    silent?: boolean
+   voter?: boolean
+   candidate?: boolean
+   closing?: boolean
+   closingLast?: boolean
+   tagTeam?: boolean
 }
 
 /** A named council recipe: roles to staff plus optional authoritative mode/synthesizer defaults. The config-facing `synthesizer` key maps to this internal `synthesize` field at load. */
@@ -48,6 +53,7 @@ interface Preset {
    voteEvery?: SynthesizeEvery
    voteVisibility?: VoteVisibility
    allowSelfVote?: boolean
+   voteByTeam?: boolean
    defaultRounds?: number
 }
 

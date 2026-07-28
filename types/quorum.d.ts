@@ -24,25 +24,6 @@ interface QuorumConfig {
    error: 'closingWithoutSynth' | 'eliminateWithoutSynth' | undefined
 }
 
-/** Dependencies the neutral phases (frame, synthesis, elimination) borrow from the running quorum. */
-interface PhaseDeps {
-   synth: Speaker | undefined
-   synthSelector: string | undefined
-   frame: Speaker | undefined
-   prompt: string
-   labels: string[]
-   optional: boolean
-   templates: PromptTemplates
-   errors: ErrorMessages
-   live: Set<number>
-   liveSpeakers: () => Speaker[]
-   full: () => string | undefined
-   telemetry: TurnTelemetry[]
-   speakOne: TurnRunner['speakOne']
-   record: TurnRunner['record']
-   note: TurnRunner['note']
-}
-
 /** Dependencies the anonymous peer vote borrows from the running quorum. `seen` gives each voter its mode-appropriate context; `candidates` is the votable field (labels are the only ballot choices, so self-votes are structurally impossible). */
 interface VoteDeps {
    args: QuorumInput
@@ -51,6 +32,7 @@ interface VoteDeps {
    budgetOk: () => boolean
    liveSpeakers: () => Speaker[]
    candidates: () => Speaker[]
+   voteByTeam: boolean
    labels: string[]
    seen: (s: Speaker, snapshot: QuorumTurn[]) => string | undefined
    runHidden: TurnRunner['runHidden']
@@ -99,7 +81,7 @@ interface TurnRunner {
    runHidden(list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined, override?: (s: Speaker) => string | undefined): Promise<TurnOutcome[]>
 }
 
-/** Which phase of a run a turn belongs to: an opening/steering frame, a normal discussion round, a staggered entry note, a closing statement, an anonymous peer vote, a synthesis, or an elimination decision. */
+/** Which phase of a run a turn belongs to: framing, discussion, entry, closing, voting, synthesis, or elimination. */
 type TurnPhase = 'frame' | 'round' | 'entry' | 'closing' | 'vote' | 'synthesis' | 'elimination'
 
 /** Internal per-turn transcript entry for a quorum round. `index` is the speaker's stable identity (position in `models[]`). */

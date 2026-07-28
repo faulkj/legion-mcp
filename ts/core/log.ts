@@ -75,12 +75,31 @@ const
       },
       prompt(entry) {
          const { toolName, modelId, latencyMs, usage, params } = entry
-         this.level('info', `🗣️ ${toolName} responded`, { modelId, latencyMs, usage, role: params.role, contextPresent: params.contextPresent })
+         const meta = {
+            modelId,
+            latencyMs,
+            usage,
+            role: params.role,
+            contextPresent: params.contextPresent
+         }
+
+         if (entry.error !== undefined)
+            this.level('error', `❌ ${toolName} failed`, { ...meta, error: entry.error })
+         else
+            this.level('info', `🗣️ ${toolName} responded`, meta)
+
          if (order.debug < threshold) return
+
          console.error(stamp(colorize('debug', `   💬 prompt: ${entry.prompt}`)))
          entry.params.role && console.error(stamp(colorize('debug', `   🎭 role: ${entry.params.role}`)))
          entry.params.contextPresent && console.error(stamp(colorize('debug', `   📎 context: (present — see structuredContent)`)))
-         console.error(stamp(colorize('debug', `   ✅ response: ${entry.response}`)))
+
+         console.error(stamp(colorize(
+            entry.error === undefined ? 'debug' : 'error',
+            entry.error === undefined
+               ? `   ✅ response: ${entry.response}`
+               : `   ❌ error: ${entry.error}`
+         )))
       }
    }
 

@@ -71,7 +71,7 @@ without one. Everything else (roles, prompts, schema, errors, description,
 presets) falls back to the bundled defaults for anything you omit.
 
 The single-file JSON text configs (`prompts.json`, `errors.json`,
-`schema.json`) merge **per key** over the built-in defaults, so a partial
+`schema.json`) merge **per key** over the bundled JSON base, so a partial
 `prompts.json` with just one key — as the kubernetes and reverse-proxy examples
 show — overrides only that key and leaves the rest alone. Directory resources
 (model, role, preset, tool files) merge **per file**: each file is one whole

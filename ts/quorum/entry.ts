@@ -32,6 +32,16 @@ export const nextEntrant = (entry: Entry): Speaker | undefined => {
 export const entrantFirst = (speaking: Speaker[], entrant: Speaker | undefined): Speaker[] =>
    entrant === undefined ? speaking : [entrant, ...speaking.filter(s => s.index !== entrant.index)]
 
+/** Rotate marked roles so one speaker per team handles each round; unmarked speakers remain active every round. */
+export const rotateTeams = (speakers: Speaker[], roles: Set<string>, round: number): Speaker[] => {
+   if (!roles.size) return speakers
+   const
+      rotating = speakers.filter(s => s.role !== undefined && roles.has(s.role)),
+      groups = rotating.reduce((map, speaker) => map.set(speaker.team!, [...(map.get(speaker.team!) ?? []), speaker]), new Map<string, Speaker[]>()),
+      selected = new Set([...groups.values()].map(group => group[(round - 1) % group.length]!.index))
+   return speakers.filter(s => !rotating.includes(s) || selected.has(s.index))
+}
+
 /** Validate a call's team objectives: teamless runs need none; team runs need >= 2 teams, an objective per team, and no objective for an unknown team. Returns an error string or null. */
 export const objectiveError = (roundSpeakers: Speaker[], objectives: Record<string, string> | undefined): string | null => {
    const teams = [...new Set(roundSpeakers.map(s => s.team).filter((t): t is string => t !== undefined))]

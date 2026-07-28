@@ -57,7 +57,7 @@ export const banner = (round: number, rounds: number, phase: TurnPhase, t: Promp
 export const presetRoles = (preset: Preset): RoleDef[] =>
    preset.roles
       .filter(r => r.description !== undefined)
-      .map(r => ({ name: slugify(r.role), instructions: r.description! }))
+   .map(r => ({ name: slugify(r.role), instructions: Array.isArray(r.description) ? r.description.join('\n') : r.description! }))
 
 /** Merge a preset's inline roles over a base role list (preset roles win on slug collision). */
 export const mergePresetRoles = (base: RoleDef[], preset: Preset): RoleDef[] => {

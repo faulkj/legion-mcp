@@ -1,7 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { basename, dirname, join, resolve } from 'node:path'
-import { errorDefaults, promptDefaults } from './defaults.js'
 
 /** Turn a file/role/model name into a tool-name slug. */
 export const slugify = (name: string): string =>
@@ -36,19 +35,23 @@ export const readLayered = (rel: string): string | undefined =>
    (localDir && readOptional(join(localDir, rel))) ?? readOptional(join(bundledDir, rel))
 
 /**
- * Merge the bundled + local copies of a single JSON config file over hardcoded defaults,
- * per key. Precedence: defaults < bundled < local. Missing files fall through; invalid
- * JSON in either layer throws with the offending path.
+ * Read a required bundled JSON object and merge an optional local copy over it per key.
+ * The bundled file is the sole base configuration; invalid JSON throws with its path.
  */
-export const mergeJsonLayers = <T extends object>(rel: string, defaults: T): T => {
-   const layer = (dir?: string): Partial<T> => {
+export const mergeJsonLayers = <T extends object>(rel: string): T => {
+   const layer = (dir: string | undefined, required = false): Partial<T> => {
       if (!dir) return {}
-      const raw = readOptional(join(dir, rel))
-      if (raw === undefined) return {}
+      const
+         path = join(dir, rel),
+         raw = readOptional(path)
+      if (raw === undefined) {
+         if (required) throw new Error(`Required bundled config ${path} is missing.`)
+         return {}
+      }
       try { return JSON.parse(raw) as Partial<T> }
-      catch { throw new Error(`${join(dir, rel)} is not valid JSON.`) }
+      catch { throw new Error(`${path} is not valid JSON.`) }
    }
-   return { ...defaults, ...layer(bundledDir), ...layer(localDir) }
+   return { ...layer(bundledDir, true), ...(localDir === bundledDir ? {} : layer(localDir)) } as T
 }
 
 /**
@@ -88,11 +91,11 @@ export const loadSchema = (): SchemaDescriptions => {
    return { ...flatten(bundledDir), ...flatten(localDir) }
 }
 
-/** Read config/prompts.json prompt-shaping templates; missing files or keys fall back to defaults. */
-export const loadPrompts = (): PromptTemplates => mergeJsonLayers('prompts.json', promptDefaults)
+/** Read bundled config/prompts.json and overlay local keys. */
+export const loadPrompts = (): PromptTemplates => mergeJsonLayers('prompts.json')
 
-/** Read config/errors.json runtime messages; missing files or keys fall back to defaults. */
-export const loadErrors = (): ErrorMessages => mergeJsonLayers('errors.json', errorDefaults)
+/** Read bundled config/errors.json and overlay local keys. */
+export const loadErrors = (): ErrorMessages => mergeJsonLayers('errors.json')
 
 /** Slugify a file's basename (drop extension) into a tool/role key. */
 export const slugKey = (ext: string) => (file: string): string => slugify(basename(file, ext))

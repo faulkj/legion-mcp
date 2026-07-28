@@ -19,10 +19,15 @@ const
       description: z.union([z.string(), z.array(z.string())]),
       roles: z.array(z.object({
          role: z.string().min(1),
-         description: z.string().optional(),
+         description: z.union([z.string(), z.array(z.string())]).optional(),
          min: z.number().int().min(0).optional(),
          max: z.number().int().min(1).nullable().optional(),
-         silent: z.boolean().optional()
+         silent: z.boolean().optional(),
+         voter: z.boolean().optional(),
+         candidate: z.boolean().optional(),
+         closing: z.boolean().optional(),
+         closingLast: z.boolean().optional(),
+         tagTeam: z.boolean().optional()
       })).min(1),
       mode: z.enum(['sequential', 'parallel', 'private', 'independent']).optional(),
       synthesizer: z.string().optional(),
@@ -37,6 +42,7 @@ const
       voteEvery: z.union([z.literal('end'), z.number().int().min(0)]).optional(),
       voteVisibility: z.enum(['aggregate', 'ballots']).optional(),
       allowSelfVote: z.boolean().optional(),
+      voteByTeam: z.boolean().optional(),
       defaultRounds: z.number().int().min(1).optional()
    }),
 
@@ -54,9 +60,13 @@ const
          throw new Error(`Invalid ${file}:\n${z.prettifyError(result.error)}`)
 
       const
-         { description, roles, mode, synthesizer, synthesizeEvery, framer, reframeEvery, closingStatements, eliminateEvery, eliminationsOptional, enterEvery, vote, voteEvery, voteVisibility, allowSelfVote, defaultRounds } = result.data,
-         bad = roles.find(r => effMin(r) > effMax(r))
+         { description, roles, mode, synthesizer, synthesizeEvery, framer, reframeEvery, closingStatements, eliminateEvery, eliminationsOptional, enterEvery, vote, voteEvery, voteVisibility, allowSelfVote, voteByTeam, defaultRounds } = result.data,
+         bad = roles.find(r => effMin(r) > effMax(r)),
+         badCloser = roles.find(r => r.closingLast && !r.closing)
       if (bad) throw new Error(`Invalid ${file}: role "${bad.role}" has min > max.`)
+      if (badCloser) throw new Error(`Invalid ${file}: role "${badCloser.role}" sets closingLast without closing.`)
+      if (enterEvery !== undefined && enterEvery > 0 && roles.some(r => r.tagTeam))
+         throw new Error(`Invalid ${file}: enterEvery and tagTeam cannot be combined.`)
       if (roles.reduce((n, r) => n + effMin(r), 0) < 1)
          throw new Error(`Invalid ${file}: every role is optional (min 0) — a preset needs at least one speaker.`)
       if (synthesizeEvery !== undefined && synthesizer === undefined)
@@ -67,16 +77,16 @@ const
          throw new Error(`Invalid ${file}: "eliminateEvery" requires a "synthesizer" — the synthesizer decides who leaves.`)
       if (reframeEvery !== undefined && framer === undefined)
          throw new Error(`Invalid ${file}: "reframeEvery" only applies when "framer" is set.`)
-      if ((voteEvery !== undefined || voteVisibility !== undefined || allowSelfVote !== undefined) && vote === undefined)
-         throw new Error(`Invalid ${file}: "voteEvery"/"voteVisibility"/"allowSelfVote" only apply when "vote" is set.`)
+      if ((voteEvery !== undefined || voteVisibility !== undefined || allowSelfVote !== undefined || voteByTeam !== undefined) && vote === undefined)
+         throw new Error(`Invalid ${file}: vote options only apply when "vote" is set.`)
       if (framer !== undefined && !roles.find(r => slugify(r.role) === slugify(framer)))
          throw new Error(`Invalid ${file}: framer role "${framer}" must be a preset role.`)
       if (synthesizer !== undefined) {
          const synth = roles.find(r => slugify(r.role) === slugify(synthesizer))
-         if (!synth || effMin(synth) < 1)
-            throw new Error(`Invalid ${file}: synthesizer role "${synthesizer}" must be a preset role with min >= 1.`)
+         if (!synth)
+            throw new Error(`Invalid ${file}: synthesizer role "${synthesizer}" must be a preset role.`)
          if (roles.some(r => slugify(r.role) !== slugify(synthesizer) && effMin(r) >= 1) === false)
             throw new Error(`Invalid ${file}: a preset with a synthesizer needs at least one other required role — the synthesizer no longer speaks in normal rounds.`)
       }
-      return { description: Array.isArray(description) ? description.join('\n') : description, roles, mode, synthesize: synthesizer, synthesizeEvery, frame: framer, reframeEvery, closingStatements, eliminateEvery, eliminationsOptional, enterEvery, vote, voteEvery, voteVisibility, allowSelfVote, defaultRounds }
+      return { description: Array.isArray(description) ? description.join('\n') : description, roles, mode, synthesize: synthesizer, synthesizeEvery, frame: framer, reframeEvery, closingStatements, eliminateEvery, eliminationsOptional, enterEvery, vote, voteEvery, voteVisibility, allowSelfVote, voteByTeam, defaultRounds }
    }

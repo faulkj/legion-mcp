@@ -1,8 +1,8 @@
-import { fill } from '../config/config.js'
+import { fill, slugify } from '../config/config.js'
 import { log } from '../core/log.js'
 import { makeSeen, toContext } from './context.js'
-import { entrantFirst, entryDue, makeEntry, nextEntrant, objectiveError, recordEntry, withObjective } from './entry.js'
-import { eliminationDue, frameDue, makeEliminator, makeFramer, makeSynthesizer } from './phases.js'
+import { entrantFirst, entryDue, makeEntry, nextEntrant, objectiveError, recordEntry, rotateTeams, withObjective } from './entry.js'
+import { eliminationDue, frameDue, makeCloser, makeEliminator, makeFramer, makeSynthesizer } from './phases.js'
 import { presetError, resolveSpeakers, validatePreset } from './helpers.js'
 import { makeTurnRunner } from './runner.js'
 import { resolveConfig } from './setup.js'
@@ -37,6 +37,10 @@ export const runQuorum = async (
    if (bad) return err(fill(errors.unknownSelector, { selector: bad }))
    if (synth?.team !== undefined) return err(errors.synthTeamed)
    if (frame?.team !== undefined) return err(errors.frameTeamed)
+   const unteamedCandidate = preset?.voteByTeam ? roundSpeakers.find(s => s.team === undefined && preset.roles.some(r => r.candidate && slugify(r.role) === s.role)) : undefined
+   if (unteamedCandidate) return err(`Selector "${unteamedCandidate.selector}" must use an @team tag for team voting.`)
+   const unteamedTag = roundSpeakers.find(s => s.team === undefined && preset?.roles.some(r => r.tagTeam && slugify(r.role) === s.role))
+   if (unteamedTag) return err(`Selector "${unteamedTag.selector}" must use an @team tag for tag-team rounds.`)
    const setupErr = objectiveError(roundSpeakers, args.objectives)
    if (setupErr) return err(setupErr)
 
@@ -45,22 +49,30 @@ export const runQuorum = async (
       // `live` shrinks on elimination, `entered` grows on entry; effective = entered AND live (one seam rounds + eliminator read).
       live = new Set(roundSpeakers.map(s => s.index)),
       entry = makeEntry(roundSpeakers, enterEvery),
-      // voters = every effective seat (incl. a silent electorate); liveSpeakers (rounds/elimination) drops silent.
-      voters = (): Speaker[] => roundSpeakers.filter(s => entry.entered.has(s.index) && live.has(s.index)),
-      liveSpeakers = (): Speaker[] => voters().filter(s => !s.silent),
+      markedRoles = (key: 'voter' | 'candidate' | 'tagTeam'): Set<string> => new Set((preset?.roles ?? []).filter(r => r[key]).map(r => slugify(r.role))),
+      voterRoles = markedRoles('voter'),
+      candidateRoles = markedRoles('candidate'),
+      tagTeamRoles = markedRoles('tagTeam'),
+      hasRole = (s: Speaker, marked: Set<string>): boolean => !marked.size || s.role !== undefined && marked.has(s.role),
+      field = (): Speaker[] => roundSpeakers.filter(s => entry.entered.has(s.index) && live.has(s.index)),
+      voters = (): Speaker[] => field().filter(s => hasRole(s, voterRoles)),
+      liveSpeakers = (): Speaker[] => field().filter(s => !s.silent),
+      candidates = (): Speaker[] => liveSpeakers().filter(s => hasRole(s, candidateRoles)),
       full = () => toContext(turns, labels, templates, args.context),
+      closingContext = (speaker: Speaker) => withObjective(speaker, args.objectives, false, toContext(turns, labels, templates, args.context, speaker.index)),
       seen = makeSeen(mode, labels, templates, args.context, args.objectives, withObjective),
       refFull = () => withObjective(synth, args.objectives, true, full()), // neutral synth sees every team's objective
       deps = { synth, synthSelector, frame, prompt: args.prompt, labels, optional, templates, errors, live, liveSpeakers, full: refFull, telemetry, speakOne, record, note },
       runSynthesis = makeSynthesizer(deps),
       runElimination = makeEliminator(deps),
       runFrame = makeFramer(deps),
+      runClosing = makeCloser({ roles: preset?.roles ?? [], rounds, budgetOk: () => !(tokenBudget && used() >= tokenBudget), speakers: liveSpeakers, context: closingContext, runParallel, speakOne, record, skip }),
       // voters = everyone who casts (incl. silent electorate); candidates = the non-silent field they vote FOR.
-      runVote = makeVoter({ args, preset, rounds, budgetOk: () => !(tokenBudget && used() >= tokenBudget), liveSpeakers: voters, candidates: liveSpeakers, labels, seen, runHidden, note, telemetry, templates })
+      runVote = makeVoter({ args, preset, rounds, budgetOk: () => !(tokenBudget && used() >= tokenBudget), liveSpeakers: voters, candidates, voteByTeam: preset?.voteByTeam === true, labels, seen, runHidden, note, telemetry, templates })
 
    for (let round = 1; round <= rounds; round++) {
       if (tokenBudget && used() >= tokenBudget) {
-         for (let r = round; r <= rounds; r++) skip(r, 0, 'round', liveSpeakers())
+         for (let r = round; r <= rounds; r++) skip(r, 0, 'round', rotateTeams(liveSpeakers(), tagTeamRoles, r))
          log('warn', `⚠️ token budget ${tokenBudget} exceeded (${used()}) — skipping remaining turns`)
          break
       }
@@ -72,7 +84,7 @@ export const runQuorum = async (
          // The fresh entrant is nudged to bring something new instead of echoing the field.
          entrantPrompt = (s: Speaker): string | undefined => s.index === entrant?.index ? templates.entrant + args.prompt : undefined
       if (entrant) recordEntry(note, entrant, round, labels[entrant.index] ?? entrant.selector)
-      const speaking = entrantFirst(liveSpeakers(), entrant)
+      const speaking = entrantFirst(rotateTeams(liveSpeakers(), tagTeamRoles, round), entrant)
       if (mode === 'sequential')
          for (let i = 0; i < speaking.length; i++) {
             if (tokenBudget && used() >= tokenBudget) { skip(round, i, 'round', speaking); break }
@@ -82,7 +94,7 @@ export const runQuorum = async (
          const snapshot = [...turns]
          await runParallel(speaking, round, 'round', s => seen(s, snapshot), entrantPrompt)
       }
-      if (runVote) await runVote(round, [...turns]) // anonymous peer vote after field turns, before synthesis/elimination
+      if (runVote && !(closing && round === rounds)) await runVote(round, [...turns])
       // Per-round synthesis on the interval — but when closing is on, skip the final round's so there's one synthesis, after closing.
       if (synthInterval !== Infinity && (round % synthInterval === 0 || round === rounds) && !(closing && round === rounds))
          await runSynthesis(round)
@@ -92,10 +104,8 @@ export const runQuorum = async (
    }
 
    // Closing statements: one final parallel pass over the whole transcript, right before the final synthesis.
-   if (closing && !(tokenBudget && used() >= tokenBudget))
-      await runParallel(liveSpeakers(), rounds + 1, 'closing', full)
-   else if (closing)
-      skip(rounds + 1, 0, 'closing')
+   if (closing) await runClosing()
+   if (closing && runVote) await runVote(rounds, [...turns])
 
    // End-only synthesis, or the single synthesis that follows closing statements, runs once after all rounds (round 0).
    if (synthInterval === Infinity || closing)

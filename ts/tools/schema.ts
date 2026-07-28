@@ -30,7 +30,7 @@ export const quorumShape = (schema: SchemaDescriptions, maxRounds: number, minMo
 export const modelList = (models: ModelDef[]): string =>
    models.map(m => m.description ? `${slugify(m.name)} — ${m.description}` : slugify(m.name)).join('; ')
 
-/** One-line staffing hint per preset role: `contestant (2+)`, `jury (3-12)`, `judge (one)`, `security (optional)`, `helper (up to 3)`. */
+/** One-line staffing hint per preset role: `contestant (2+)`, `juror (3-12)`, `judge (one)`, `security (optional)`, `helper (up to 3)`. */
 export const roleCardinality = (role: PresetRole): string => {
    const
       slug = slugify(role.role),

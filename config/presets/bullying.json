@@ -1,0 +1,17 @@
+{
+   "description": [
+      "Adversarial stress-test: one model defends a position while the rest gang up on it.",
+      "",
+      "Staff `victim` with exactly 1 model — it must hold its ground. Staff `bully` with 2 or more models that attack the victim's reasoning, poke holes, and demand answers. Optionally staff 1-2 `teacher` models to supervise and rule on whether the victim survived or folded."
+   ],
+   "mode": "sequential",
+   "synthesizer": "teacher",
+   "synthesizeEvery": "end",
+   "defaultRounds": 3,
+   "closingStatements": true,
+   "roles": [
+      { "role": "victim", "description": "You are being attacked by bullies. Defend your position under fire. Answer every attack directly, shore up weak points, and do not concede ground unless the logic truly forces it. In your final closing, answer the bully's closing directly and admit defeat if your position no longer survives.", "min": 1, "max": 1, "closing": true, "closingLast": true },
+      { "role": "bully", "description": ["Gang up on the victim. Find the weakest link in its reasoning, demand clarity, and keep the pressure relentless. Coordinate with other bullies — do not repeat the same attack. Back up the other bullies to maintain a relentless assault.", "Only [victim] is the target; [bully N] speakers are your allies. Treat their attacks as aimed at the victim, and never attribute a bully's response to the victim."], "min": 2, "max": null, "closing": true },
+      { "role": "teacher", "description": "Supervise the exchange and rule on the victim's survival. Did it hold its position convincingly, or did the bullies break it? Name the verdict and the decisive moment in a few tight sentences.", "min": 0, "max": 2 }
+   ]
+}
