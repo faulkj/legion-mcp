@@ -1,0 +1,63 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.faulkj/legion",
+  "description": "MCP-native LLM councils for debates, juries, blind panels, refinement, and custom deliberation.",
+  "repository": {
+    "url": "https://github.com/faulkj/legion-mcp",
+    "source": "github"
+  },
+  "version": "0.3.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "legion-mcp",
+      "version": "0.3.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "description": "Default OpenAI Responses-compatible API root for model files that omit baseUrl.",
+          "format": "string",
+          "name": "DEFAULT_BASE_URL",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        {
+          "description": "Default provider or gateway key for model files that omit apiKey.",
+          "format": "string",
+          "isSecret": true,
+          "name": "DEFAULT_API_KEY"
+        },
+        {
+          "description": "Maximum discussion rounds accepted by a council run.",
+          "format": "number",
+          "name": "MAX_ROUNDS",
+          "default": "5"
+        },
+        {
+          "description": "Optional soft cumulative token budget for a council run.",
+          "format": "number",
+          "name": "TOKEN_BUDGET"
+        },
+        {
+          "description": "Allow callers to define ad-hoc council roles inline.",
+          "format": "boolean",
+          "name": "DYNAMIC_ROLES",
+          "default": "true"
+        },
+        {
+          "description": "Logging verbosity. Logs are written to stderr for stdio safety.",
+          "format": "string",
+          "name": "LOG_LEVEL",
+          "default": "info",
+          "choices": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        }
+      ]
+    }
+  ]
+}
