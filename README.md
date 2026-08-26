@@ -71,6 +71,14 @@ flowchart LR
 
 ## Setup
 
+From npm — no clone, no build:
+
+```pwsh
+npx legion-mcp
+```
+
+From a clone:
+
 ```pwsh
 npm install
 copy .env.example .env   # then edit .env
@@ -348,7 +356,21 @@ Color is auto-disabled when stderr is not a TTY.
 
 ## Run
 
-One entrypoint, transport as an argument (`stdio` is the default):
+One entrypoint, transport as an argument (`stdio` is the default).
+
+From npm (`legion-mcp` bin — run from a directory holding your `config/`):
+
+```pwsh
+npx legion-mcp        # stdio transport
+npx legion-mcp http   # Streamable HTTP transport on :$PORT/mcp
+```
+
+Installed globally or as a dependency, the same binary is on `PATH`:
+
+```pwsh
+npm install -g legion-mcp
+legion-mcp http
+```
 
 Development (no build step, via `tsx`):
 
@@ -375,7 +397,25 @@ npx @modelcontextprotocol/inspector npx tsx ts/server.ts
 
 ## Use in VS Code
 
-Add to your `mcp.json`:
+Add to your `mcp.json` — from npm:
+
+```json
+{
+   "servers": {
+      "legion": {
+         "command": "npx",
+         "args": ["-y", "legion-mcp"],
+         "cwd": "path/to/your/config/parent",
+         "env": {
+            "DEFAULT_BASE_URL": "https://your-gateway.example.com",
+            "DEFAULT_API_KEY": "sk-your-key"
+         }
+      }
+   }
+}
+```
+
+Or from a clone:
 
 ```json
 {
