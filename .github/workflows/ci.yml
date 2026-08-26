@@ -27,6 +27,10 @@ jobs:
          - name: Install dependencies
            run: npm ci
 
+         - name: Set MCP manifest version
+           run: |
+              node -e "const fs=require('fs'),p=require('./package.json'),s=require('./server.json'); s.version=p.version; let found=false; for(const pkg of s.packages??[]) if(pkg.identifier===p.name){pkg.version=p.version;found=true} if(!found) throw new Error('server.json has no package entry for '+p.name); fs.writeFileSync('server.json',JSON.stringify(s,null,2)+'\n')"
+
          - name: Build
            run: npm run build
 
