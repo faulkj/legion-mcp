@@ -357,35 +357,35 @@ Color is auto-disabled when stderr is not a TTY.
 
 ## Run
 
-One entrypoint, transport as an argument (`stdio` is the default).
+One entrypoint, transport as an argument (`http` is the default).
 
 From npm (`legion-mcp` bin — run from a directory holding your `config/`):
 
 ```pwsh
-npx legion-mcp        # stdio transport
-npx legion-mcp http   # Streamable HTTP transport on :$PORT/mcp
+npx legion-mcp         # Streamable HTTP transport on :$PORT/mcp
+npx legion-mcp stdio   # stdio transport
 ```
 
 Installed globally or as a dependency, the same binary is on `PATH`:
 
 ```pwsh
 npm install -g legion-mcp
-legion-mcp http
+legion-mcp
 ```
 
 Development (no build step, via `tsx`):
 
 ```pwsh
-npm run dev        # stdio transport
-npm run dev:http   # Streamable HTTP transport on :$PORT/mcp
+npm run dev         # Streamable HTTP transport on :$PORT/mcp
+npm run dev:stdio   # stdio transport
 ```
 
 Production (compiled to `bin/server.js`):
 
 ```pwsh
 npm run build
-npm start          # node bin/server.js       (stdio)
-npm run start:http # node bin/server.js http
+npm start           # node bin/server.js       (http)
+npm run start:stdio # node bin/server.js stdio
 ```
 
 ## Try it
@@ -393,7 +393,7 @@ npm run start:http # node bin/server.js http
 List the tools with the MCP Inspector:
 
 ```pwsh
-npx @modelcontextprotocol/inspector npx tsx ts/server.ts
+npx @modelcontextprotocol/inspector npx tsx ts/server.ts stdio
 ```
 
 ## Use in VS Code
@@ -405,7 +405,7 @@ Add to your `mcp.json` — from npm:
    "servers": {
       "legion": {
          "command": "npx",
-         "args": ["-y", "legion-mcp"],
+         "args": ["-y", "legion-mcp", "stdio"],
          "cwd": "path/to/your/config/parent",
          "env": {
             "DEFAULT_BASE_URL": "https://your-gateway.example.com",
@@ -423,7 +423,7 @@ Or from a clone:
    "servers": {
       "legion": {
          "command": "node",
-         "args": ["bin/server.js"],
+         "args": ["bin/server.js", "stdio"],
          "cwd": "path/to/legion",
          "env": {
             "DEFAULT_BASE_URL": "https://your-gateway.example.com",

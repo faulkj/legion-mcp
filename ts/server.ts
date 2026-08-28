@@ -13,7 +13,7 @@ const
          process.exit(1)
       }
    })(),
-   transport = process.argv[2] ?? 'stdio',
+   transport = process.argv[2] ?? 'http',
    displayHost = (host: string): string => host === '127.0.0.1' ? 'localhost' : host
 
 if (transport === 'http') {
@@ -49,6 +49,6 @@ if (transport === 'http') {
    log('info', '🚀 transport: stdio')
    log('info', `🧩 models loaded: ${models.length}`)
 } else {
-   console.error(`Unknown transport "${transport}". Use "stdio" (default) or "http".`)
+   console.error(`Unknown transport "${transport}". Use "http" (default) or "stdio".`)
    process.exit(1)
 }

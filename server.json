@@ -15,6 +15,13 @@
       "transport": {
         "type": "stdio"
       },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "stdio",
+          "description": "Run over MCP stdio (the binary defaults to HTTP)."
+        }
+      ],
       "environmentVariables": [
         {
           "description": "Default OpenAI Responses-compatible API root for model files that omit baseUrl.",

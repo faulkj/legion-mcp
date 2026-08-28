@@ -42,11 +42,11 @@
    ],
    "scripts": {
       "dev": "tsx watch --env-file-if-exists=.env ts/server.ts",
-      "dev:http": "tsx watch --env-file-if-exists=.env ts/server.ts http",
+      "dev:stdio": "tsx watch --env-file-if-exists=.env ts/server.ts stdio",
       "build": "tsc --noEmit && tsup --entry.server=ts/server.ts --format esm --out-dir bin --no-splitting --platform node --clean",
       "prepack": "npm run build",
       "start": "node --env-file-if-exists=.env bin/server.js",
-      "start:http": "node --env-file-if-exists=.env bin/server.js http",
+      "start:stdio": "node --env-file-if-exists=.env bin/server.js stdio",
       "inspector": "npx @modelcontextprotocol/inspector --transport http --server-url http://localhost:5000/mcp"
    },
    "dependencies": {
