@@ -320,6 +320,7 @@ config file can't live inside it.)
 | --- | --- | --- |
 | `DEFAULT_BASE_URL` | no* | API root for models without a `baseUrl` — the SDK appends `/responses`. E.g. `https://api.openai.com/v1`, `https://<res>.openai.azure.com/openai/v1`; a LiteLLM proxy works at its plain root. |
 | `DEFAULT_API_KEY` | no* | API key for models without an `apiKey`. Stays server-side. |
+| `ALLOW_NO_MODELS` | no | `true` boots even when **no model files exist**: zero model tools; `quorum` and preset tools register but fail on use until a `config/models/*.json` appears (hot-reloaded per request). For demos and registry sandboxes that only list tools. Default `false` — missing models stay fatal. |
 | `HOST` | no | HTTP bind address (default `127.0.0.1`). Set `0.0.0.0` to expose — then set `ALLOWED_HOSTS`. |
 | `ALLOWED_HOSTS` | no | Comma-separated hostnames for DNS-rebinding protection on non-localhost binds. |
 | `PORT` | no | HTTP port (default `5000`; ignored by stdio). |
@@ -332,9 +333,9 @@ config file can't live inside it.)
 \* Every model must resolve a `baseUrl` and `apiKey` from its file or the
 defaults — validated at startup.
 
-The server **fails fast** at startup on a missing/empty models directory,
-invalid model files, an unresolvable endpoint or key, or two file names that
-slugify to the same tool.
+The server **fails fast** at startup on a missing/empty models directory
+(unless `ALLOW_NO_MODELS=true`), invalid model files, an unresolvable endpoint
+or key, or two file names that slugify to the same tool.
 
 ### Routing
 

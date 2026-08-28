@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import * as z from 'zod/v4'
+import { log } from '../core/log.js'
 import { bundledDir, csv, layeredFiles, localDir, packageRoot, readOptional, slugKey, slugify } from './text.js'
 
 export { fill, loadDescription, loadErrors, loadPrompts, loadSchema, loadToolDescription, slugify } from './text.js'
@@ -11,12 +12,13 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
    if (!parsed.success)
       throw new Error(`Invalid configuration:\n${z.prettifyError(parsed.error)}`)
 
-   const { DEFAULT_BASE_URL, DEFAULT_API_KEY, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, TOKEN_BUDGET, DYNAMIC_ROLES, DISABLE_PRESETS, LOG_LEVEL } = parsed.data
+   const { DEFAULT_BASE_URL, DEFAULT_API_KEY, ALLOW_NO_MODELS, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, TOKEN_BUDGET, DYNAMIC_ROLES, DISABLE_PRESETS, LOG_LEVEL } = parsed.data
 
    return {
       ...readPackage(),
       defaultBaseUrl: DEFAULT_BASE_URL?.replace(/\/+$/, ''),
       defaultApiKey: DEFAULT_API_KEY,
+      allowNoModels: ALLOW_NO_MODELS === 'true',
       host: HOST,
       allowedHosts: csv(ALLOWED_HOSTS),
       port: PORT,
@@ -35,11 +37,19 @@ export const loadRoles = (): RoleDef[] => {
    return roles
 }
 
-/** Scan config/models/*.json across both layers (local wins); each becomes a tool named after its slugified file name. */
+/**
+ * Scan config/models/*.json across both layers (local wins); each becomes a tool named after its
+ * slugified file name. An empty models directory is fatal unless ALLOW_NO_MODELS=true, which boots
+ * with zero model tools (quorum/presets still register but cannot run) for demos and registry sandboxes.
+ */
 export const loadModels = (config: AppConfig): ModelDef[] => {
    const files = layeredFiles('models', '.json', slugKey('.json'), f => f.endsWith('.example.json'))
-   if (!files.length)
-      throw new Error(`No model files found in ${localDir ?? bundledDir}/models. Add e.g. models/fable.json`)
+   if (!files.length) {
+      if (!config.allowNoModels)
+         throw new Error(`No model files found in ${localDir ?? bundledDir}/models. Add e.g. models/fable.json`)
+      log('warn', `⚠ No model files found in ${localDir ?? bundledDir}/models — model tools disabled; quorum/preset calls will fail until a config/models/*.json exists (ALLOW_NO_MODELS=true)`)
+      return []
+   }
 
    const models = files.map(({ dir, file }) => parseModelFile(dir, file))
    assertNoSlugCollisions(models)
@@ -59,6 +69,7 @@ const
    envSchema = z.object({
       DEFAULT_BASE_URL: z.url('DEFAULT_BASE_URL must be a valid URL').optional(),
       DEFAULT_API_KEY: z.string().min(1).optional(),
+      ALLOW_NO_MODELS: z.enum(['true', 'false']).default('false'),
       HOST: z.string().min(1).default('127.0.0.1'),
       ALLOWED_HOSTS: z.string().optional(),
       PORT: z.coerce.number().int().positive().default(5000),

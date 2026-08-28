@@ -113,6 +113,7 @@ interface AppConfig {
    version: string
    defaultBaseUrl?: string
    defaultApiKey?: string
+   allowNoModels: boolean
    host: string
    allowedHosts?: string[]
    port: number
