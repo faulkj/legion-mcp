@@ -114,6 +114,7 @@ interface AppConfig {
    defaultBaseUrl?: string
    defaultApiKey?: string
    allowNoModels: boolean
+   transport: 'http' | 'stdio'
    host: string
    allowedHosts?: string[]
    port: number

@@ -13,10 +13,9 @@ const
          process.exit(1)
       }
    })(),
-   transport = process.argv[2] ?? 'http',
    displayHost = (host: string): string => host === '127.0.0.1' ? 'localhost' : host
 
-if (transport === 'http') {
+if (config.transport === 'http') {
    const
       handler = createMcpHandler(createServer),
       node = toNodeHandler(handler),
@@ -43,12 +42,9 @@ if (transport === 'http') {
       await handler.close()
       process.exit(0)
    })
-} else if (transport === 'stdio') {
+} else {
    void serveStdio(createServer)
    banner(`⚡ ${config.name} v${config.version} running`)
    log('info', '🚀 transport: stdio')
    log('info', `🧩 models loaded: ${models.length}`)
-} else {
-   console.error(`Unknown transport "${transport}". Use "http" (default) or "stdio".`)
-   process.exit(1)
 }

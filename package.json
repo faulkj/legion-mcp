@@ -1,6 +1,6 @@
 {
    "name": "legion-mcp",
-   "version": "0.3.2",
+   "version": "0.4.0",
    "mcpName": "io.github.faulkj/legion",
    "description": "I am Legion, for we are many ~ MCP-native LLM councils for debates, juries, blind panels, refinement, and custom multi-model deliberation.",
    "author": "Joshua Faulkenberry <j@joshuafaulkenberry.com> (https://joshuafaulkenberry.com/)",
@@ -42,11 +42,11 @@
    ],
    "scripts": {
       "dev": "tsx watch --env-file-if-exists=.env ts/server.ts",
-      "dev:stdio": "tsx watch --env-file-if-exists=.env ts/server.ts stdio",
+      "dev:stdio": "cross-env MCP_TRANSPORT=stdio tsx watch --env-file-if-exists=.env ts/server.ts",
       "build": "tsc --noEmit && tsup --entry.server=ts/server.ts --format esm --out-dir bin --no-splitting --platform node --clean",
       "prepack": "npm run build",
       "start": "node --env-file-if-exists=.env bin/server.js",
-      "start:stdio": "node --env-file-if-exists=.env bin/server.js stdio",
+      "start:stdio": "cross-env MCP_TRANSPORT=stdio node --env-file-if-exists=.env bin/server.js",
       "inspector": "npx @modelcontextprotocol/inspector --transport http --server-url http://localhost:5000/mcp"
    },
    "dependencies": {
@@ -59,6 +59,7 @@
    "devDependencies": {
       "@types/express": "^5.0.6",
       "@types/node": "^26.4.0",
+      "cross-env": "^10.1.0",
       "tsup": "^8.5.1",
       "tsx": "^4.23.12",
       "typescript": "^7.0.2"

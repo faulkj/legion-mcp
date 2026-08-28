@@ -321,6 +321,7 @@ config file can't live inside it.)
 | `DEFAULT_BASE_URL` | no* | API root for models without a `baseUrl` — the SDK appends `/responses`. E.g. `https://api.openai.com/v1`, `https://<res>.openai.azure.com/openai/v1`; a LiteLLM proxy works at its plain root. |
 | `DEFAULT_API_KEY` | no* | API key for models without an `apiKey`. Stays server-side. |
 | `ALLOW_NO_MODELS` | no | `true` boots even when **no model files exist**: zero model tools; `quorum` and preset tools register but fail on use until a `config/models/*.json` appears (hot-reloaded per request). For demos and registry sandboxes that only list tools. Default `false` — missing models stay fatal. |
+| `MCP_TRANSPORT` | no | `http` (default) or `stdio`. |
 | `HOST` | no | HTTP bind address (default `127.0.0.1`). Set `0.0.0.0` to expose — then set `ALLOWED_HOSTS`. |
 | `ALLOWED_HOSTS` | no | Comma-separated hostnames for DNS-rebinding protection on non-localhost binds. |
 | `PORT` | no | HTTP port (default `5000`; ignored by stdio). |
@@ -357,13 +358,14 @@ Color is auto-disabled when stderr is not a TTY.
 
 ## Run
 
-One entrypoint, transport as an argument (`http` is the default).
+One entrypoint; the transport comes from `MCP_TRANSPORT` (`http` is the
+default, set `stdio` for desktop MCP clients).
 
 From npm (`legion-mcp` bin — run from a directory holding your `config/`):
 
 ```pwsh
-npx legion-mcp         # Streamable HTTP transport on :$PORT/mcp
-npx legion-mcp stdio   # stdio transport
+npx legion-mcp                             # Streamable HTTP transport on :$PORT/mcp
+$env:MCP_TRANSPORT='stdio'; npx legion-mcp # stdio transport
 ```
 
 Installed globally or as a dependency, the same binary is on `PATH`:
@@ -384,8 +386,8 @@ Production (compiled to `bin/server.js`):
 
 ```pwsh
 npm run build
-npm start           # node bin/server.js       (http)
-npm run start:stdio # node bin/server.js stdio
+npm start           # http
+npm run start:stdio # stdio
 ```
 
 ## Try it
@@ -393,7 +395,7 @@ npm run start:stdio # node bin/server.js stdio
 List the tools with the MCP Inspector:
 
 ```pwsh
-npx @modelcontextprotocol/inspector npx tsx ts/server.ts stdio
+npx @modelcontextprotocol/inspector -e MCP_TRANSPORT=stdio npx tsx ts/server.ts
 ```
 
 ## Use in VS Code
@@ -405,9 +407,10 @@ Add to your `mcp.json` — from npm:
    "servers": {
       "legion": {
          "command": "npx",
-         "args": ["-y", "legion-mcp", "stdio"],
+         "args": ["-y", "legion-mcp"],
          "cwd": "path/to/your/config/parent",
          "env": {
+            "MCP_TRANSPORT": "stdio",
             "DEFAULT_BASE_URL": "https://your-gateway.example.com",
             "DEFAULT_API_KEY": "sk-your-key"
          }
@@ -423,9 +426,10 @@ Or from a clone:
    "servers": {
       "legion": {
          "command": "node",
-         "args": ["bin/server.js", "stdio"],
+         "args": ["bin/server.js"],
          "cwd": "path/to/legion",
          "env": {
+            "MCP_TRANSPORT": "stdio",
             "DEFAULT_BASE_URL": "https://your-gateway.example.com",
             "DEFAULT_API_KEY": "sk-your-key"
          }

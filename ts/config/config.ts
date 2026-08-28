@@ -12,13 +12,14 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
    if (!parsed.success)
       throw new Error(`Invalid configuration:\n${z.prettifyError(parsed.error)}`)
 
-   const { DEFAULT_BASE_URL, DEFAULT_API_KEY, ALLOW_NO_MODELS, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, TOKEN_BUDGET, DYNAMIC_ROLES, DISABLE_PRESETS, LOG_LEVEL } = parsed.data
+   const { DEFAULT_BASE_URL, DEFAULT_API_KEY, ALLOW_NO_MODELS, MCP_TRANSPORT, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, TOKEN_BUDGET, DYNAMIC_ROLES, DISABLE_PRESETS, LOG_LEVEL } = parsed.data
 
    return {
       ...readPackage(),
       defaultBaseUrl: DEFAULT_BASE_URL?.replace(/\/+$/, ''),
       defaultApiKey: DEFAULT_API_KEY,
       allowNoModels: ALLOW_NO_MODELS === 'true',
+      transport: MCP_TRANSPORT,
       host: HOST,
       allowedHosts: csv(ALLOWED_HOSTS),
       port: PORT,
@@ -70,6 +71,7 @@ const
       DEFAULT_BASE_URL: z.url('DEFAULT_BASE_URL must be a valid URL').optional(),
       DEFAULT_API_KEY: z.string().min(1).optional(),
       ALLOW_NO_MODELS: z.enum(['true', 'false']).default('false'),
+      MCP_TRANSPORT: z.enum(['http', 'stdio'], { error: 'MCP_TRANSPORT must be "http" or "stdio"' }).default('http'),
       HOST: z.string().min(1).default('127.0.0.1'),
       ALLOWED_HOSTS: z.string().optional(),
       PORT: z.coerce.number().int().positive().default(5000),

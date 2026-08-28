@@ -7,7 +7,7 @@ import { join } from 'node:path'
 const
    server = process.argv[2] ?? join(import.meta.dirname, '..', 'bin', 'server.js'),
    cwd = mkdtempSync(join(tmpdir(), 'legion-smoke-')),
-   child = spawn(process.execPath, [server, 'stdio'], { cwd, env: { ...process.env, ...JSON.parse(process.argv[3] ?? '{}') }, stdio: ['pipe', 'pipe', 'inherit'] }),
+   child = spawn(process.execPath, [server], { cwd, env: { ...process.env, MCP_TRANSPORT: 'stdio', ...JSON.parse(process.argv[3] ?? '{}') }, stdio: ['pipe', 'pipe', 'inherit'] }),
    send = (msg) => child.stdin.write(JSON.stringify(msg) + '\n')
 
 let buf = ''
