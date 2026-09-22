@@ -1,6 +1,6 @@
 {
    "name": "legion-mcp",
-   "version": "0.4.1",
+   "version": "0.5.0",
    "mcpName": "io.github.faulkj/legion",
    "description": "I am Legion, for we are many ~ MCP-native LLM councils for debates, juries, blind panels, refinement, and custom multi-model deliberation.",
    "author": "Joshua Faulkenberry <j@joshuafaulkenberry.com> (https://joshuafaulkenberry.com/)",
@@ -53,15 +53,15 @@
       "@modelcontextprotocol/express": "2.0.0",
       "@modelcontextprotocol/node": "2.0.0",
       "@modelcontextprotocol/server": "2.0.0",
-      "openai": "^7.8.0",
-      "zod": "^4.4.3"
+      "openai": "^7.22.0",
+      "zod": "^4.6.5"
    },
    "devDependencies": {
       "@types/express": "^5.0.6",
-      "@types/node": "^26.4.0",
+      "@types/node": "^26.6.2",
       "cross-env": "^10.1.0",
       "tsup": "^8.5.1",
-      "tsx": "^4.23.12",
+      "tsx": "^4.23.15",
       "typescript": "^7.0.2"
    },
    "overrides": {
