@@ -82,9 +82,8 @@ export const loadToolDescription = (tool: string): string | undefined => readLay
 /** Read config/schema.json — sections of field descriptions, flattened then overlaid (local over bundled). */
 export const loadSchema = (): SchemaDescriptions => {
    const flatten = (dir?: string): SchemaDescriptions => {
-      if (!dir) return {}
-      const raw = readOptional(join(dir, 'schema.json'))
-      if (raw === undefined) return {}
+      const raw = dir && readOptional(join(dir, 'schema.json'))
+      if (!raw) return {}
       try { return Object.assign({}, ...Object.values(JSON.parse(raw) as Record<string, SchemaDescriptions>)) as SchemaDescriptions }
       catch { throw new Error(`${join(dir, 'schema.json')} is not valid JSON.`) }
    }
@@ -99,6 +98,19 @@ export const loadErrors = (): ErrorMessages => mergeJsonLayers('errors.json')
 
 /** Slugify a file's basename (drop extension) into a tool/role key. */
 export const slugKey = (ext: string) => (file: string): string => slugify(basename(file, ext))
+
+/**
+ * Resolve an `env:VAR` reference to the value of that environment variable; any other
+ * string passes through unchanged. Throws when the referenced variable is unset or empty,
+ * so a mis-wired deployment fails fast at startup rather than 401-ing on first call.
+ */
+export const resolveEnvRef = (value: string, label: string): string => {
+   const name = /^env:(.+)$/.exec(value)?.[1]
+   if (!name) return value
+   const resolved = process.env[name]
+   if (!resolved) throw new Error(`${label} references env var ${name}, which is not set.`)
+   return resolved
+}
 
 /** Fill {token} placeholders in a template. */
 export const fill = (template: string, vars: Record<string, string | number>): string =>

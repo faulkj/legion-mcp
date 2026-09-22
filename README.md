@@ -133,7 +133,10 @@ Each JSON file becomes a tool, named after the slugified file name
 - `system` — optional baseline system instructions baked into every call to
   this model.
 - `baseUrl` / `apiKey` — optional; omitted values fall back to
-  `DEFAULT_BASE_URL` / `DEFAULT_API_KEY`.
+  `DEFAULT_BASE_URL` / `DEFAULT_API_KEY`. `apiKey` may reference an environment
+  variable with the `env:` prefix — `"apiKey": "env:GPT_KEY"` reads `GPT_KEY`
+  from the environment (unset/empty is a fatal startup error), so a key can stay
+  out of the file entirely.
 - `omitParams` — optional list of request params to drop for this model, e.g.
   `["temperature"]`. The server stays provider-agnostic: it never assumes which
   models reject which params — you declare each model's quirks here. Useful for

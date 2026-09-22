@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import * as z from 'zod/v4'
 import { log } from '../core/log.js'
-import { bundledDir, csv, layeredFiles, localDir, packageRoot, readOptional, slugKey, slugify } from './text.js'
+import { bundledDir, csv, layeredFiles, localDir, packageRoot, readOptional, resolveEnvRef, slugKey, slugify } from './text.js'
 
 export { fill, loadDescription, loadErrors, loadPrompts, loadSchema, loadToolDescription, slugify } from './text.js'
 
@@ -32,11 +32,9 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
 }
 
 /** Scan config/roles/*.md across both layers (local wins); returns empty array when none exist. */
-export const loadRoles = (): RoleDef[] => {
-   const roles = layeredFiles('roles', '.md', slugKey('.md'))
+export const loadRoles = (): RoleDef[] =>
+   layeredFiles('roles', '.md', slugKey('.md'))
       .map(({ key, dir, file }) => ({ name: key, instructions: readFileSync(join(dir, file), 'utf8') }))
-   return roles
-}
 
 /**
  * Scan config/models/*.json across both layers (local wins); each becomes a tool named after its
@@ -96,7 +94,10 @@ const
       if (!result.success)
          throw new Error(`Invalid ${file}:\n${z.prettifyError(result.error)}`)
 
-      return { name: basename(file, '.json'), ...result.data }
+      const name = basename(file, '.json')
+      if (result.data.apiKey)
+         result.data.apiKey = resolveEnvRef(result.data.apiKey, `Model "${name}" apiKey`)
+      return { name, ...result.data }
    },
 
    assertNoSlugCollisions = (models: ModelDef[]): void => {
