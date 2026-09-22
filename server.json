@@ -6,12 +6,12 @@
     "url": "https://github.com/faulkj/legion-mcp",
     "source": "github"
   },
-  "version": "0.3.1",
+  "version": "0.5.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "legion-mcp",
-      "version": "0.3.1",
+      "version": "0.5.0",
       "transport": {
         "type": "stdio"
       },
@@ -34,6 +34,12 @@
           "format": "string",
           "isSecret": true,
           "name": "DEFAULT_API_KEY"
+        },
+        {
+          "description": "Optional. A model file's apiKey may be \"env:VAR\" to read the key from an environment variable named VAR at startup; name those variables here as needed.",
+          "format": "string",
+          "isSecret": true,
+          "name": "GPT_API_KEY"
         },
         {
           "description": "Maximum discussion rounds accepted by a council run.",
