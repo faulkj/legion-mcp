@@ -60,8 +60,31 @@ jobs:
            env:
               NPM_CONFIG_PROVENANCE: true
 
+         - name: Wait for npm to propagate
+           run: |
+              VERSION=$(node -p "require('./package.json').version")
+              for i in $(seq 1 30); do
+                 if curl -fsSL "https://registry.npmjs.org/legion-mcp/$VERSION" >/dev/null 2>&1; then
+                    echo "legion-mcp@$VERSION visible on npm read-path"
+                    exit 0
+                 fi
+                 echo "attempt $i: legion-mcp@$VERSION not yet propagated — waiting 10s"
+                 sleep 10
+              done
+              echo "legion-mcp@$VERSION did not appear on npm within 5 minutes" >&2
+              exit 1
+
          - name: Authenticate to MCP Registry
            run: ./mcp-publisher login github-oidc
 
          - name: Publish to MCP Registry
-           run: ./mcp-publisher publish
+           run: |
+              for i in $(seq 1 5); do
+                 if ./mcp-publisher publish; then
+                    exit 0
+                 fi
+                 echo "mcp-publisher publish attempt $i failed — retrying in 15s"
+                 sleep 15
+              done
+              echo "mcp-publisher publish failed after 5 attempts" >&2
+              exit 1
