@@ -18,7 +18,8 @@ export const runQuorum = async (
    templates: PromptTemplates,
    errors: ErrorMessages,
    tokenBudget?: number,
-   presets: Presets = {}
+   presets: Presets = {},
+   onProgress?: OnProgress
 ): Promise<{ content: { type: 'text'; text: string }[]; structuredContent?: unknown; isError: boolean }> => {
    const err = (text: string) => ({ content: [{ type: 'text' as const, text }], isError: true })
 
@@ -101,6 +102,7 @@ export const runQuorum = async (
       // Eliminations run on their own cadence after any synthesis, including the final round.
       if (eliminationDue(eliminateEvery, round))
          await runElimination(round)
+      await onProgress?.(round, rounds + 1, `round ${round}/${rounds} complete`)
    }
 
    // Closing statements: one final parallel pass over the whole transcript, right before the final synthesis.
@@ -110,6 +112,7 @@ export const runQuorum = async (
    // End-only synthesis, or the single synthesis that follows closing statements, runs once after all rounds (round 0).
    if (synthInterval === Infinity || closing)
       await runSynthesis(0)
+   await onProgress?.(rounds + 1, rounds + 1, 'synthesizing')
 
    return {
       content,

@@ -128,6 +128,16 @@ success returns what succeeded. Empty responses retry once before erroring.
 (parallel — a round can overshoot); synthesis always runs.
 `structuredContent.budget` = `{ limit, used, exceeded }`.
 
+**Long runs & timeouts**: a sequential council makes one model call per speaker
+per round, in series — so cost scales with `speakers × rounds`. Multi-round
+presets (`final_girl`, `war_games`, `refine`, `courtroom`, `workshop`,
+`bullying`, `debate`, `election`) can run for minutes and exceed a client's
+default call timeout. The tool emits `notifications/progress` at each round
+boundary, so a client that sends a `progressToken` and sets
+`resetTimeoutOnProgress` won't time out. Clients without that should either call
+with a low `rounds` and moderate across calls (see above), or raise their
+per-call timeout.
+
 Roles/presets apply **pressure, not guaranteed output control** — for a hard
 length cap use `maxTokens`; trust `structuredContent.turns` for what actually
 happened.

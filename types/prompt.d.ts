@@ -35,6 +35,9 @@ interface Selector {
    team?: string
 }
 
+/** Progress reporter passed into a quorum run: fired at each phase boundary so a long council can heartbeat its caller. `done`/`total` are phase counts; `message` names the current phase. */
+type OnProgress = (done: number, total: number, message: string) => void | Promise<void>
+
 /** Visibility policy for a quorum run: how much of the transcript each round speaker sees. */
 type QuorumMode = 'sequential' | 'parallel' | 'private' | 'independent'
 
