@@ -2,14 +2,23 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import * as z from 'zod/v4'
 import { slugify } from './config.js'
-import { layeredFiles, slugKey } from './text.js'
+import { bundledFiles, layeredFiles, slugKey } from './text.js'
 
-/** Scan config/presets/*.json across both layers (local wins); each becomes a preset keyed by its slugified file name. `DISABLE_PRESETS` slugs are dropped after merge. */
+/**
+ * Scan config/presets/*.json across both layers (local wins); each becomes a preset keyed by its
+ * slugified file name. `PRESETS` is an allowlist over the BUNDLED set, so shipping a new bundled
+ * preset never silently grows a curated deployment; unset exposes them all. A preset the deployment
+ * authored itself is already a statement of intent, so local-only files are always exposed. A local
+ * file that shadows a bundled slug is a customization of that preset, not a new one, and stays
+ * subject to the allowlist.
+ */
 export const loadPresets = (config: AppConfig): Presets => {
-   const disabled = new Set(config.disabledPresets)
+   const
+      allowed = config.presets && new Set(config.presets),
+      bundled = new Set(bundledFiles('presets', '.json', slugKey('.json'), f => f.endsWith('.example.json')).map(e => e.key))
    return Object.fromEntries(
       layeredFiles('presets', '.json', slugKey('.json'), f => f.endsWith('.example.json'))
-         .filter(({ key }) => !disabled.has(key))
+         .filter(({ key }) => !allowed || allowed.has(key) || !bundled.has(key))
          .map(({ key, dir, file }) => [key, parsePresetFile(dir, file)] as const)
    )
 }

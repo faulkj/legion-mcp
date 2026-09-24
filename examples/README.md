@@ -60,8 +60,8 @@ Legion's bundled defaults are **always the base layer**; a `config/` folder in
 the current working directory is **overlaid on top, per file**. A local file
 overrides the bundled file of the same name, a local-only file is added, and
 every bundled file you don't touch stays in place. The overlay can override or
-add — it can't delete a bundled entry (use `DISABLE_PRESETS` to turn off bundled
-presets).
+add — it can't delete a bundled entry (use `PRESETS` to pick which bundled
+presets register as tools).
 
 Because the overlay merges, each example ships only the files it actually
 customizes. Every example still ships **at least one model file**

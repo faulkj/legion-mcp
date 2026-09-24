@@ -122,6 +122,7 @@ interface AppConfig {
    modelTimeout: number
    tokenBudget?: number
    dynamicRoles: boolean
-   disabledPresets: string[]
+   /** Bundled preset slugs to expose; `undefined` exposes them all. Local-only presets are always exposed. */
+   presets?: string[]
    logLevel: LogLevel
 }

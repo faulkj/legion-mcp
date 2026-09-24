@@ -100,8 +100,8 @@ is **overlaid on top of them, per file**:
   the keys it sets.
 - **`description.md`**: local wins whole if present, else bundled.
 
-The overlay can **override or add**, but not delete a bundled entry. To turn off
-bundled presets you don't want, use `DISABLE_PRESETS` (see below).
+The overlay can **override or add**, but not delete a bundled entry. To choose
+which bundled presets register as tools, use `PRESETS` (see below).
 
 > **Installing from npm? You must supply your own model files.** The bundled
 > config ships only key-free `*.example.json` model files, which the scanner
@@ -332,7 +332,7 @@ config file can't live inside it.)
 | `MODEL_TIMEOUT` | no | Per-model-call timeout in ms (default `90000`), so one stalled seat cannot stall a council. Retried once, so a seat's worst case is roughly double before it becomes a failed turn. |
 | `TOKEN_BUDGET` | no | Default **soft** cumulative token budget for a `quorum` run (unset = no limit; per-call `tokenBudget` overrides). |
 | `DYNAMIC_ROLES` | no | Allow the calling AI to define ad-hoc `quorum` roles inline (default `true`). |
-| `DISABLE_PRESETS` | no | Comma-separated preset slugs to **not** register as tools (e.g. `battle_royale,courtroom`). Applies to bundled and local presets alike; unknown names are ignored. Unset = all presets registered. |
+| `PRESETS` | no | Comma-separated **allowlist** of bundled preset slugs to register as tools (e.g. `code_review,debate`). Unset = every bundled preset, so upgrades never silently drop one; set = only these, so a newly shipped bundled preset never appears uninvited. Presets you add under your own `config/presets/` are **always** registered — authoring one is the opt-in — while a local file sharing a bundled slug customizes that preset and still obeys the list. Unknown names are ignored. |
 | `LOG_LEVEL` | no | `debug` \| `info` \| `warn` \| `error` (default `info`). |
 
 \* Every model must resolve a `baseUrl` and `apiKey` from its file or the

@@ -61,17 +61,16 @@ export const mergeJsonLayers = <T extends object>(rel: string): T => {
  * registration order stays stable. `skip` drops files (e.g. *.example.json) before keying.
  */
 export const layeredFiles = (sub: string, ext: string, key: (file: string) => string, skip?: (file: string) => boolean): { key: string; dir: string; file: string }[] => {
-   const scan = (dir?: string): { key: string; dir: string; file: string }[] =>
-      !dir || !existsSync(join(dir, sub))
-         ? []
-         : readdirSync(join(dir, sub))
-            .filter(f => f.endsWith(ext) && !(skip?.(f) ?? false))
-            .map(f => ({ key: key(f), dir: join(dir, sub), file: f })),
-      bundled = scan(bundledDir),
-      local = scan(localDir),
+   const
+      bundled = scanLayer(bundledDir, sub, ext, key, skip),
+      local = scanLayer(localDir, sub, ext, key, skip),
       localKeys = new Set(local.map(e => e.key))
    return [...bundled.filter(e => !localKeys.has(e.key)), ...local]
 }
+
+/** The bundled layer alone, so callers can tell a shipped file from one the deployment authored. */
+export const bundledFiles = (sub: string, ext: string, key: (file: string) => string, skip?: (file: string) => boolean): { key: string; dir: string; file: string }[] =>
+   scanLayer(bundledDir, sub, ext, key, skip)
 
 /** Read config/description.md as the server MCP `instructions`; returns undefined when absent. */
 export const loadDescription = (): string | undefined => readLayered('description.md')
@@ -120,5 +119,12 @@ export const fill = (template: string, vars: Record<string, string | number>): s
 export const readOptional = (path: string | URL): string | undefined => {
    try { return readFileSync(path, 'utf8') } catch { return undefined }
 }
+
+const scanLayer = (dir: string | undefined, sub: string, ext: string, key: (file: string) => string, skip?: (file: string) => boolean): { key: string; dir: string; file: string }[] =>
+   !dir || !existsSync(join(dir, sub))
+      ? []
+      : readdirSync(join(dir, sub))
+         .filter(f => f.endsWith(ext) && !(skip?.(f) ?? false))
+         .map(f => ({ key: key(f), dir: join(dir, sub), file: f }))
 
 
