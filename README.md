@@ -255,41 +255,65 @@ first lawyer listed for each side gives that side's closing statement:
 }
 ```
 
+#### Authoring notes
+
+Things that bite when writing a preset:
+
+- **`min`/`max` count every speaker in that role, not per team.** A 3-a-side tag
+  match is `min: 4, max: 12`, not `max: 3`. The engine cannot enforce
+  "one per side" — say it in the `description` instead.
+- **Neutral roles cannot be teamed.** The `synthesizer` and `framer` reject a
+  `@team` tag, so a role that belongs to one side can't hold either job.
+- **Some keys require others**, and a violation is caught at load: `synthesizeEvery`
+  and `eliminateEvery` need a `synthesizer`, `reframeEvery` needs a `framer`,
+  `closingLast` needs `closing`, vote options need `vote`, and a synthesizer
+  needs at least one other required role (it stops speaking in normal rounds).
+  `enterEvery` and `tagTeam` cannot be combined — both decide who speaks.
+- **A malformed preset is skipped, not fatal.** It logs
+  `❌ preset skipped — Invalid <file>: <reason>` and every other tool still
+  registers, so check the server log when a preset tool doesn't appear.
+- **Cost is `speakers × rounds` serial model calls**, so `defaultRounds` and a
+  generous `max` multiply quickly. `mode: "parallel"` collapses each round to
+  its slowest speaker, at the price of speakers no longer seeing each other
+  within a round.
+
 This repo ships these presets — edit or delete freely:
 
 <dl>
-<dt><code>code_review</code></dt>
-<dd>Structured multi-model code review.</dd>
-<dt><code>debate</code></dt>
-<dd>Opposing sides argue a question to a synthesis.</dd>
-<dt><code>brainstorm</code></dt>
-<dd>Divergent idea generation across models.</dd>
-<dt><code>quick_take</code></dt>
-<dd>Fast one-shot reactions from several models.</dd>
-<dt><code>tiebreak</code></dt>
-<dd>A decisive third voice resolves a stalemate.</dd>
 <dt><code>battle_royale</code></dt>
 <dd>Free-for-all contest; an overseer crowns a winner.</dd>
+<dt><code>brainstorm</code></dt>
+<dd>Divergent idea generation across models.</dd>
+<dt><code>bullying</code></dt>
+<dd>A pack pressure-tests one position to see what survives.</dd>
+<dt><code>code_review</code></dt>
+<dd>Structured multi-model code review.</dd>
 <dt><code>courtroom</code></dt>
 <dd>Team-tagged lawyers argue opposing sides, jurors vote by side, and a judge rules.</dd>
-<dt><code>election</code></dt>
-<dd>Candidates campaign, then the field decides by secret ballot — the anonymous vote is the verdict, not a judge's call. Optional <code>incumbent</code> defends a record; an optional silent <code>electorate</code> reads every round and votes without campaigning.</dd>
+<dt><code>debate</code></dt>
+<dd>Opposing sides argue a question to a synthesis.</dd>
 <dt><code>double_blind</code></dt>
 <dd>Independent blind panel — no one sees the others.</dd>
-<dt><code>gauntlet</code></dt>
-<dd>Private self-refinement race across rounds.</dd>
-<dt><code>refine</code></dt>
-<dd>Relay polish of an existing artifact.</dd>
-<dt><code>workshop</code></dt>
-<dd>Differentiated creative team.</dd>
-<dt><code>focus_group</code></dt>
-<dd>Moderated panel that riffs off each other.</dd>
+<dt><code>election</code></dt>
+<dd>Candidates campaign, then the field decides by secret ballot — the anonymous vote is the verdict, not a judge's call. Optional <code>incumbent</code> defends a record; an optional silent <code>electorate</code> reads every round and votes without campaigning.</dd>
 <dt><code>final_girl</code></dt>
 <dd>Survivors culled one per round until one remains.</dd>
-<dt><code>war_games</code></dt>
-<dd>A staggered-entry team cage match: <code>@team</code>-tagged combatants enter one at a time while a neutral ref calls fouls and names the winning team, with an optional <code>booker</code> who sets the match.</dd>
+<dt><code>focus_group</code></dt>
+<dd>Moderated panel that riffs off each other.</dd>
+<dt><code>gauntlet</code></dt>
+<dd>Private self-refinement race across rounds.</dd>
+<dt><code>quick_take</code></dt>
+<dd>Fast one-shot reactions from several models.</dd>
+<dt><code>refine</code></dt>
+<dd>Relay polish of an existing artifact.</dd>
 <dt><code>tag_team</code></dt>
 <dd>Tag team match: one <code>@team</code>-tagged wrestler is legal per team each round and the rest wait on the apron, rotating every round so a three-person side cycles through all three. An optional <code>run_in</code> hits the ring for a single round (book it with <code>cameoRound</code>), an optional <code>announcer</code> calls the match, and the <code>ref</code> names the winning team.</dd>
+<dt><code>tiebreak</code></dt>
+<dd>A decisive third voice resolves a stalemate.</dd>
+<dt><code>war_games</code></dt>
+<dd>A staggered-entry team cage match: <code>@team</code>-tagged combatants enter one at a time while a neutral ref calls fouls and names the winning team, with an optional <code>booker</code> who sets the match.</dd>
+<dt><code>workshop</code></dt>
+<dd>Differentiated creative team.</dd>
 </dl>
 
 Empty/missing folder → no preset tools. Which **bundled** presets register as tools

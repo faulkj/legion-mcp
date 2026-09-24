@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import * as z from 'zod/v4'
 import { slugify } from './config.js'
+import { log } from '../core/log.js'
 import { bundledFiles, layeredFiles, slugKey } from './text.js'
 
 /**
@@ -11,6 +12,10 @@ import { bundledFiles, layeredFiles, slugKey } from './text.js'
  * authored itself is already a statement of intent, so local-only files are always exposed. A local
  * file that shadows a bundled slug is a customization of that preset, not a new one, and stays
  * subject to the allowlist.
+ *
+ * Presets reload per request, so a malformed file must not take the server down with it: the bad
+ * preset is logged and skipped, and every other tool still registers. Throwing here would surface
+ * as an unexplained `-32603` on `tools/list` — the validation message never reaching the author.
  */
 export const loadPresets = (config: AppConfig): Presets => {
    const
@@ -19,7 +24,13 @@ export const loadPresets = (config: AppConfig): Presets => {
    return Object.fromEntries(
       layeredFiles('presets', '.json', slugKey('.json'), f => f.endsWith('.example.json'))
          .filter(({ key }) => !allowed || allowed.has(key) || !bundled.has(key))
-         .map(({ key, dir, file }) => [key, parsePresetFile(dir, file)] as const)
+         .flatMap(({ key, dir, file }) => {
+            try { return [[key, parsePresetFile(dir, file)] as const] }
+            catch (e) {
+               log('error', `❌ preset skipped — ${e instanceof Error ? e.message : String(e)}`)
+               return []
+            }
+         })
    )
 }
 
