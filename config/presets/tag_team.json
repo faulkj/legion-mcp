@@ -5,7 +5,9 @@
       "Staff `wrestler` with team-tagged selectors — `model:wrestler@blue`, `model:wrestler@red` — and give each team a shared objective via `objectives` ({ \"blue\": \"…\", \"red\": \"…\" }).",
       "Keep the sides even: **2 a side** for a standard tag match (4 wrestlers), **3 a side** for a six-man tag (6), or **6 a side** for a twelve-man war (12).",
       "Only ONE wrestler per team is legal each round; the rest are on the apron reading the match, and the legal wrestler rotates every round, so a 3-person team cycles through all three across rounds 1-2-3 and a 6-person team takes six rounds to get everyone in.",
-      "Whoever is in has to pick up their partner's thread, not restart it. Optionally staff an `announcer` (no team) to call the opening bell and the turning points. The `ref` names the winning TEAM and why. Use rounds >= 2x your team size so everyone gets in at least twice."
+      "Whoever is in has to pick up their partner's thread, not restart it. Optionally staff an `announcer` (no team) to call the opening bell and the turning points. The `ref` names the winning TEAM and why. Use rounds >= 2x your team size so everyone gets in at least twice.",
+      "",
+      "Optionally book interference: staff `run_in` with a team tag (`model:run_in@blue`) and it hits the ring for exactly ONE round — at most two, and if you book two, book **one per side** (`@blue` and `@red`) so the interference cuts both ways. Set `cameoRound` to book the round it happens (default: the middle of the match). A run-in is not a wrestler: it never becomes legal, never takes a tag, and is gone the moment it has done its damage."
    ],
    "mode": "sequential",
    "synthesizer": "ref",
@@ -14,6 +16,7 @@
    "defaultRounds": 4,
    "roles": [
       { "role": "wrestler", "description": "You are the legal wrestler for your team this round — your partners are on the apron and cannot speak until they are tagged in. Advance YOUR TEAM's objective, not your own pet angle: pick up exactly where your partner left off, build on their best work, and take apart the other team's case. Never contradict your own corner; if a partner left a weak spot, shore it up instead of abandoning it.", "min": 4, "max": 12, "tagTeam": true },
+      { "role": "run_in", "description": "You have just hit the ring for your team, and you get ONE shot before you are gone — you are NOT the legal wrestler and you never will be. Interfere: hit the other team's weakest current claim, cover for your own wrestler where they are exposed, and swing the match while you are out here. Stay short and opportunistic — a cheap shot, not a speech — and never restate your own wrestler's argument back at them.", "min": 0, "max": 2, "cameo": true },
       { "role": "announcer", "description": "You call the match from the desk — no team, no favorites. On the opening bell, set it up: state the exact question the teams are fighting over and what a win looks like. When you speak again mid-match, call the turn: name what just shifted, who is on the back foot, and what is still unsettled. Never take a side and never answer the question yourself.", "min": 0, "max": 1 },
       { "role": "ref", "description": "You are the official — no team, no bias. At the final bell, count the fall: name the winning TEAM and the decisive reason it collectively advanced its objective better than the other. Judge each TEAM's combined case across all its wrestlers, not the single best individual turn, and say plainly where the losing side broke down.", "min": 1, "max": 1 }
    ]

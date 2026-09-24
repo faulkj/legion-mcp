@@ -34,6 +34,8 @@ interface PresetRole {
    closing?: boolean
    closingLast?: boolean
    tagTeam?: boolean
+   /** Speaks in exactly one round (the caller's `cameoRound`, else the midpoint) instead of every round — a run-in, not a regular. */
+   cameo?: boolean
 }
 
 /** A named council recipe: roles to staff plus optional authoritative mode/synthesizer defaults. The config-facing `synthesizer` key maps to this internal `synthesize` field at load. */

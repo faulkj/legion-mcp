@@ -21,6 +21,7 @@ interface QuorumConfig {
    enterEvery: number | undefined
    optional: boolean
    silentRoles: Set<string>
+   cameoRound: number | undefined
    error: 'closingWithoutSynth' | 'eliminateWithoutSynth' | undefined
 }
 

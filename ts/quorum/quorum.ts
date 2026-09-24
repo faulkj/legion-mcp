@@ -28,7 +28,7 @@ export const runQuorum = async (
       return err(errors.adhocDisabled)
 
    const
-      { preset, effectiveRoles, adHocEmpty, rounds, mode, synthSelector, synthInterval, frameSelector, reframeEvery, closing, eliminateEvery, enterEvery, optional, silentRoles, error } = resolveConfig(args, models, roles, presets, maxRounds)
+      { preset, effectiveRoles, adHocEmpty, rounds, mode, synthSelector, synthInterval, frameSelector, reframeEvery, closing, eliminateEvery, enterEvery, optional, silentRoles, cameoRound, error } = resolveConfig(args, models, roles, presets, maxRounds)
    if (adHocEmpty) return err(errors.adhocEmptyName)
    if (error) return err(errors[error])
 
@@ -51,10 +51,14 @@ export const runQuorum = async (
       // `live` shrinks on elimination, `entered` grows on entry; effective = entered AND live (one seam rounds + eliminator read).
       live = new Set(roundSpeakers.map(s => s.index)),
       entry = makeEntry(roundSpeakers, enterEvery),
-      markedRoles = (key: 'voter' | 'candidate' | 'tagTeam'): Set<string> => new Set((preset?.roles ?? []).filter(r => r[key]).map(r => slugify(r.role))),
+      markedRoles = (key: 'voter' | 'candidate' | 'tagTeam' | 'cameo'): Set<string> => new Set((preset?.roles ?? []).filter(r => r[key]).map(r => slugify(r.role))),
       voterRoles = markedRoles('voter'),
       candidateRoles = markedRoles('candidate'),
       tagTeamRoles = markedRoles('tagTeam'),
+      cameoRoles = markedRoles('cameo'),
+      // A cameo is a run-in: it sits out every round but the one it is booked for, so it interrupts rather than participates.
+      onCard = (list: Speaker[], round: number): Speaker[] =>
+         !cameoRoles.size ? list : list.filter(s => round === cameoRound || s.role === undefined || !cameoRoles.has(s.role)),
       hasRole = (s: Speaker, marked: Set<string>): boolean => !marked.size || s.role !== undefined && marked.has(s.role),
       field = (): Speaker[] => roundSpeakers.filter(s => entry.entered.has(s.index) && live.has(s.index)),
       voters = (): Speaker[] => field().filter(s => hasRole(s, voterRoles)),
@@ -87,7 +91,7 @@ export const runQuorum = async (
          // The fresh entrant is nudged to bring something new instead of echoing the field.
          entrantPrompt = (s: Speaker): string | undefined => s.index === entrant?.index ? templates.entrant + args.prompt : undefined
       if (entrant) recordEntry(note, entrant, round, labels[entrant.index] ?? entrant.selector)
-      const speaking = entrantFirst(rotateTeams(liveSpeakers(), tagTeamRoles, round), entrant)
+      const speaking = entrantFirst(onCard(rotateTeams(liveSpeakers(), tagTeamRoles, round), round), entrant)
       if (mode === 'sequential')
          for (let i = 0; i < speaking.length; i++) {
             if (tokenBudget && used() >= tokenBudget) { skip(round, i, 'round', speaking); break }

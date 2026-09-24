@@ -232,6 +232,7 @@ Role object keys:
 | `closing` | `boolean` | all eligible roles | Restricts closings to marked roles; only the first marked speaker per team or unteamed role closes. |
 | `closingLast` | `boolean` | `false` | Runs this closer after parallel closings with their statements in context; requires `closing: true`. |
 | `tagTeam` | `boolean` | `false` | Rotates one marked speaker per `@team` into each normal round. Cannot combine with `enterEvery`. |
+| `cameo` | `boolean` | `false` | Speaks in exactly one round — the call's `cameoRound`, else the midpoint — instead of every round. A run-in, not a regular. |
 
 For example, a courtroom call assigns lawyers to sides with `@team` tags. The
 first lawyer listed for each side gives that side's closing statement:
@@ -287,9 +288,14 @@ This repo ships these presets — edit or delete freely:
 <dd>Survivors culled one per round until one remains.</dd>
 <dt><code>war_games</code></dt>
 <dd>A staggered-entry team cage match: <code>@team</code>-tagged combatants enter one at a time while a neutral ref calls fouls and names the winning team, with an optional <code>booker</code> who sets the match.</dd>
+<dt><code>tag_team</code></dt>
+<dd>Tag team match: one <code>@team</code>-tagged wrestler is legal per team each round and the rest wait on the apron, rotating every round so a three-person side cycles through all three. An optional <code>run_in</code> hits the ring for a single round (book it with <code>cameoRound</code>), an optional <code>announcer</code> calls the match, and the <code>ref</code> names the winning team.</dd>
 </dl>
 
-Empty/missing folder → no preset tools.
+Empty/missing folder → no preset tools. Which **bundled** presets register as tools
+is controlled by [`PRESETS`](#environment-variables) — unset registers them all,
+and a preset you add under your own `config/presets/` is always registered
+regardless, since authoring one is the opt-in.
 
 > **Role text nudges output, it doesn't cap it** — use `maxTokens` for a hard
 > limit, and budget generously for reasoning models and multi-round quorums.

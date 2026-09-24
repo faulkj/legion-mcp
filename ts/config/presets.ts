@@ -36,7 +36,8 @@ const
          candidate: z.boolean().optional(),
          closing: z.boolean().optional(),
          closingLast: z.boolean().optional(),
-         tagTeam: z.boolean().optional()
+         tagTeam: z.boolean().optional(),
+         cameo: z.boolean().optional()
       })).min(1),
       mode: z.enum(['sequential', 'parallel', 'private', 'independent']).optional(),
       synthesizer: z.string().optional(),

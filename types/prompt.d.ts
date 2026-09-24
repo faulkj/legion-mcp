@@ -55,6 +55,7 @@ interface QuorumInput extends PromptInput {
    models: string[]
    roles?: Record<string, string>
    rounds?: number
+   cameoRound?: number
    mode?: QuorumMode
    synthesize?: string
    synthesizeEvery?: SynthesizeEvery

@@ -18,12 +18,13 @@ export const resolveConfig = (args: QuorumInput, models: ModelDef[], roles: Role
       effectiveRoles = preset ? mergePresetRoles(baseRoles, preset) : baseRoles,
       synthSelector = preset ? presetSynth(preset, args.models, models, effectiveRoles) : args.synthesize,
       closing = (preset?.closingStatements ?? args.closingStatements) === true,
-      eliminateEvery = preset?.eliminateEvery
+      eliminateEvery = preset?.eliminateEvery,
+      rounds = Math.min(maxRounds, Math.max(1, args.rounds ?? preset?.defaultRounds ?? 1))
    return {
       preset,
       effectiveRoles,
       adHocEmpty: adHoc.some(r => !r.name),
-      rounds: Math.min(maxRounds, Math.max(1, args.rounds ?? preset?.defaultRounds ?? 1)),
+      rounds,
       mode: preset?.mode ?? args.mode ?? 'sequential',
       synthSelector,
       synthInterval: synthSelector === undefined ? Infinity : everyN(preset?.synthesizeEvery ?? args.synthesizeEvery),
@@ -34,6 +35,10 @@ export const resolveConfig = (args: QuorumInput, models: ModelDef[], roles: Role
       enterEvery: preset?.enterEvery,
       optional: preset?.eliminationsOptional === true,
       silentRoles: new Set((preset?.roles ?? []).filter(r => r.silent).map(r => slugify(r.role))),
+      // Clamped so a booked round always exists; the midpoint default lands the run-in mid-match rather than on the opening or closing bell.
+      cameoRound: (preset?.roles ?? []).some(r => r.cameo)
+         ? Math.min(rounds, Math.max(1, args.cameoRound ?? Math.ceil(rounds / 2)))
+         : undefined,
       error: closing && synthSelector === undefined ? 'closingWithoutSynth'
          : eliminateEvery !== undefined && eliminateEvery > 0 && synthSelector === undefined ? 'eliminateWithoutSynth'
             : undefined
