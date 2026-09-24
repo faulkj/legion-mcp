@@ -21,7 +21,9 @@ one model. The `quorum` tool fans a prompt out to many.
 - `temperature` and `maxTokens` (optional).
 
 Identity and telemetry (usage, latency, status) are returned in
-`structuredContent`, not embedded in text.
+`structuredContent`, not embedded in text. Every tool declares an
+`outputSchema`, so that shape is typed and validated — read it directly instead
+of parsing the answer text.
 
 ## Mind your own timeout
 

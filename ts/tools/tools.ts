@@ -5,7 +5,7 @@ import { runQuorum } from '../quorum/quorum.js'
 import { withHeartbeat } from '../quorum/heartbeat.js'
 import { createPrompt } from '../core/llm.js'
 import { logPrompt, okStatus, promptEntry } from '../core/log.js'
-import { buildInputSchema, modelList, quorumShape, roleCardinality } from './schema.js'
+import { buildInputSchema, modelList, modelOutputSchema, quorumOutputSchema, quorumShape, roleCardinality } from './schema.js'
 
 /** Register one tool per model definition on the given server. */
 export const registerModelTools = (
@@ -16,26 +16,26 @@ export const registerModelTools = (
    errors: ErrorMessages,
    schema: SchemaDescriptions = {}
 ): void => {
-   const inputSchema = buildInputSchema(schema)
+   const inputSchema = buildInputSchema(schema).shape
    for (const def of models) {
       const
          toolName = slugify(def.name),
          description = def.description ?? `Prompt the ${def.name} model (${def.model}).`
 
-      server.registerTool(toolName, { description, inputSchema }, async (input: PromptInput) => {
+      server.registerTool(toolName, { description, inputSchema, outputSchema: modelOutputSchema }, async (input: PromptInput) => {
          if (input.role !== undefined && !roles.find(r => r.name === input.role))
-            return { content: [{ type: 'text', text: fill(errors.unknownRole, { role: input.role, available: roles.map(r => r.name).join(', ') || 'none' }) }], isError: true }
+            return { content: [{ type: 'text' as const, text: fill(errors.unknownRole, { role: input.role, available: roles.map(r => r.name).join(', ') || 'none' }) }], isError: true }
          try {
             const result = await prompt(def, input)
             logPrompt(promptEntry(def, input, { response: result.text, usage: result.usage, latencyMs: result.latencyMs }, toolName))
             return {
-               content: [{ type: 'text', text: result.text }],
+               content: [{ type: 'text' as const, text: result.text }],
                structuredContent: { tool: toolName, modelName: def.name, modelId: def.model, role: input.role, usage: result.usage, latencyMs: result.latencyMs, status: okStatus(result) }
             }
          } catch (err) {
             const message = err instanceof Error ? err.message : String(err)
             logPrompt(promptEntry(def, input, { error: message }, toolName))
-            return { content: [{ type: 'text', text: fill(errors.modelFailed, { model: def.name, message }) }], isError: true }
+            return { content: [{ type: 'text' as const, text: fill(errors.modelFailed, { model: def.name, message }) }], isError: true }
          }
       })
    }
@@ -79,7 +79,8 @@ export const registerQuorumTool = (
       'quorum',
       {
          description: `${description ?? fallback}\n\nAvailable models: ${modelList(models)}.`,
-         inputSchema: quorumSchema
+         inputSchema: quorumSchema,
+         outputSchema: quorumOutputSchema
       },
       (args: QuorumInput, ctx) => withHeartbeat(ctx, r => runQuorum(args, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget, presets, r))
    )
@@ -119,7 +120,8 @@ export const registerPresetTools = (
          toolName,
          {
             description: `${preset.description}\n\nStaff via models[]: ${staffing}.${synthLine} Available models: ${modelList(models)}.`,
-            inputSchema: presetSchema
+            inputSchema: presetSchema,
+            outputSchema: quorumOutputSchema
          },
          (args: QuorumInput, ctx) => withHeartbeat(ctx, r => runQuorum({ ...args, preset: key }, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget, presets, r))
       )
