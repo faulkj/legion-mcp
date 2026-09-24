@@ -65,7 +65,19 @@ speaker until one remains — the cut is a neutral transcript note (labeled
 so it incurs no further tokens or cost, and its earlier turns stay in the
 transcript marked `· eliminated`. With `eliminationsOptional: true` the
 synthesizer may keep everyone that round (a `0) no elimination` menu choice).
-Requires a synthesizer.
+Requires a synthesizer. Once the field collapses to a single survivor the run
+**stops early** and goes straight to the final synthesis — remaining rounds are
+skipped rather than re-prompting a lone speaker.
+
+**Long serial presets & client deadlines**: survivor-mode presets like
+`final_girl` are `sequential` *and* add a full-transcript synthesizer call every
+round, so wall-clock scales with `survivors + rounds` in series — a large field
+over many rounds can run for minutes. The per-call `MODEL_TIMEOUT` only bounds a
+single stalled seat, not the **sum** of many healthy serial calls. A client
+enforcing a fixed wall-clock deadline (that progress can't reset) may still cut a
+big run off. To stay under it: keep the field and `rounds` modest, or drive the
+elimination manually — call with `rounds: 1`, read `structuredContent.transcript`,
+and feed it back as `context` on the next call.
 
 **Anonymous voting**: set `vote` to a ballot instruction and every live round
 speaker casts one **hidden ballot** in parallel — each seeing the transcript

@@ -23,6 +23,25 @@ one model. The `quorum` tool fans a prompt out to many.
 Identity and telemetry (usage, latency, status) are returned in
 `structuredContent`, not embedded in text.
 
+## Mind your own timeout
+
+These calls can be slow. A single model may think for minutes at a high
+`maxTokens`, and a council multiplies that by its speakers and rounds. Legion
+streams progress, but if your harness enforces a fixed wall-clock deadline it
+will abandon the call while the work keeps running — you lose the answer and pay
+for it anyway.
+
+Before a big call, budget against the deadline you actually have:
+
+- Set `maxTokens` (400-800 is plenty for most turns). This is the single
+  biggest lever — uncapped reasoning models can spend the whole budget thinking
+  and return nothing.
+- Keep `models` and `rounds` small; cost scales with speakers × rounds.
+- Prefer one preset call over a bigger ad-hoc council.
+- If a run is too big for your limit, split it: call with `rounds: 1`, then pass
+  the returned `structuredContent.transcript` back as `context` on the next
+  call. Each leg stays short and nothing is lost between them.
+
 ## Tools
 
 Each model in `config/models/` is exposed as its own tool. The `quorum` tool

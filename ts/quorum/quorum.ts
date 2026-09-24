@@ -102,8 +102,9 @@ export const runQuorum = async (
       if (synthInterval !== Infinity && (round % synthInterval === 0 || round === rounds) && !(closing && round === rounds))
          await runSynthesis(round)
       // Eliminations run on their own cadence after any synthesis, including the final round.
-      if (eliminationDue(eliminateEvery, round))
-         await runElimination(round)
+      if (eliminationDue(eliminateEvery, round)) await runElimination(round)
+      // Last one standing: stop rather than re-prompt a lone survivor; the tail synthesis still names them.
+      if (eliminateEvery !== undefined && liveSpeakers().length <= 1) break
    }
 
    // Closing statements: one final parallel pass over the whole transcript, right before the final synthesis.
