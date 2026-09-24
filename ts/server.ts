@@ -19,7 +19,9 @@ const
 
 if (config.transport === 'http') {
    const
-      handler = createMcpHandler(createServer),
+      // 'sse' (not the 'auto' default) so the stream — and its keepalive frames — start immediately: 'auto' only upgrades once a
+      // notification is emitted, which never happens for a caller that sends no progressToken, leaving a long council silent.
+      handler = createMcpHandler(createServer, { responseMode: 'sse' }),
       node = toNodeHandler(handler),
       app = createMcpExpressApp({
          host: config.host,

@@ -6,6 +6,7 @@ import { eliminationDue, frameDue, makeCloser, makeEliminator, makeFramer, makeS
 import { presetError, resolveSpeakers, validatePreset } from './helpers.js'
 import { makeTurnRunner } from './runner.js'
 import { resolveConfig } from './setup.js'
+import { buildTimeline } from './timeline.js'
 import { makeVoter } from './voting.js'
 
 export const runQuorum = async (
@@ -19,7 +20,7 @@ export const runQuorum = async (
    errors: ErrorMessages,
    tokenBudget?: number,
    presets: Presets = {},
-   onProgress?: OnProgress
+   report: ReportPhase = () => {}
 ): Promise<{ content: { type: 'text'; text: string }[]; structuredContent?: unknown; isError: boolean }> => {
    const err = (text: string) => ({ content: [{ type: 'text' as const, text }], isError: true })
 
@@ -72,6 +73,7 @@ export const runQuorum = async (
       runVote = makeVoter({ args, preset, rounds, budgetOk: () => !(tokenBudget && used() >= tokenBudget), liveSpeakers: voters, candidates, voteByTeam: preset?.voteByTeam === true, labels, seen, runHidden, note, telemetry, templates })
 
    for (let round = 1; round <= rounds; round++) {
+      await report(`round ${round}/${rounds}`)
       if (tokenBudget && used() >= tokenBudget) {
          for (let r = round; r <= rounds; r++) skip(r, 0, 'round', rotateTeams(liveSpeakers(), tagTeamRoles, r))
          log('warn', `⚠️ token budget ${tokenBudget} exceeded (${used()}) — skipping remaining turns`)
@@ -102,22 +104,22 @@ export const runQuorum = async (
       // Eliminations run on their own cadence after any synthesis, including the final round.
       if (eliminationDue(eliminateEvery, round))
          await runElimination(round)
-      await onProgress?.(round, rounds + 1, `round ${round}/${rounds} complete`)
    }
 
    // Closing statements: one final parallel pass over the whole transcript, right before the final synthesis.
-   if (closing) await runClosing()
+   if (closing)
+      await report('closing statements'), await runClosing()
    if (closing && runVote) await runVote(rounds, [...turns])
 
    // End-only synthesis, or the single synthesis that follows closing statements, runs once after all rounds (round 0).
    if (synthInterval === Infinity || closing)
-      await runSynthesis(0)
-   await onProgress?.(rounds + 1, rounds + 1, 'synthesizing')
+      await report('synthesizing'), await runSynthesis(0)
 
    return {
       content,
       structuredContent: {
          turns: telemetry,
+         timeline: buildTimeline(telemetry, labels),
          transcript: toContext(turns, labels, templates) ?? '',
          ...(args.preset ? { preset: args.preset } : {}),
          ...(tokenBudget ? { budget: { limit: tokenBudget, used: used(), exceeded: used() > tokenBudget } } : {})

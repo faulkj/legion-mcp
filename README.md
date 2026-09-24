@@ -329,6 +329,7 @@ config file can't live inside it.)
 | `ALLOWED_HOSTS` | no | Comma-separated hostnames for DNS-rebinding protection on non-localhost binds. |
 | `PORT` | no | HTTP port (default `5000`; ignored by stdio). |
 | `MAX_ROUNDS` | no | Max discussion rounds the `quorum` tool accepts (default `5`). |
+| `MODEL_TIMEOUT` | no | Per-model-call timeout in ms (default `90000`), so one stalled seat cannot stall a council. Retried once, so a seat's worst case is roughly double before it becomes a failed turn. |
 | `TOKEN_BUDGET` | no | Default **soft** cumulative token budget for a `quorum` run (unset = no limit; per-call `tokenBudget` overrides). |
 | `DYNAMIC_ROLES` | no | Allow the calling AI to define ad-hoc `quorum` roles inline (default `true`). |
 | `DISABLE_PRESETS` | no | Comma-separated preset slugs to **not** register as tools (e.g. `battle_royale,courtroom`). Applies to bundled and local presets alike; unknown names are ignored. Unset = all presets registered. |

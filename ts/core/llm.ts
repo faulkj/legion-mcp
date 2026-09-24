@@ -13,7 +13,8 @@ export const createPrompt = (config: AppConfig) => {
             url = (def.baseUrl ?? config.defaultBaseUrl!).replace(/\/+$/, ''),
             apiKey = def.apiKey ?? config.defaultApiKey!,
             key = `${url}|${apiKey}`
-         !clients.has(key) && clients.set(key, new OpenAI({ baseURL: url, apiKey }))
+         // maxRetries is pinned because the SDK retries timeouts too: the default (2) would make one stalled seat cost 3 × timeout.
+         !clients.has(key) && clients.set(key, new OpenAI({ baseURL: url, apiKey, timeout: config.modelTimeout, maxRetries: 1 }))
          return clients.get(key)!
       }
 

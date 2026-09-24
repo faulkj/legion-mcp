@@ -124,6 +124,13 @@ combine, e.g. `truncated, reasoning-heavy`) · `skipped: budget` ·
 `error: <message>`. `isError: true` only when **all** turns fail; partial
 success returns what succeeded. Empty responses retry once before erroring.
 
+**Timeline**: `structuredContent.timeline` is the run's ordered event log —
+`{ round, phase, who?, detail? }` per turn, in the order it happened, so you can
+reason about the *shape* of the deliberation (who framed, who entered, vote
+tallies, who was cut, when it synthesized) without parsing the full transcript.
+`round: 0` is the end-of-run synthesis; `detail` carries the vote tally,
+elimination target, or a skip/error status.
+
 **Budget** is soft: checked between turns (sequential) or at round boundaries
 (parallel — a round can overshoot); synthesis always runs.
 `structuredContent.budget` = `{ limit, used, exceeded }`.
@@ -131,12 +138,14 @@ success returns what succeeded. Empty responses retry once before erroring.
 **Long runs & timeouts**: a sequential council makes one model call per speaker
 per round, in series — so cost scales with `speakers × rounds`. Multi-round
 presets (`final_girl`, `war_games`, `refine`, `courtroom`, `workshop`,
-`bullying`, `debate`, `election`) can run for minutes and exceed a client's
-default call timeout. The tool emits `notifications/progress` at each round
-boundary, so a client that sends a `progressToken` and sets
-`resetTimeoutOnProgress` won't time out. Clients without that should either call
-with a low `rounds` and moderate across calls (see above), or raise their
-per-call timeout.
+`bullying`, `debate`, `election`) can run for minutes. A caller that sends a
+`progressToken` gets `notifications/progress` at each phase boundary and every
+15s in between, which resets the deadline on clients that set
+`resetTimeoutOnProgress`. Progress alone is not a guarantee: a client enforcing
+a fixed wall-clock deadline, or one that ignores progress, will still cut the
+call off. Single model calls are capped by `MODEL_TIMEOUT` (default 90s) so one
+stalled seat cannot stall the whole council. To shorten a run, lower `rounds`
+and moderate across calls (see above), or raise the client's per-call timeout.
 
 Roles/presets apply **pressure, not guaranteed output control** — for a hard
 length cap use `maxTokens`; trust `structuredContent.turns` for what actually

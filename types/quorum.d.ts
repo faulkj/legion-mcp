@@ -108,3 +108,11 @@ interface TurnTelemetry {
    contentIndex?: number
    eliminatedIndex?: number
 }
+
+/** One ordered event in the run's flattened timeline. `who` is absent for seatless notes (votes, unresolvable synthesis); `detail` carries the vote tally, elimination target, or a skip/error status. */
+interface TimelineEvent {
+   round: number
+   phase: TurnPhase
+   who?: string
+   detail?: string
+}

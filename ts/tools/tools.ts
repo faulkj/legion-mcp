@@ -1,17 +1,11 @@
-import { McpServer, type ServerContext } from '@modelcontextprotocol/server'
+import { McpServer } from '@modelcontextprotocol/server'
 import * as z from 'zod/v4'
 import { fill, slugify } from '../config/config.js'
 import { runQuorum } from '../quorum/quorum.js'
+import { withHeartbeat } from '../quorum/heartbeat.js'
 import { createPrompt } from '../core/llm.js'
 import { logPrompt, okStatus, promptEntry } from '../core/log.js'
 import { buildInputSchema, modelList, quorumShape, roleCardinality } from './schema.js'
-
-/** Adapt a tool handler's context into a quorum progress reporter: emit `notifications/progress` only when the caller supplied a token (per spec), so a long council heartbeats clients that set `resetTimeoutOnProgress`. */
-const progressFor = (ctx: ServerContext): OnProgress | undefined => {
-   const progressToken = ctx.mcpReq._meta?.progressToken
-   if (progressToken === undefined) return undefined
-   return (progress, total, message) => ctx.mcpReq.notify({ method: 'notifications/progress', params: { progressToken, progress, total, message } })
-}
 
 /** Register one tool per model definition on the given server. */
 export const registerModelTools = (
@@ -87,7 +81,7 @@ export const registerQuorumTool = (
          description: `${description ?? fallback}\n\nAvailable models: ${modelList(models)}.`,
          inputSchema: quorumSchema
       },
-      (args: QuorumInput, ctx) => runQuorum(args, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget, presets, progressFor(ctx))
+      (args: QuorumInput, ctx) => withHeartbeat(ctx, r => runQuorum(args, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget, presets, r))
    )
 }
 
@@ -127,7 +121,7 @@ export const registerPresetTools = (
             description: `${preset.description}\n\nStaff via models[]: ${staffing}.${synthLine} Available models: ${modelList(models)}.`,
             inputSchema: presetSchema
          },
-         (args: QuorumInput, ctx) => runQuorum({ ...args, preset: key }, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget, presets, progressFor(ctx))
+         (args: QuorumInput, ctx) => withHeartbeat(ctx, r => runQuorum({ ...args, preset: key }, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget, presets, r))
       )
    }
 }

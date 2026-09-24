@@ -119,6 +119,7 @@ interface AppConfig {
    allowedHosts?: string[]
    port: number
    maxRounds: number
+   modelTimeout: number
    tokenBudget?: number
    dynamicRoles: boolean
    disabledPresets: string[]

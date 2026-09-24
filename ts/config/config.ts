@@ -12,7 +12,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
    if (!parsed.success)
       throw new Error(`Invalid configuration:\n${z.prettifyError(parsed.error)}`)
 
-   const { DEFAULT_BASE_URL, DEFAULT_API_KEY, ALLOW_NO_MODELS, MCP_TRANSPORT, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, TOKEN_BUDGET, DYNAMIC_ROLES, DISABLE_PRESETS, LOG_LEVEL } = parsed.data
+   const { DEFAULT_BASE_URL, DEFAULT_API_KEY, ALLOW_NO_MODELS, MCP_TRANSPORT, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, MODEL_TIMEOUT, TOKEN_BUDGET, DYNAMIC_ROLES, DISABLE_PRESETS, LOG_LEVEL } = parsed.data
 
    return {
       ...readPackage(),
@@ -24,6 +24,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
       allowedHosts: csv(ALLOWED_HOSTS),
       port: PORT,
       maxRounds: MAX_ROUNDS,
+      modelTimeout: MODEL_TIMEOUT,
       tokenBudget: TOKEN_BUDGET,
       dynamicRoles: DYNAMIC_ROLES === 'true',
       disabledPresets: csv(DISABLE_PRESETS)?.map(slugify) ?? [],
@@ -74,6 +75,7 @@ const
       ALLOWED_HOSTS: z.string().optional(),
       PORT: z.coerce.number().int().positive().default(5000),
       MAX_ROUNDS: z.coerce.number().int().positive().default(5),
+      MODEL_TIMEOUT: z.coerce.number().int().positive().default(90_000),
       TOKEN_BUDGET: z.coerce.number().int().positive().optional(),
       DYNAMIC_ROLES: z.enum(['true', 'false']).default('true'),
       DISABLE_PRESETS: z.string().optional(),
