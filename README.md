@@ -245,6 +245,7 @@ Role object keys:
 | `description` | `string \| string[]` | matching role file | Inline instructions; arrays are joined with newlines. Otherwise `config/roles/<role>.md` must exist. |
 | `min` | non-negative integer | `1` | Minimum speakers; `0` makes the role optional. |
 | `max` | positive integer or `null` | `1` | Maximum speakers; `null` is unbounded. |
+| `maxTokens` | positive integer | call's `maxTokens` | Output ceiling for this role's seats, overriding the caller's `maxTokens`. Give reasoning synthesizers headroom — they can spend a whole budget thinking and emit nothing. |
 | `silent` | `boolean` | `false` | Lets the role observe and vote without speaking in normal rounds. |
 | `voter` | `boolean` | all eligible roles | Restricts anonymous ballots to marked roles when any role is marked. |
 | `candidate` | `boolean` | all eligible roles | Restricts ballot choices to marked roles when any role is marked. |

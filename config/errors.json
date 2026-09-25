@@ -4,6 +4,7 @@
    "adhocDisabled": "Ad-hoc roles are disabled (set DYNAMIC_ROLES=true to enable).",
    "adhocEmptyName": "Every ad-hoc role name must contain at least one alphanumeric character.",
    "unresolvableSelector": "error: unresolvable selector",
+   "synthFailed": "The council ran, but its final synthesis ({synth}) produced no answer — the text above is the raw discussion, not a finished result. Check structuredContent.turns for the failing turn; a reasoning model that emits no text has usually spent its whole budget thinking, so raise maxTokens — or, if the preset caps that role, the role's own maxTokens.",
    "modelFailed": "{model} failed: {message}",
    "unknownPreset": "Unknown preset \"{preset}\". Available: {available}",
    "roleNotInPreset": "Selector \"{selector}\" uses a role not in preset \"{preset}\" (allowed: {available}).",

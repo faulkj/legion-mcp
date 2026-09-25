@@ -32,6 +32,7 @@ interface QuorumConfig {
    enterEvery: number | undefined
    optional: boolean
    silentRoles: Set<string>
+   roleTokens: Map<string, number>
    cameoRound: number | undefined
    error: 'closingWithoutSynth' | 'eliminateWithoutSynth' | undefined
 }
@@ -67,6 +68,7 @@ interface Speaker {
    role?: string
    team?: string
    silent?: boolean
+   maxTokens?: number
 }
 
 /** The resolved council: every seat, the round speakers (all but the synthesizer), the optional synthesizer, and per-seat display labels. `bad` names the first unresolvable selector instead. */

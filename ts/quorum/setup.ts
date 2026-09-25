@@ -37,6 +37,7 @@ export const resolveConfig = (args: QuorumInput, models: ModelDef[], roles: Role
       enterEvery: preset?.enterEvery,
       optional: preset?.eliminationsOptional === true,
       silentRoles: new Set((preset?.roles ?? []).filter(r => r.silent).map(r => slugify(r.role))),
+      roleTokens: new Map((preset?.roles ?? []).filter(r => r.maxTokens).map(r => [slugify(r.role), r.maxTokens!])),
       // Clamped so a booked round always exists; the midpoint default lands the run-in mid-match rather than on the opening or closing bell.
       cameoRound: (preset?.roles ?? []).some(r => r.cameo)
          ? Math.min(rounds, Math.max(1, args.cameoRound ?? Math.ceil(rounds / 2)))
@@ -55,8 +56,8 @@ export const resolveConfig = (args: QuorumInput, models: ModelDef[], roles: Role
  */
 export const staffCouncil = (args: QuorumInput, config: QuorumConfig, models: ModelDef[], errors: ErrorMessages): ResolvedCouncil & { error?: string } => {
    const
-      { preset, effectiveRoles, synthSelector, frameSelector, silentRoles } = config,
-      council = resolveSpeakers(args.models, synthSelector, models, effectiveRoles, frameSelector, silentRoles),
+      { preset, effectiveRoles, synthSelector, frameSelector, silentRoles, roleTokens } = config,
+      council = resolveSpeakers(args.models, synthSelector, models, effectiveRoles, frameSelector, silentRoles, roleTokens),
       { roundSpeakers, synth, frame, bad } = council,
       teamed = (predicate: (r: PresetRole) => boolean | undefined) =>
          roundSpeakers.find(s => s.team === undefined && preset?.roles.some(r => predicate(r) && slugify(r.role) === s.role)),

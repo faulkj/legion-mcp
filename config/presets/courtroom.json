@@ -15,8 +15,36 @@
    "voteByTeam": true,
    "voteVisibility": "ballots",
    "roles": [
-      { "role": "lawyer", "description": "Argue your side's objective as an advocate. Build on your co-counsel, challenge the opposing side's evidence and reasoning, and answer attacks directly. If you are your side's first listed lawyer, deliver its sole closing statement when called.", "min": 2, "max": null, "candidate": true, "closing": true, "tagTeam": true },
-      { "role": "juror", "description": "Act as a neutral juror. Observe the full trial and closing statements without speaking, then cast your secret ballot for the stronger side.", "min": 3, "max": 12, "silent": true, "voter": true },
-      { "role": "judge", "description": "Preside neutrally. Weigh the lawyers' arguments and the anonymous side tally, then deliver the binding ruling with the decisive reasons." }
+      {
+         "role": "lawyer",
+         "description": [
+            "Argue your side's objective as an advocate.",
+            "Build on your co-counsel, challenge the opposing side's evidence and reasoning, and answer attacks directly.",
+            "If you are your side's first listed lawyer, deliver its sole closing statement when called."
+         ],
+         "min": 2,
+         "max": null,
+         "candidate": true,
+         "closing": true,
+         "tagTeam": true
+      },
+      {
+         "role": "juror",
+         "description": [
+            "Act as a neutral juror.",
+            "Observe the full trial and closing statements without speaking, then cast your secret ballot for the stronger side."
+         ],
+         "min": 3,
+         "max": 12,
+         "silent": true,
+         "voter": true
+      },
+      {
+         "role": "judge",
+         "description": [
+            "Preside neutrally.",
+            "Weigh the lawyers' arguments and the anonymous side tally, then deliver the binding ruling with the decisive reasons."
+         ]
+      }
    ]
 }

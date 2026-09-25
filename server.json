@@ -6,12 +6,12 @@
     "url": "https://github.com/faulkj/legion-mcp",
     "source": "github"
   },
-  "version": "0.6.0",
+  "version": "0.7.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "legion-mcp",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "transport": {
         "type": "stdio"
       },
@@ -36,10 +36,17 @@
           "name": "DEFAULT_API_KEY"
         },
         {
-          "description": "Optional. A model file's apiKey may be \"env:VAR\" to read the key from an environment variable named VAR at startup; name those variables here as needed.",
+          "description": "Boot without any config/models/*.json. The package ships only key-free examples, which the scanner ignores, so this must stay true until a real model file exists beside the working directory.",
+          "isRequired": true,
+          "format": "boolean",
+          "name": "ALLOW_NO_MODELS",
+          "value": "true"
+        },
+        {
+          "description": "Optional. A model file's apiKey may be \"env:VAR\" to read the key from an environment variable named VAR at startup; name those variables here as needed. The bundled gpt example reads this one.",
           "format": "string",
           "isSecret": true,
-          "name": "GPT_API_KEY"
+          "name": "OPENAI_API_KEY"
         },
         {
           "description": "Maximum discussion rounds accepted by a council run.",

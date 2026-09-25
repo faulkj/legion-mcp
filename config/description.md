@@ -41,7 +41,8 @@ Before a big call, budget against the deadline you actually have:
 
 - Set `maxTokens` (400-800 is plenty for most turns). This is the single
   biggest lever — uncapped reasoning models can spend the whole budget thinking
-  and return nothing.
+  and return nothing. Some preset roles set their own ceiling (e.g. a
+  synthesizer given headroom to finish), which overrides yours for that seat.
 - Keep `models` and `rounds` small; cost scales with speakers × rounds.
 - Prefer one preset call over a bigger ad-hoc council.
 - If a run is too big for your limit, split it: call with `rounds: 1`, then pass

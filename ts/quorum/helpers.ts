@@ -20,16 +20,18 @@ export const resolve = (selector: string, models: ModelDef[], roles: RoleDef[]):
  * A seat whose role is in `silentRoles` is flagged `silent` (it hears everything and votes, but
  * takes no round/elimination turn — e.g. an electorate). Returns `{ bad }` for the first unknown selector.
  */
-export const resolveSpeakers = (selectors: string[], synthSelector: string | undefined, models: ModelDef[], roles: RoleDef[], frameSelector?: string, silentRoles?: Set<string>): ResolvedCouncil => {
-   const seats = selectors.map((selector, index) => ({ selector, index, r: resolve(selector, models, roles) }))
+export const resolveSpeakers = (selectors: string[], synthSelector: string | undefined, models: ModelDef[], roles: RoleDef[], frameSelector?: string, silentRoles?: Set<string>, roleTokens?: Map<string, number>): ResolvedCouncil => {
+   const
+      seats = selectors.map((selector, index) => ({ selector, index, r: resolve(selector, models, roles) })),
+      cap = (role?: string): number | undefined => role === undefined ? undefined : roleTokens?.get(role)
    for (const s of seats)
       if (s.r === null) return { speakers: [], roundSpeakers: [], labels: [], bad: s.selector }
    const
-      speakers: Speaker[] = seats.map(({ selector, index, r }) => ({ index, selector, def: r!.def, role: r!.role, team: r!.team, silent: r!.role !== undefined && silentRoles?.has(r!.role) })),
+      speakers: Speaker[] = seats.map(({ selector, index, r }) => ({ index, selector, def: r!.def, role: r!.role, team: r!.team, silent: r!.role !== undefined && silentRoles?.has(r!.role), maxTokens: cap(r!.role) })),
       pick = (sel: string | undefined, at: number): Speaker | undefined => {
          if (sel === undefined) return undefined
          const ext = resolve(sel, models, roles)
-         return speakers.find(s => s.selector === sel) ?? (ext ? { index: at, selector: sel, def: ext.def, role: ext.role, team: ext.team } : undefined)
+         return speakers.find(s => s.selector === sel) ?? (ext ? { index: at, selector: sel, def: ext.def, role: ext.role, team: ext.team, maxTokens: cap(ext.role) } : undefined)
       },
       synth = pick(synthSelector, speakers.length),
       frame = pick(frameSelector, synth && synth.index >= speakers.length ? speakers.length + 1 : speakers.length),

@@ -46,7 +46,7 @@ export const makeTurnRunner = (
             prompt: promptOverride ?? banner(round, rounds, phase, templates) + args.prompt,
             system: args.system,
             temperature: args.temperature,
-            maxTokens: args.maxTokens,
+            maxTokens: speaker.maxTokens ?? args.maxTokens,
             role,
             context: extraContext ?? args.context
          },

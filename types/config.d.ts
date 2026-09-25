@@ -28,6 +28,8 @@ interface PresetRole {
    description?: string | string[]
    min?: number
    max?: number | null
+   /** Per-seat output ceiling, overriding the call's `maxTokens`. Give reasoning synthesizers headroom: they can spend the whole budget thinking before emitting any text. */
+   maxTokens?: number
    silent?: boolean
    voter?: boolean
    candidate?: boolean
@@ -79,6 +81,7 @@ interface ErrorMessages {
    adhocDisabled: string
    adhocEmptyName: string
    unresolvableSelector: string
+   synthFailed: string
    modelFailed: string
    unknownPreset: string
    roleNotInPreset: string

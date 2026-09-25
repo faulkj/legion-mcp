@@ -42,6 +42,7 @@ const
          description: z.union([z.string(), z.array(z.string())]).optional(),
          min: z.number().int().min(0).optional(),
          max: z.number().int().min(1).nullable().optional(),
+         maxTokens: z.number().int().positive().optional(),
          silent: z.boolean().optional(),
          voter: z.boolean().optional(),
          candidate: z.boolean().optional(),

@@ -135,8 +135,10 @@ labels; the tool owns that structure.
 `status` ∈ `ok` · `truncated` (hit `maxTokens`, partial text returned) ·
 `reasoning-heavy` (spent most of the budget thinking — answer may be thin; may
 combine, e.g. `truncated, reasoning-heavy`) · `skipped: budget` ·
-`error: <message>`. `isError: true` only when **all** turns fail; partial
-success returns what succeeded. A response that comes back empty *and*
+`error: <message>`. `isError: true` when **all** turns fail, or when the
+synthesizer's final answer fails — the discussion is still returned, followed by
+a note that it is not a finished result. Otherwise partial success returns what
+succeeded. A response that comes back empty *and*
 incomplete is retried once before erroring; an empty but completed response is
 returned as-is.
 

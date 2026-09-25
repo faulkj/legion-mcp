@@ -1,3 +1,4 @@
+import { fill } from '../config/config.js'
 import { log } from '../core/log.js'
 import { makeSeen, toContext } from './context.js'
 import { entrantFirst, entryDue, makeEntry, makeField, nextEntrant, recordEntry, rotateTeams, withObjective } from './entry.js'
@@ -92,8 +93,10 @@ export const runQuorum = async (
    if (synthInterval === Infinity || closing)
       await report('synthesizing'), await runSynthesis(0)
 
+   const synthFailed = synthSelector !== undefined && telemetry.findLast(t => t.phase === 'synthesis')?.contentIndex === undefined
+
    return {
-      content,
+      content: synthFailed ? [...content, { type: 'text' as const, text: fill(errors.synthFailed, { synth: synthSelector! }) }] : content,
       structuredContent: {
          turns: telemetry,
          timeline: buildTimeline(telemetry, labels),
@@ -101,6 +104,6 @@ export const runQuorum = async (
          ...(args.preset ? { preset: args.preset } : {}),
          ...(tokenBudget ? { budget: { limit: tokenBudget, used: used(), exceeded: used() > tokenBudget } } : {})
       },
-      isError: content.length === 0
+      isError: content.length === 0 || synthFailed
    }
 }
