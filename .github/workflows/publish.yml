@@ -32,7 +32,7 @@ jobs:
 
          - name: Verify release tag
            run: |
-              node -e "const v=require('./package.json').version,tag=process.env.GITHUB_REF_TYPE==='tag'?process.env.GITHUB_REF_NAME:null; if(tag&&tag!=='v'+v) throw new Error('Tag '+tag+' does not match v'+v)"
+              node -e "const v=require('./package.json').version,t=process.env.GITHUB_REF_TYPE,n=process.env.GITHUB_REF_NAME; if(t!=='tag') throw new Error('Publish requires a v* tag; got '+t+' '+n); if(n!=='v'+v) throw new Error('Tag '+n+' does not match v'+v)"
 
          - name: Set MCP manifest version
            run: |

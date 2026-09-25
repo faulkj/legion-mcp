@@ -12,13 +12,17 @@ one model. The `quorum` tool fans a prompt out to many.
 - `context` (optional) — supporting text (code, docs, data) appended to the
   prompt as a separate block. Treated as sensitive: only its presence is logged
   at the info level.
-- `system` (optional) — call-time system instructions. Composes last (highest
-  precedence).
-- `role` (optional) — the slug of a hot-droppable role file from
-  `config/roles/`. Roles layer between model-file instructions and call-time
-  `system`. Drop a `.md` file into that directory; it becomes available
-  immediately without restart.
+- `system` (optional) — call-time system instructions, composed over the model
+  file's own `system`.
 - `temperature` and `maxTokens` (optional).
+
+## Model tools only
+
+- `role` (optional) — the slug of a hot-droppable role file from
+  `config/roles/`. Instructions compose model file → call-time `system` → role
+  contract, so the role binds last. Drop a `.md` file into that directory and it
+  becomes available without a rebuild. The `quorum` and preset tools take no
+  `role`; they assign roles per seat via `models` selectors instead.
 
 Identity and telemetry (usage, latency, status) are returned in
 `structuredContent`, not embedded in text. Every tool declares an

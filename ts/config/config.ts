@@ -4,7 +4,9 @@ import * as z from 'zod/v4'
 import { log } from '../core/log.js'
 import { bundledDir, csv, layeredFiles, localDir, packageRoot, readOptional, resolveEnvRef, slugKey, slugify } from './text.js'
 
-export { fill, loadDescription, loadErrors, loadPrompts, loadSchema, loadToolDescription, slugify } from './text.js'
+export { fill, slugify } from './text.js'
+
+export { loadDescription, loadErrors, loadPrompts, loadSchema, loadToolDescription } from './load.js'
 
 /** Parse and validate environment configuration, failing fast on any problem. */
 export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
@@ -66,6 +68,7 @@ const
       apiKey: z.string().min(1).optional(),
       omitParams: z.array(z.string()).optional()
    }),
+
    envSchema = z.object({
       DEFAULT_BASE_URL: z.url('DEFAULT_BASE_URL must be a valid URL').optional(),
       DEFAULT_API_KEY: z.string().min(1).optional(),

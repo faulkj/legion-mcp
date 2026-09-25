@@ -14,7 +14,7 @@ closingStatements — true: one final statement per speaker before synthesis; ne
 objectives — optional { team: goal } map for team runs (see Teams)
 vote — optional anonymous peer-vote ballot instructions (see Anonymous voting)
 voteEvery — N: vote every Nth round (always the last); 0/"end" = one final vote; needs vote
-voteVisibility — "aggregate" (default, counts only) | "ballots" (also anonymized ballot texts)
+voteVisibility — "aggregate" (default, counts only) | "ballots" (also every cast label, unordered)
 tokenBudget — optional soft cumulative token budget (overrides TOKEN_BUDGET)
 ```
 
@@ -69,10 +69,11 @@ Requires a synthesizer. Once the field collapses to a single survivor the run
 **stops early** and goes straight to the final synthesis — remaining rounds are
 skipped rather than re-prompting a lone speaker.
 
-**Long serial presets & client deadlines**: survivor-mode presets like
-`final_girl` are `sequential` *and* add a full-transcript synthesizer call every
-round, so wall-clock scales with `survivors + rounds` in series — a large field
-over many rounds can run for minutes. The per-call `MODEL_TIMEOUT` only bounds a
+**Long survivor presets & client deadlines**: survivor-mode presets add a
+full-transcript synthesizer call every round, so even a `parallel` field like
+`final_girl` serializes one elimination per round — wall-clock scales with
+`rounds`, and a `sequential` field like `war_games` scales with
+`survivors × rounds`. Either can run for minutes. The per-call `MODEL_TIMEOUT` only bounds a
 single stalled seat, not the **sum** of many healthy serial calls. A client
 enforcing a fixed wall-clock deadline (that progress can't reset) may still cut a
 big run off. To stay under it: keep the field and `rounds` modest, or drive the
@@ -94,8 +95,9 @@ recoverable. The engine is **advisory** — it never eliminates or picks a winne
 on its own, so tell the synthesizer/ref to act on the tally if you want it
 binding. `voteEvery: N` votes every Nth round (always including the last);
 `0`/`end` (default) = one final vote before synthesis. `voteVisibility:
-"ballots"` also appends the anonymized winning labels (still no voter
-identities). Each ballot is a full model call, so `voteEvery: 1` adds ~voters ×
+"ballots"` also appends one line per cast ballot — every choice, losing ones
+included, in no particular order (still no voter identities and no ballot text).
+Each ballot is a full model call, so `voteEvery: 1` adds ~voters ×
 rounds hidden calls against the token budget. A silent electorate role votes
 without campaigning; neutral voices (synth, framer) don't vote.
 
@@ -134,7 +136,9 @@ labels; the tool owns that structure.
 `reasoning-heavy` (spent most of the budget thinking — answer may be thin; may
 combine, e.g. `truncated, reasoning-heavy`) · `skipped: budget` ·
 `error: <message>`. `isError: true` only when **all** turns fail; partial
-success returns what succeeded. Empty responses retry once before erroring.
+success returns what succeeded. A response that comes back empty *and*
+incomplete is retried once before erroring; an empty but completed response is
+returned as-is.
 
 **Timeline**: `structuredContent.timeline` is the run's ordered event log —
 `{ round, phase, who?, detail? }` per turn, in the order it happened, so you can

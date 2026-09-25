@@ -52,8 +52,9 @@ flowchart LR
 - **No provider adapters.** There is no provider-specific code and no built-in
   model list. Legion speaks one wire format; models that don't speak it natively
   go through a gateway. Supporting a new model requires no change here.
-- **Models are config, not code.** Adding a model means adding a JSON file. The
-  directory is re-read per request, so no rebuild or restart.
+- **Models are config, not code.** Adding a model means adding a JSON file. Over
+  HTTP the directory is re-read per request, so no rebuild or restart; over
+  stdio the config is read once per connection (see [Hot-reload](#hot-reload)).
 - **One tool per model.** Each model appears to the calling AI as its own tool
   with its own description, rather than a single tool with a model parameter.
   The `quorum` tool covers the ad-hoc multi-model case, and each preset in
@@ -110,8 +111,26 @@ which bundled presets register as tools, use `PRESETS` (see below).
 > in ...`). Drop one `config/models/<name>.json` next to where you run the
 > server (see below) — the rest falls back to the bundled defaults.
 
-The layout below is identical either way, and everything hot-reloads per
-request.
+The layout below is identical either way.
+
+### Hot-reload
+
+Config is read fresh when a server instance is built, never baked in at build
+time — but *when* that happens depends on the transport:
+
+| Transport | Config is re-read | Effect of editing a config file |
+| --- | --- | --- |
+| `http` | per request | Live on the next call, no restart. |
+| `stdio` | once per connection | Takes effect when the client reconnects. |
+
+HTTP builds a fresh server per request, so a dropped-in model, role, preset, or
+text override is picked up by the very next call. Stdio pins one server for the
+life of the connection, so the same edit lands when the client restarts Legion —
+which for most desktop MCP clients means reloading the server, not rebooting the
+machine.
+
+Where this README says something is "live on the next call", read it as the HTTP
+behavior; over stdio it's the next connection.
 
 ### Models — `config/models/*.json`
 
@@ -306,7 +325,7 @@ This repo ships these presets — edit or delete freely:
 <dt><code>gauntlet</code></dt>
 <dd>Private self-refinement race across rounds.</dd>
 <dt><code>quick_take</code></dt>
-<dd>Fast one-shot reactions from several models.</dd>
+<dd>Fast two-voice gut check — one direct answer, one line of pushback.</dd>
 <dt><code>refine</code></dt>
 <dd>Relay polish of an existing artifact.</dd>
 <dt><code>tag_team</code></dt>
@@ -339,12 +358,17 @@ models and when the AI should use each. See this repo's copy for a template.
 
 ### Tool, field & message text — `config/*.json` and `config/tools/*.md`
 
-All user-facing text lives in config, not code, and hot-reloads per request.
-Each file merges over the bundled JSON base per key, so override only what you want;
-open the shipped copies to see the full key set and `{token}` placeholders:
+The text a caller reads to *drive* Legion — tool and field descriptions, prompt
+scaffolding, runtime errors — lives in config, not code. (Result-shape
+descriptions in `outputSchema`, generated staffing lines, and startup errors
+stay in code.) Each file merges over the bundled JSON base per key, so override
+only what you want; open the shipped copies to see the full key set and
+`{token}` placeholders:
 
-- `config/tools/<tool>.md` — a tool's description (e.g. `quorum.md`). Delete to
-  fall back to the built-in string.
+- `config/tools/quorum.md` — the `quorum` tool's description. Delete to fall
+  back to the built-in string. This is the only per-tool markdown file that is
+  read: model tools describe themselves from their model file's `description`,
+  and preset tools from the preset's own `description`.
 - `config/schema.json` — input-field descriptions (`prompt` = shared fields,
   `quorum` = quorum-only; a `quorum` key wins on a name clash).
 - `config/prompts.json` — the prompt-shaping templates models read: role

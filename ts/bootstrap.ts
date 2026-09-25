@@ -33,7 +33,6 @@ export const makeServerFactory = (config: AppConfig): () => McpServer => {
          templates = loadPrompts(),
          errors = loadErrors(),
          presets = loadPresets(config),
-         // Forward roles + templates so quorum can pass its effective (file + ad-hoc) roles; both default here.
          prompt: ReturnType<typeof createPrompt> = (def, input, override, tpl) => basePrompt(def, input, override ?? roles, tpl ?? templates)
 
       registerModelTools(server, models, roles, prompt, errors, schema)

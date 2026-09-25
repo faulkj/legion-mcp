@@ -55,7 +55,7 @@ export const makeSynthesizer = (deps: PhaseDeps): ((round: number) => Promise<vo
 /** Build the closing phase: one marked closer per team or unteamed role speaks in parallel, then `closingLast` roles respond in sequence. */
 export const makeCloser = (deps: ClosingDeps): (() => Promise<void>) => {
    const
-   { roles, rounds, budgetOk, speakers, context, runParallel, speakOne, record, skip } = deps,
+      { roles, rounds, budgetOk, speakers, context, runParallel, speakOne, record, skip } = deps,
       marked = (key: 'closing' | 'closingLast'): Set<string> => new Set(roles.filter(r => r[key]).map(r => slugify(r.role))),
       closingRoles = marked('closing'),
       finalRoles = marked('closingLast'),
@@ -102,7 +102,6 @@ export const makeEliminator = (deps: PhaseDeps): ((round: number) => Promise<voi
    }
 }
 
-/** Numbered candidate menu shown to the synthesizer, one live speaker per line (`1) critic 1`); when `optional`, a leading `0) no elimination` lets it keep everyone. */
 const eliminationMenu = (candidates: Speaker[], labels: string[], optional: boolean): string => {
    const rows = candidates.map((s, i) => `${i + 1}) ${labels[s.index] ?? s.selector}`)
    return optional ? ['0) no elimination', ...rows].join('\n') : rows.join('\n')

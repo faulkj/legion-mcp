@@ -41,7 +41,6 @@ const
    voteMenu = (menu: Speaker[], labels: string[], byTeam: boolean): string =>
       ['0) abstain', ...menu.map((s, i) => `${i + 1}) ${voteLabel(s, labels, byTeam)}`)].join('\n'),
 
-   // Parse a ballot to a canonical candidate label (or null = abstain). The first integer indexes the voter's OWN menu.
    parseVote = (reply: string | null, menu: Speaker[], labels: string[], byTeam: boolean): string | null => {
       const match = reply?.match(/\d+/)
       if (!match) return null

@@ -1,7 +1,8 @@
 import { fill, slugify } from '../config/config.js'
 import { everyN } from './context.js'
 import { objectiveError } from './entry.js'
-import { mergePresetRoles, presetFrame, presetSynth, resolveSpeakers } from './helpers.js'
+import { resolveSpeakers } from './helpers.js'
+import { mergePresetRoles, presetFrame, presetSynth } from './preset.js'
 
 /**
  * Resolve a quorum call's effective configuration from its args and (optional) preset: merged
