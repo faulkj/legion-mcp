@@ -1,3 +1,5 @@
+import { slugify } from '../config/config.js'
+
 /**
  * Set up staggered entry for a run. When `enterEvery` is positive AND the round speakers carry
  * team tags, the field starts with one speaker per team (first-seen team order) plus any teamless
@@ -31,6 +33,33 @@ export const nextEntrant = (entry: Entry): Speaker | undefined => {
 /** Order an entry round's speakers so the new entrant speaks first, then the rest in seat order. */
 export const entrantFirst = (speaking: Speaker[], entrant: Speaker | undefined): Speaker[] =>
    entrant === undefined ? speaking : [entrant, ...speaking.filter(s => s.index !== entrant.index)]
+
+/**
+ * Build the live-field selectors for a run from its entry/elimination state and the preset's marked
+ * roles. `field` = entered ∩ live; `regulars` drops cameos (run-ins kept out of every recurring
+ * phase); `onCard` lets a cameo in only on its booked round. `voters`/`candidates` narrow to the
+ * preset's marked seats. Returns `tagTeamRoles` for the round rotation too.
+ */
+export const makeField = (roundSpeakers: Speaker[], live: Set<number>, entry: Entry, preset: Preset | undefined, cameoRound: number | undefined): Field => {
+   const
+      marked = (key: 'voter' | 'candidate' | 'tagTeam' | 'cameo'): Set<string> => new Set((preset?.roles ?? []).filter(r => r[key]).map(r => slugify(r.role))),
+      voterRoles = marked('voter'),
+      candidateRoles = marked('candidate'),
+      cameoRoles = marked('cameo'),
+      hasRole = (s: Speaker, set: Set<string>): boolean => !set.size || s.role !== undefined && set.has(s.role),
+      isCameo = (s: Speaker): boolean => s.role !== undefined && cameoRoles.has(s.role),
+      field = (): Speaker[] => roundSpeakers.filter(s => entry.entered.has(s.index) && live.has(s.index)),
+      regulars = (): Speaker[] => field().filter(s => !isCameo(s))
+   return {
+      tagTeamRoles: marked('tagTeam'),
+      onCard: (list, round) => !cameoRoles.size ? list : list.filter(s => round === cameoRound || !isCameo(s)),
+      field,
+      regulars,
+      voters: () => regulars().filter(s => hasRole(s, voterRoles)),
+      liveSpeakers: () => field().filter(s => !s.silent),
+      candidates: () => regulars().filter(s => !s.silent && hasRole(s, candidateRoles))
+   }
+}
 
 /** Rotate marked roles so one speaker per team handles each round; unmarked speakers remain active every round. */
 export const rotateTeams = (speakers: Speaker[], roles: Set<string>, round: number): Speaker[] => {

@@ -8,6 +8,20 @@ export const eliminationDue = (eliminateEvery: number | undefined, round: number
    return interval !== Infinity && round % interval === 0
 }
 
+/**
+ * Survivor mode must crown a single winner. If the round cap runs out (or a cut comes back invalid)
+ * with the field still crowded, keep eliminating until one remains — bounded by the starting field
+ * size and bailing the moment a round removes no one, so a synthesizer that never cuts can't loop.
+ */
+export const chaseToOne = async (eliminateEvery: number | undefined, rounds: number, regulars: () => Speaker[], runElimination: (round: number) => Promise<void>, report: ReportPhase): Promise<void> => {
+   if (eliminateEvery === undefined || eliminateEvery <= 0) return
+   for (let extra = regulars().length; regulars().length > 1 && extra > 0; extra--) {
+      const before = regulars().length
+      await report(`elimination — ${before} left`), await runElimination(rounds)
+      if (regulars().length === before) return
+   }
+}
+
 /** Whether a frame is due this round: always the opening (round 1), then every `reframeEvery` rounds after it (so N=2 → rounds 1, 3, 5…). */
 export const frameDue = (reframeEvery: SynthesizeEvery | undefined, round: number): boolean => {
    const interval = everyN(reframeEvery)
@@ -64,12 +78,7 @@ export const makeCloser = (deps: ClosingDeps): (() => Promise<void>) => {
    }
 }
 
-/**
- * Build the elimination step. Each call has the synthesizer read the transcript and pick one live
- * speaker to remove via a numbered menu; the pick is dropped from `live` (never prompted again, so
- * it costs nothing after its cut) and the decision is recorded as a transcript note, not answer
- * content. When `optional`, the synthesizer may decline; an unparseable reply removes no one.
- */
+/** Build the elimination step: the synthesizer picks one live speaker off a numbered menu to drop from `live` (never prompted again), recorded as a transcript note. `optional` lets it decline; an unparseable reply cuts no one. */
 export const makeEliminator = (deps: PhaseDeps): ((round: number) => Promise<void>) => {
    const { synth, labels, optional, templates, live, liveSpeakers, full, speakOne, note } = deps
    return async (round: number): Promise<void> => {

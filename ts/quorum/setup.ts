@@ -1,6 +1,7 @@
-import { slugify } from '../config/config.js'
+import { fill, slugify } from '../config/config.js'
 import { everyN } from './context.js'
-import { mergePresetRoles, presetFrame, presetSynth } from './helpers.js'
+import { objectiveError } from './entry.js'
+import { mergePresetRoles, presetFrame, presetSynth, resolveSpeakers } from './helpers.js'
 
 /**
  * Resolve a quorum call's effective configuration from its args and (optional) preset: merged
@@ -43,4 +44,28 @@ export const resolveConfig = (args: QuorumInput, models: ModelDef[], roles: Role
          : eliminateEvery !== undefined && eliminateEvery > 0 && synthSelector === undefined ? 'eliminateWithoutSynth'
             : undefined
    }
+}
+
+/**
+ * Staff the council from a resolved config and run every pre-round guard: unresolvable selectors,
+ * teamed neutrals, `@team`-less candidates/tag-team seats when the preset needs sides, and the
+ * team-objective contract. Returns the resolved council on success, or `{ error }` with a
+ * ready-to-return message string on the first failure.
+ */
+export const staffCouncil = (args: QuorumInput, config: QuorumConfig, models: ModelDef[], errors: ErrorMessages): ResolvedCouncil & { error?: string } => {
+   const
+      { preset, effectiveRoles, synthSelector, frameSelector, silentRoles } = config,
+      council = resolveSpeakers(args.models, synthSelector, models, effectiveRoles, frameSelector, silentRoles),
+      { roundSpeakers, synth, frame, bad } = council,
+      teamed = (predicate: (r: PresetRole) => boolean | undefined) =>
+         roundSpeakers.find(s => s.team === undefined && preset?.roles.some(r => predicate(r) && slugify(r.role) === s.role)),
+      unteamedCandidate = preset?.voteByTeam ? teamed(r => r.candidate) : undefined,
+      unteamedTag = teamed(r => r.tagTeam),
+      error = bad ? fill(errors.unknownSelector, { selector: bad })
+         : synth?.team !== undefined ? errors.synthTeamed
+            : frame?.team !== undefined ? errors.frameTeamed
+               : unteamedCandidate ? `Selector "${unteamedCandidate.selector}" must use an @team tag for team voting.`
+                  : unteamedTag ? `Selector "${unteamedTag.selector}" must use an @team tag for tag-team rounds.`
+                     : objectiveError(roundSpeakers, args.objectives) ?? undefined
+   return { ...council, error }
 }

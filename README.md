@@ -60,7 +60,7 @@ flowchart LR
   `config/presets/` is exposed as its own enforced, pre-staffed council tool.
 - **Stateless.** Every call is one-shot with `store: false`. Nothing is
   persisted, so there is no database and no conversation state to manage.
-- **Small.** A few hundred lines of TypeScript, one bundled output file, six
+- **Small.** A couple thousand lines of TypeScript, one bundled output file, five
   dependencies.
 
 ## Requirements
@@ -259,9 +259,12 @@ first lawyer listed for each side gives that side's closing statement:
 
 Things that bite when writing a preset:
 
-- **`min`/`max` count every speaker in that role, not per team.** A 3-a-side tag
-  match is `min: 4, max: 12`, not `max: 3`. The engine cannot enforce
-  "one per side" — say it in the `description` instead.
+- **`min`/`max` count every speaker in that role, not per team.** They bound the
+  whole role across all teams, so a tag-team `wrestler` role that must cover
+  sides from a 2v2 up to a 6v6 is `min: 4, max: 12` — a 3v3 is just one valid
+  staffing (6 wrestlers) inside that range, not its own `max: 3`. The engine
+  cannot enforce "even sides" or "one per side" — say it in the `description`
+  instead.
 - **Neutral roles cannot be teamed.** The `synthesizer` and `framer` reject a
   `@team` tag, so a role that belongs to one side can't hold either job.
 - **Some keys require others**, and a violation is caught at load: `synthesizeEvery`
@@ -285,7 +288,7 @@ This repo ships these presets — edit or delete freely:
 <dt><code>brainstorm</code></dt>
 <dd>Divergent idea generation across models.</dd>
 <dt><code>bullying</code></dt>
-<dd>A pack pressure-tests one position to see what survives.</dd>
+<dd>One model defends a position while the rest gang up on it; an optional teacher rules on whether it held.</dd>
 <dt><code>code_review</code></dt>
 <dd>Structured multi-model code review.</dd>
 <dt><code>courtroom</code></dt>
@@ -316,10 +319,15 @@ This repo ships these presets — edit or delete freely:
 <dd>Differentiated creative team.</dd>
 </dl>
 
-Empty/missing folder → no preset tools. Which **bundled** presets register as tools
-is controlled by [`PRESETS`](#environment-variables) — unset registers them all,
-and a preset you add under your own `config/presets/` is always registered
-regardless, since authoring one is the opt-in.
+Which **bundled** presets register as tools is controlled by
+[`PRESETS`](#environment-variables) — unset registers them all, and a **local-only**
+preset (a slug with no bundled counterpart) you add under your own
+`config/presets/` is always registered regardless, since authoring one is the
+opt-in. A local file that reuses a bundled slug is a customization of that
+preset, not a new one, so it still obeys `PRESETS`. With no bundled presets and
+no local presets there are no preset tools — but note the bundled set is the base
+layer, so you get every bundled preset even when you ship no `config/presets/`
+folder of your own.
 
 > **Role text nudges output, it doesn't cap it** — use `maxTokens` for a hard
 > limit, and budget generously for reasoning models and multi-round quorums.

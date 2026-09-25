@@ -5,6 +5,17 @@ interface Entry {
    active: boolean
 }
 
+/** The run's live field selectors, derived from entry/elimination state and preset role marks. `tagTeamRoles` feeds `rotateTeams`; the rest slice the field for each phase (cameos excluded from every recurring phase). */
+interface Field {
+   tagTeamRoles: Set<string>
+   onCard: (list: Speaker[], round: number) => Speaker[]
+   field: () => Speaker[]
+   regulars: () => Speaker[]
+   voters: () => Speaker[]
+   liveSpeakers: () => Speaker[]
+   candidates: () => Speaker[]
+}
+
 /** A quorum call's resolved config (preset defaults merged over per-call args), plus a first-fault `error` key and the `adHocEmpty` guard flag for the caller to check before staffing. */
 interface QuorumConfig {
    preset: Preset | undefined
