@@ -4,6 +4,10 @@ import { fill, loadPrompts } from '../config/config.js'
 /** Prefix of the error thrown when a model answers but emits no text before hitting maxTokens. */
 export const emptyOutputError = 'no output before hitting maxTokens'
 
+/** Whether an error message is one of the no-text outcomes: the provider answered, but with no output text. */
+export const isEmptyResponse = (message: string): boolean =>
+   message.startsWith(emptyOutputError) || message.startsWith(emptyResponseError)
+
 /** Build a `prompt` function that routes each model to its endpoint, falling back to the defaults. */
 export const createPrompt = (config: AppConfig) => {
    const
@@ -36,26 +40,24 @@ export const createPrompt = (config: AppConfig) => {
    }
 
    return async (def: ModelDef, input: PromptInput, roles: RoleDef[] = [], templates: PromptTemplates = loadPrompts(), signal?: AbortSignal): Promise<PromptResult> => {
-      let { res, text, started } = await attempt(def, input, roles, templates, signal).catch(err => { throw withUsage(err) })
+      const started = performance.now()
+      let { res, text } = await attempt(def, input, roles, templates, signal).catch(err => { throw withUsage(err) })
+      const prior = res.usage
       if (res.status !== 'completed' && text === '' && !signal?.aborted)
-         ({ res, text, started } = await attempt(def, input, roles, templates, signal).catch(err => { throw withUsage(err) }))
+         ({ res, text } = await attempt(def, input, roles, templates, signal).catch(err => { throw withUsage(err, prior) }))
 
+      const usage = toUsage(res.usage, prior === res.usage ? undefined : prior)
       if (res.status !== 'completed' && text === '')
-         throw new Error(incompleteMessage(res.status, res.incomplete_details?.reason))
+         throw Object.assign(new Error(incompleteMessage(res.status, res.incomplete_details?.reason)), { usage })
 
       const
-         reasoningTokens = res.usage?.output_tokens_details?.reasoning_tokens,
-         visibleTokens = (res.usage?.output_tokens ?? 0) - (reasoningTokens ?? 0),
+         reasoningTokens = usage.reasoningTokens,
+         visibleTokens = (res.usage?.output_tokens ?? 0) - (res.usage?.output_tokens_details?.reasoning_tokens ?? 0),
          reasoningHeavy = !!reasoningTokens && reasoningTokens >= visibleTokens,
          degenerate = isDegenerate(text)
       return {
          text,
-         usage: {
-            inputTokens: res.usage?.input_tokens,
-            outputTokens: res.usage?.output_tokens,
-            totalTokens: res.usage?.total_tokens,
-            ...(reasoningTokens ? { reasoningTokens } : {})
-         },
+         usage,
          latencyMs: Math.round(performance.now() - started),
          ...(res.status === 'completed' ? {} : { truncated: true }),
          ...(reasoningHeavy ? { reasoningHeavy: true } : {}),
@@ -67,17 +69,31 @@ export const createPrompt = (config: AppConfig) => {
 const
    defaultMaxTokens = 8192,
 
+   sum = (a?: number, b?: number): number | undefined => a === undefined && b === undefined ? undefined : (a ?? 0) + (b ?? 0),
+
+   // Both attempts of one turn are billed, so the retry's usage is added to the first response's.
+   toUsage = (u: Partial<ResponseUsage> | undefined, prior?: ResponseUsage): TokenUsage => {
+      const reasoning = sum(u?.output_tokens_details?.reasoning_tokens, prior?.output_tokens_details?.reasoning_tokens)
+      return {
+         inputTokens: sum(u?.input_tokens, prior?.input_tokens),
+         outputTokens: sum(u?.output_tokens, prior?.output_tokens),
+         totalTokens: sum(u?.total_tokens, prior?.total_tokens),
+         ...(reasoning ? { reasoningTokens: reasoning } : {})
+      }
+   },
+
    // A provider that rejects a response (content filter, policy) has still billed the call. The SDK keeps
    // only body.error, and gateways like LiteLLM embed the upstream JSON in the message, so look in both
    // places and hang the usage on the thrown error for the caller to book.
-   withUsage = (err: unknown): unknown => {
+   withUsage = (err: unknown, prior?: ResponseUsage): unknown => {
       if (!(err instanceof Error)) return err
       const
          fromBody = (err as { error?: { usage?: Record<string, number> } }).error?.usage,
          fromText = err.message.match(/"usage"\s*:\s*(\{[^{}]*\})/)?.[1],
-         u = fromBody ?? (fromText ? (() => { try { return JSON.parse(fromText) as Record<string, number> } catch { return undefined } })() : undefined)
-      if (u)
-         (err as Error & { usage?: TokenUsage }).usage = { inputTokens: u.prompt_tokens, outputTokens: u.completion_tokens, totalTokens: u.total_tokens }
+         u = fromBody ?? (fromText ? (() => { try { return JSON.parse(fromText) as Record<string, number> } catch { return undefined } })() : undefined),
+         billed = u ? { input_tokens: u.prompt_tokens, output_tokens: u.completion_tokens, total_tokens: u.total_tokens } : undefined
+      if (billed || prior)
+         (err as Error & { usage?: TokenUsage }).usage = toUsage(billed, prior)
       return err
    },
 
@@ -89,10 +105,12 @@ const
       return words.length >= 60 && new Set(words).size / words.length < 0.2
    },
 
+   emptyResponseError = 'empty response',
+
    incompleteMessage = (status?: string, reason?: string): string =>
-      reason && reason !== 'max_output_tokens'
-         ? `response ${status ?? 'incomplete'} (${reason})`
-         : `${emptyOutputError} — raise maxTokens (reasoning models can spend the full budget thinking before emitting any text)`,
+      reason === 'max_output_tokens'
+         ? `${emptyOutputError} — raise maxTokens (reasoning models can spend the full budget thinking before emitting any text)`
+         : `${emptyResponseError}: status ${status ?? 'unknown'}, reason ${reason ?? 'not given'} (after one retry)`,
 
    composeInput = (input: PromptInput, t: PromptTemplates): string =>
       input.context === undefined

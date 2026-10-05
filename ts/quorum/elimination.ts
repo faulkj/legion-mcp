@@ -4,9 +4,11 @@ export const eliminationMenu = (candidates: Speaker[], labels: string[], optiona
    return optional ? ['KEEP ALL', ...rows].join('\n') : rows.join('\n')
 }
 
-/** Return the reason after a valid command line, or the malformed reply, capped at 300 characters. */
-export const eliminationReason = (reply: string): string =>
-   (verdictOf(reply)?.reason ?? reply).replace(/\s+/g, ' ').trim().slice(0, 300)
+/** Return the reason after a valid command line, or the malformed reply, shortened on a word boundary with a visible `[…]` marker past 300 characters. */
+export const eliminationReason = (reply: string): string => {
+   const text = (verdictOf(reply)?.reason ?? reply).replace(/\s+/g, ' ').trim()
+   return text.length <= 300 ? text : `${text.slice(0, 300).replace(/\s+\S*$/, '')} […]`
+}
 
 /** Resolve one exact command to a unique eligible candidate, an optional pass, or null without guessing. */
 export const parseElimination = (reply: string, candidates: Speaker[], labels: string[], optional: boolean): Speaker | 'none' | null => {

@@ -1,6 +1,9 @@
 /** The bound per-run prompt function returned by `createPrompt`. */
 type Prompt = ReturnType<typeof import('../ts/core/llm.js').createPrompt>
 
+/** Raw usage block on a Responses API response. */
+type ResponseUsage = import('openai/resources/responses/responses').ResponseUsage
+
 /** Arguments accepted by every model tool. */
 interface PromptInput {
    prompt: string

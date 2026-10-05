@@ -17,7 +17,7 @@
    "degenerateTurn": "[— degenerate: the rest of this turn collapsed into repeated words and has been omitted —]",
    "failedTurn": {
       "timeout": "[— no answer: this speaker timed out and produced nothing this turn —]",
-      "empty": "[— no answer: this speaker spent its whole token budget thinking and produced nothing this turn —]",
+      "empty": "[— no answer: this speaker's call returned no text this turn —]",
       "error": "[— no answer: this speaker's call failed and produced nothing this turn —]"
    }
 }

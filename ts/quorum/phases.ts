@@ -102,13 +102,13 @@ export const makeEliminator = (deps: PhaseDeps): ((round: number) => Promise<voi
       const
          pick = text === null ? null : parseElimination(text, candidates, labels, optional),
          cut = pick === 'none' ? null : pick,
-         why = text === null ? '' : eliminationReason(text),
+         why = text === null ? `call failed: ${entry.status.replace(/^error: /, '')}` : eliminationReason(text),
          tail = why ? ` — ${why}` : '',
-         status = cut ? `eliminated: ${labels[cut.index]}` : pick === 'none' ? 'no elimination' : 'invalid decision'
+         status = cut ? `eliminated: ${labels[cut.index]}` : pick === 'none' ? 'no elimination' : text === null ? entry.status : 'invalid decision'
       if (cut) live.delete(cut.index)
       note(
          { index: cut ? cut.index : synth.index, selector: synth.selector, round, phase: 'elimination', text: (cut ? `${labels[cut.index]} eliminated` : 'no elimination') + tail },
-         { ...entry, phase: 'elimination', status: status + tail, eliminatedIndex: cut ? cut.index : undefined }
+         { ...entry, phase: 'elimination', status: text === null ? status : status + tail, eliminatedIndex: cut ? cut.index : undefined }
       )
    }
 }

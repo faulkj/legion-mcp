@@ -1,5 +1,5 @@
 import { loadModels } from '../config/config.js'
-import { createPrompt, emptyOutputError } from './llm.js'
+import { createPrompt, isEmptyResponse } from './llm.js'
 
 /**
  * Deep health probe: fan a minimal prompt to every configured model and report
@@ -13,14 +13,14 @@ export const makeProbe = (config: AppConfig): () => Promise<HealthReport> => {
       const models = await Promise.all(loadModels(config).map(async def => {
          const started = performance.now()
          try {
-            // Reachability only: a minimal (but API-valid) budget. Hitting the
-            // token ceiling still proves the endpoint answered, so llm.ts's
-            // empty-output error is treated as reachable below, not a failure.
+            // Reachability only: a minimal (but API-valid) budget. A response with
+            // no text still proves the endpoint answered, so llm.ts's empty-response
+            // errors are treated as reachable below, not a failure.
             await prompt(def, { prompt: 'ping', maxTokens: probeTokens })
             return { name: def.name, model: def.model, ok: true, latencyMs: Math.round(performance.now() - started) }
          } catch (e) {
             const message = e instanceof Error ? e.message : String(e)
-            return message.startsWith(emptyOutputError)
+            return isEmptyResponse(message)
                ? { name: def.name, model: def.model, ok: true, latencyMs: Math.round(performance.now() - started) }
                : { name: def.name, model: def.model, ok: false, latencyMs: Math.round(performance.now() - started), error: message }
          }

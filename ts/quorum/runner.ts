@@ -1,3 +1,4 @@
+import { isEmptyResponse } from '../core/llm.js'
 import { logPrompt, okStatus, promptEntry } from '../core/log.js'
 import { banner } from './helpers.js'
 
@@ -120,4 +121,4 @@ export const makeTurnRunner = (
 }
 
 const failReason = (status: string): 'timeout' | 'empty' | 'error' =>
-   /timed out/i.test(status) ? 'timeout' : /no output before hitting maxTokens/.test(status) ? 'empty' : 'error'
+   /timed out/i.test(status) ? 'timeout' : isEmptyResponse(status.replace(/^error: /, '')) ? 'empty' : 'error'
