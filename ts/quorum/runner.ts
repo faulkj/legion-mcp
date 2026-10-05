@@ -23,7 +23,8 @@ export const makeTurnRunner = (
       telemetry: TurnTelemetry[] = [],
       turns: QuorumTurn[] = [],
       content: { type: 'text'; text: string }[] = [],
-      pending: QuorumTurn[] = []
+      pending: QuorumTurn[] = [],
+      inFlight: InFlightSeat[] = []
    let
       used = 0,
       phase = 'starting'
@@ -76,16 +77,22 @@ export const makeTurnRunner = (
          const
             latencyMs = Math.round(performance.now() - started),
             cancelled = signal?.aborted === true,
-            message = cancelled ? 'cancelled' : err instanceof Error ? err.message : String(err)
-         logPrompt(promptEntry(def, roleInput, { error: message, latencyMs }, selector, runId))
-         return { text: null, cancelled, entry: { ...base, usage: {}, latencyMs, status: cancelled ? 'cancelled' : `error: ${message}` } }
+            message = cancelled ? 'cancelled' : err instanceof Error ? err.message : String(err),
+            usage = (err as { usage?: TokenUsage })?.usage ?? {}
+         used += usage.totalTokens ?? 0
+         logPrompt(promptEntry(def, roleInput, { error: message, latencyMs, usage }, selector, runId))
+         return { text: null, cancelled, entry: { ...base, usage, latencyMs, status: cancelled ? 'cancelled' : `error: ${message}` } }
       }
    }
 
    const launch = (list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined, override?: (s: Speaker) => string | undefined): Promise<TurnOutcome>[] =>
       list.map(s => {
-         try { return speakOne(s, round, phase, ctx(s), override?.(s)) }
+         const seat: InFlightSeat = { index: s.index, selector: s.selector, round, phase, startedAt: Date.now() }
+         inFlight.push(seat)
+         const done = () => { const i = inFlight.indexOf(seat); i >= 0 && inFlight.splice(i, 1) }
+         try { return speakOne(s, round, phase, ctx(s), override?.(s)).finally(done) }
          catch (err) {
+            done()
             const message = err instanceof Error ? err.message : String(err)
             return Promise.resolve({ text: null, entry: { index: s.index, selector: s.selector, modelName: s.def.name, modelId: s.def.model, role: s.role, round, phase, usage: {}, latencyMs: 0, status: `error: ${message}` } })
          }
@@ -102,7 +109,7 @@ export const makeTurnRunner = (
       Promise.all(launch(list, round, phase, ctx, override))
 
    return {
-      telemetry, turns, content, pending,
+      telemetry, turns, content, pending, inFlight,
       used: () => used,
       cancelled: () => signal?.aborted === true,
       phase: () => phase,

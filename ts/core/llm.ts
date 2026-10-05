@@ -35,9 +35,9 @@ export const createPrompt = (config: AppConfig) => {
    }
 
    return async (def: ModelDef, input: PromptInput, roles: RoleDef[] = [], templates: PromptTemplates = loadPrompts(), signal?: AbortSignal): Promise<PromptResult> => {
-      let { res, text, started } = await attempt(def, input, roles, templates, signal)
+      let { res, text, started } = await attempt(def, input, roles, templates, signal).catch(err => { throw withUsage(err) })
       if (res.status !== 'completed' && text === '' && !signal?.aborted)
-         ({ res, text, started } = await attempt(def, input, roles, templates, signal))
+         ({ res, text, started } = await attempt(def, input, roles, templates, signal).catch(err => { throw withUsage(err) }))
 
       if (res.status !== 'completed' && text === '')
          throw new Error(incompleteMessage(res.status, res.incomplete_details?.reason))
@@ -65,6 +65,20 @@ export const createPrompt = (config: AppConfig) => {
 
 const
    defaultMaxTokens = 8192,
+
+   // A provider that rejects a response (content filter, policy) has still billed the call. The SDK keeps
+   // only body.error, and gateways like LiteLLM embed the upstream JSON in the message, so look in both
+   // places and hang the usage on the thrown error for the caller to book.
+   withUsage = (err: unknown): unknown => {
+      if (!(err instanceof Error)) return err
+      const
+         fromBody = (err as { error?: { usage?: Record<string, number> } }).error?.usage,
+         fromText = err.message.match(/"usage"\s*:\s*(\{[^{}]*\})/)?.[1],
+         u = fromBody ?? (fromText ? (() => { try { return JSON.parse(fromText) as Record<string, number> } catch { return undefined } })() : undefined)
+      if (u)
+         (err as Error & { usage?: TokenUsage }).usage = { inputTokens: u.prompt_tokens, outputTokens: u.completion_tokens, totalTokens: u.total_tokens }
+      return err
+   },
 
    // A model stuck in a loop emits a long tail of the same few words. Legit prose keeps well over
    // half its words unique; a collapsed tail sits near 5%. Only the tail is checked so a long,

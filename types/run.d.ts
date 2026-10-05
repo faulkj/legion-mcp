@@ -34,12 +34,22 @@ interface TurnOutcome {
    entry: TurnTelemetry
 }
 
-/** Stateful per-run turn engine: runs model calls and records outcomes/skips into shared collectors. `pending` holds finished-but-uncommitted public parallel turns; `phase` is the human-readable step the run is on. */
+/** A model call that has been launched and not yet settled, so a live snapshot can show who the run is waiting on. */
+interface InFlightSeat {
+   index: number
+   selector: string
+   round: number
+   phase: TurnPhase
+   startedAt: number
+}
+
+/** Stateful per-run turn engine: runs model calls and records outcomes/skips into shared collectors. `pending` holds finished-but-uncommitted public parallel turns; `inFlight` the calls still outstanding; `phase` is the human-readable step the run is on. */
 interface TurnRunner {
    readonly telemetry: TurnTelemetry[]
    readonly turns: QuorumTurn[]
    readonly content: { type: 'text'; text: string }[]
    readonly pending: QuorumTurn[]
+   readonly inFlight: InFlightSeat[]
    used(): number
    cancelled(): boolean
    phase(): string

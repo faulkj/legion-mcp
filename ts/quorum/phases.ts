@@ -20,14 +20,18 @@ export const eliminationDue = (eliminateEvery: EliminateEvery | undefined, round
 /**
  * Survivor mode must crown a single winner. If the round cap runs out (or a cut comes back invalid)
  * with the field still crowded, keep eliminating until one remains — bounded by the starting field
- * size and bailing the moment a round removes no one, so a synthesizer that never cuts can't loop.
+ * size. A cut that removes no one is retried once (reasoning models can blow their budget on a
+ * single call); two misses in a row ends the chase so a synthesizer that never cuts can't loop.
  */
 export const chaseToOne = async (eliminateEvery: EliminateEvery | undefined, rounds: number, regulars: () => Speaker[], runElimination: (round: number) => Promise<void>, report: ReportPhase): Promise<void> => {
    if (eliminateEvery === undefined || eliminateEvery === 0) return
+   let misses = 0
    for (let extra = regulars().length; regulars().length > 1 && extra > 0; extra--) {
       const before = regulars().length
-      await report(`elimination after round ${rounds} — ${before} left`), await runElimination(rounds)
-      if (regulars().length === before) return
+      await report(`elimination after round ${rounds} — ${before} left${misses ? ' (retry)' : ''}`), await runElimination(rounds)
+      if (regulars().length < before) misses = 0
+      else if (++misses > 1) return
+      else extra++
    }
 }
 

@@ -25,12 +25,21 @@ interface Job {
    error?: string
 }
 
+/** A seat the run is currently waiting on, as shown to pollers. */
+interface WaitingSeat {
+   who: string
+   phase: TurnPhase
+   round: number
+   elapsedMs: number
+}
+
 /** Copied public projection of a run in progress, from the live engine. */
 interface RunSnapshot {
    phase: string
    answers: string[]
    notes: string[]
    turns: TurnTelemetry[]
+   waitingOn: WaitingSeat[]
    usage: number
    transcript?: string
    timeline?: TimelineEvent[]
@@ -47,6 +56,7 @@ interface JobView {
    answers?: string[]
    notes?: string[]
    turns?: TurnTelemetry[]
+   waitingOn?: WaitingSeat[]
    usage?: number
    transcript?: string
    timeline?: TimelineEvent[]

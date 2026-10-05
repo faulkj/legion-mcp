@@ -12,6 +12,12 @@ export const jobOutputSchema = {
    answers: z.array(z.string()).optional().describe('Completed answer texts so far, in council order (parallel turns that finished early appear before they are committed).'),
    notes: z.array(z.string()).optional().describe('Public tally, elimination and entry notes so far.'),
    turns: quorumOutputSchema.turns.optional().describe('Per-turn telemetry so far; same shape as the final `turns`.'),
+   waitingOn: z.array(z.object({
+      who: z.string().describe('Seat label.'),
+      phase: z.string(),
+      round: z.number(),
+      elapsedMs: z.number().describe('How long this call has been outstanding.')
+   })).optional().describe('Model calls launched but not yet settled — who the run is waiting on right now.'),
    usage: z.number().optional().describe('Total tokens consumed so far.'),
    transcript: z.string().optional().describe('Rendered transcript; only with `full: true`.'),
    timeline: quorumOutputSchema.timeline.optional().describe('Ordered event log; only with `full: true`.'),

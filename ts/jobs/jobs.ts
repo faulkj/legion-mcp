@@ -40,7 +40,7 @@ export const makeJobService = (config: AppConfig, templates: PromptTemplates): J
          phase: live?.phase ?? (job.state === 'running' ? 'starting' : job.state),
          elapsedMs: (job.settledAt ?? Date.now()) - job.startedAt,
          pollIntervalMs: limits.pollIntervalMs,
-         ...(live ? { answers: live.answers, notes: live.notes, turns: live.turns, usage: live.usage } : {}),
+         ...(live ? { answers: live.answers, notes: live.notes, turns: live.turns, waitingOn: live.waitingOn, usage: live.usage } : {}),
          ...(full && live?.transcript !== undefined ? { transcript: live.transcript, timeline: live.timeline } : {}),
          ...(job.settledAt !== undefined ? { expiresAt: new Date(job.settledAt + limits.retainMs).toISOString() } : {}),
          ...(job.result && (full || job.state !== 'running') ? { result: job.result } : {}),

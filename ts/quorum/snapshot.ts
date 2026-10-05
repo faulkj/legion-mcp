@@ -10,7 +10,8 @@ import { buildTimeline } from './timeline.js'
  */
 export const snapshotRun = (runner: TurnRunner, labels: string[], templates: PromptTemplates, full: boolean): RunSnapshot => {
    const
-      { telemetry, turns, content, pending, used, phase } = runner,
+      { telemetry, turns, content, pending, inFlight, used, phase } = runner,
+      now = Date.now(),
       answers = [
          ...content.map(c => c.text),
          ...pending.map(p => p.text)
@@ -21,6 +22,7 @@ export const snapshotRun = (runner: TurnRunner, labels: string[], templates: Pro
       answers,
       notes,
       turns: telemetry.map(t => ({ ...t, usage: { ...t.usage } })),
+      waitingOn: inFlight.map(s => ({ who: labels[s.index] ?? s.selector, phase: s.phase, round: s.round, elapsedMs: now - s.startedAt })),
       usage: used(),
       ...(full
          ? {
