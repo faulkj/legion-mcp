@@ -8,10 +8,11 @@ export const eliminationMenu = (candidates: Speaker[], labels: string[], optiona
 export const eliminationReason = (reply: string): string => {
    const
       v = verdictOf(reply),
+      leading = /^\s*\**\s*\d+\**\s*[\u2014\-:.)]*\s*/,
       body = v === null
          ? reply
-         : v.at === reply.search(/\S/)
-            ? reply.replace(/^\s*\d+\s*[\u2014\-:.)]*\s*/, '')
+         : leading.test(reply) && v.at < (reply.match(leading)?.[0].length ?? 0)
+            ? reply.replace(leading, '')
             : reply.slice(0, v.at) + reply.slice(v.at).replace(/^[^\n]*/, '')
    return body.replace(/\s+/g, ' ').trim().slice(0, 300)
 }
@@ -27,12 +28,14 @@ export const parseElimination = (reply: string, candidates: Speaker[], optional:
          : null
 }
 
-// A model may reason first and decide last ("2 … on reflection, cut: 1"), so the verdict is an explicit
-// Cut/Eliminate line when present, else the LAST bare number — never the first digit it happens to emit.
+// The asked-for shape is "N — reason", so a leading number IS the verdict, even if the reason mentions
+// other seats. Only when the reply doesn't open with one do we look for a Cut/Eliminate line, then the
+// last bare number (a model that reasons first and decides last).
 const verdictOf = (reply: string): { pick: number; at: number } | null => {
    const
+      leading = reply.match(/^\s*\**\s*(\d+)(?![\w.])/),
       labelled = [...reply.matchAll(/(?:cut|eliminate[sd]?|verdict|decision)\s*[:\u2014\-]?\s*\**\s*(\d+)/gi)].at(-1),
       bare = [...reply.matchAll(/(?<![\w.])(\d+)(?![\w.])/g)].at(-1),
-      m = labelled ?? bare
-   return m?.index === undefined ? null : { pick: Number(m[1]), at: m.index }
+      m = leading ?? labelled ?? bare
+   return m?.index === undefined ? null : { pick: Number(m[1]), at: m.index + m[0].indexOf(m[1]!) }
 }
