@@ -59,9 +59,11 @@ Shadows a file role of the same name; disabled when `DYNAMIC_ROLES=false`.
 an enforced, pre-staffed council. Each preset tool self-documents which roles to
 staff via `models` selectors. Some presets set a `defaultRounds` (used when you
 omit `rounds`); pass `rounds` explicitly to override it. A preset may also set
-`eliminateEvery` (survivor mode): every Nth round the synthesizer removes one
-speaker until one remains — the cut is a neutral transcript note (labeled
-`[elimination]`). A removed speaker is out for good: it is never prompted again,
+`eliminateEvery` (survivor mode, presets only): a number N cuts every Nth round;
+`"spread"` spaces the cuts needed to reach one survivor evenly across `rounds`,
+last cut on the final round. The synthesizer removes one speaker per cut — a
+neutral transcript note (labeled `[elimination]`, with the synthesizer's stated
+reason). A removed speaker is out for good: it is never prompted again,
 so it incurs no further tokens or cost, and its earlier turns stay in the
 transcript marked `· eliminated`. With `eliminationsOptional: true` the
 synthesizer may keep everyone that round (a `0) no elimination` menu choice).

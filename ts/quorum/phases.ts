@@ -1,9 +1,18 @@
 import { fill, slugify } from '../config/config.js'
 import { log } from '../core/log.js'
 import { everyN } from './context.js'
+import { eliminationMenu, eliminationReason, parseElimination } from './elimination.js'
 
-/** Whether an elimination is due this round: a positive `eliminateEvery` cadence, hit on its interval (including the final round). */
-export const eliminationDue = (eliminateEvery: number | undefined, round: number): boolean => {
+/**
+ * Whether an elimination is due this round. A number N cuts every Nth round. `'spread'` distributes the
+ * `field - 1` cuts needed to reach one survivor evenly across `rounds`, so the last cut lands on the
+ * final round and a 5-round match with 3 survivors cuts after rounds 3 and 5 instead of 1 and 2.
+ */
+export const eliminationDue = (eliminateEvery: EliminateEvery | undefined, round: number, rounds: number, field: number): boolean => {
+   if (eliminateEvery === 'spread') {
+      const cuts = Math.max(0, field - 1)
+      return cuts > 0 && Math.floor(round * cuts / rounds) > Math.floor((round - 1) * cuts / rounds)
+   }
    const interval = everyN(eliminateEvery)
    return interval !== Infinity && round % interval === 0
 }
@@ -13,8 +22,8 @@ export const eliminationDue = (eliminateEvery: number | undefined, round: number
  * with the field still crowded, keep eliminating until one remains — bounded by the starting field
  * size and bailing the moment a round removes no one, so a synthesizer that never cuts can't loop.
  */
-export const chaseToOne = async (eliminateEvery: number | undefined, rounds: number, regulars: () => Speaker[], runElimination: (round: number) => Promise<void>, report: ReportPhase): Promise<void> => {
-   if (eliminateEvery === undefined || eliminateEvery <= 0) return
+export const chaseToOne = async (eliminateEvery: EliminateEvery | undefined, rounds: number, regulars: () => Speaker[], runElimination: (round: number) => Promise<void>, report: ReportPhase): Promise<void> => {
+   if (eliminateEvery === undefined || eliminateEvery === 0) return
    for (let extra = regulars().length; regulars().length > 1 && extra > 0; extra--) {
       const before = regulars().length
       await report(`elimination after round ${rounds} — ${before} left`), await runElimination(rounds)
@@ -98,23 +107,4 @@ export const makeEliminator = (deps: PhaseDeps): ((round: number) => Promise<voi
          { ...entry, phase: 'elimination', status: status + tail, eliminatedIndex: cut ? cut.index : undefined }
       )
    }
-}
-
-const eliminationMenu = (candidates: Speaker[], labels: string[], optional: boolean): string => {
-   const rows = candidates.map((s, i) => `${i + 1}) ${labels[s.index] ?? s.selector}`)
-   return optional ? ['0) no elimination', ...rows].join('\n') : rows.join('\n')
-}
-
-const eliminationReason = (reply: string): string =>
-   reply.replace(/^\s*\d+\s*[\u2014\-:.)]*\s*/, '').replace(/\s+/g, ' ').trim().slice(0, 300)
-
-const parseElimination = (reply: string, candidates: Speaker[], optional: boolean): Speaker | 'none' | null => {
-   const match = reply.match(/\d+/)
-   if (!match) return null
-   const pick = Number(match[0])
-   return optional && pick === 0
-      ? 'none'
-      : pick >= 1 && pick <= candidates.length
-         ? candidates[pick - 1]!
-         : null
 }

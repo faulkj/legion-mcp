@@ -28,7 +28,7 @@ interface QuorumConfig {
    frameSelector: string | undefined
    reframeEvery: SynthesizeEvery | undefined
    closing: boolean
-   eliminateEvery: number | undefined
+   eliminateEvery: EliminateEvery | undefined
    enterEvery: number | undefined
    optional: boolean
    silentRoles: Set<string>

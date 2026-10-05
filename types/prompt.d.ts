@@ -49,6 +49,9 @@ type QuorumMode = 'sequential' | 'parallel' | 'private' | 'independent'
 /** When the synthesizer runs: `'end'` (once, after all rounds) or a number N (every Nth round, always including the last). */
 type SynthesizeEvery = 'end' | number
 
+/** Elimination cadence: a number N (every Nth round; 0 = never) or `'spread'` (the field-1 cuts spaced evenly across the requested rounds). */
+type EliminateEvery = number | 'spread'
+
 /** How much of an anonymous peer vote is revealed: `aggregate` shows only counts; `ballots` also shows the anonymized ballot texts (never voter identities). */
 type VoteVisibility = 'aggregate' | 'ballots'
 

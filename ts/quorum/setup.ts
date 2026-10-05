@@ -43,7 +43,7 @@ export const resolveConfig = (args: QuorumInput, models: ModelDef[], roles: Role
          ? Math.min(rounds, Math.max(1, args.cameoRound ?? Math.ceil(rounds / 2)))
          : undefined,
       error: closing && synthSelector === undefined ? 'closingWithoutSynth'
-         : eliminateEvery !== undefined && eliminateEvery > 0 && synthSelector === undefined ? 'eliminateWithoutSynth'
+         : eliminateEvery !== undefined && eliminateEvery !== 0 && synthSelector === undefined ? 'eliminateWithoutSynth'
             : undefined
    }
 }

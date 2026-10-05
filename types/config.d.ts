@@ -50,7 +50,7 @@ interface Preset {
    frame?: string
    reframeEvery?: SynthesizeEvery
    closingStatements?: boolean
-   eliminateEvery?: number
+   eliminateEvery?: EliminateEvery
    eliminationsOptional?: boolean
    enterEvery?: number
    vote?: string

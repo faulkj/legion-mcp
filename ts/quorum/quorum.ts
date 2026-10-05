@@ -75,7 +75,7 @@ export const runQuorum = async (
       if (runVote && !(closing && round === rounds)) await step('voting'), await runVote(round, [...turns])
       if (synthInterval !== Infinity && (round % synthInterval === 0 || round === rounds) && !(closing && round === rounds) && !cancelled())
          await step('interim synthesis'), await runSynthesis(round)
-      if (eliminationDue(eliminateEvery, round) && !cancelled()) await step('elimination'), await runElimination(round)
+      if (eliminationDue(eliminateEvery, round, rounds, roundSpeakers.length) && !cancelled()) await step('elimination'), await runElimination(round)
       if (eliminateEvery !== undefined && regulars().length <= 1) break
    }
 

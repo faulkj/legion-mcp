@@ -4,12 +4,12 @@
       "",
       "Staff `survivor` with 3 or more models — each keeps making its case round after round, reacting to who was just cut.",
       "Survivors speak simultaneously within a round (so they answer the last cut, not each other mid-round), then the `slasher` eliminates one until only the final girl is left standing.",
-      "A slower burn pays off: use rounds >= 3. Feed the question or task via the prompt/context.",
-      "The slasher keeps cutting after the last round until one survivor remains, so a run costs more calls than `rounds` alone suggests: one turn per surviving speaker each round, plus one elimination per cut, plus the closing synthesis."
+      "Cuts are spread evenly across `rounds`, with the last cut on the final round — 3 survivors over 5 rounds die after rounds 3 and 5, so every round happens and survivors get time to build a case. Ask for at least as many rounds as survivors minus one. Feed the question or task via the prompt/context.",
+      "If the field is still crowded after the last round, the slasher keeps cutting until one remains. Cost: one turn per surviving speaker each round, plus one elimination per cut, plus the closing verdict."
    ],
    "mode": "parallel",
    "synthesizer": "slasher",
-   "eliminateEvery": 1,
+   "eliminateEvery": "spread",
    "defaultRounds": 6,
    "roles": [
       {
@@ -29,7 +29,8 @@
          "description": [
             "Each round, cut the single weakest survivor. Weakest means: the thinnest evidence, the biggest hedge, the laziest restatement, a claim that would not survive a hostile fact-check, or an argument the survivor could not finish — a turn marked cut off is a case that was never made.",
             "A survivor who steps out of role — passing judgment on the others, declaring eliminations, or narrating the game instead of making their own case — is weak by definition. Cut them first.",
-            "At the end, name the final girl and justify why they outlasted the rest."
+            "When cutting, give the number first, then one tight line of why. Do not change your mind mid-reply: the number you give is the one that dies.",
+            "At the end, do NOT retell the rounds — the transcript already has them. Deliver the verdict: name the final girl, say in a few lines why they outlasted each of the others, and stop."
          ],
          "maxTokens": 4000
       }

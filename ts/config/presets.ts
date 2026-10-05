@@ -57,7 +57,7 @@ const
       framer: z.string().optional(),
       reframeEvery: z.union([z.literal('end'), z.number().int().min(0)]).optional(),
       closingStatements: z.boolean().optional(),
-      eliminateEvery: z.number().int().min(0).optional(),
+      eliminateEvery: z.union([z.number().int().min(0), z.literal('spread')]).optional(),
       eliminationsOptional: z.boolean().optional(),
       enterEvery: z.number().int().min(0).optional(),
       vote: z.string().optional(),
@@ -95,7 +95,7 @@ const
          throw new Error(`Invalid ${file}: "synthesizeEvery" only applies when "synthesizer" is set.`)
       if (closingStatements === true && synthesizer === undefined)
          throw new Error(`Invalid ${file}: "closingStatements" requires a "synthesizer" — they run right before the final synthesis.`)
-      if (eliminateEvery !== undefined && eliminateEvery > 0 && synthesizer === undefined)
+      if (eliminateEvery !== undefined && eliminateEvery !== 0 && synthesizer === undefined)
          throw new Error(`Invalid ${file}: "eliminateEvery" requires a "synthesizer" — the synthesizer decides who leaves.`)
       if (reframeEvery !== undefined && framer === undefined)
          throw new Error(`Invalid ${file}: "reframeEvery" only applies when "framer" is set.`)
