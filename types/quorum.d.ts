@@ -54,12 +54,6 @@ interface VoteDeps {
    templates: PromptTemplates
 }
 
-/** A resolved quorum turn awaiting ordered recording: text plus its telemetry (contentIndex filled at record time). */
-interface TurnOutcome {
-   text: string | null
-   entry: TurnTelemetry
-}
-
 /** A resolved council seat: a selector at its original position in `models[]`, plus its model def, optional role, and optional team. Duplicate selectors are distinct speakers with distinct indexes. */
 interface Speaker {
    index: number
@@ -81,30 +75,21 @@ interface ResolvedCouncil {
    bad?: string
 }
 
-/** Stateful per-run turn engine: runs model calls and records outcomes/skips into shared collectors. */
-interface TurnRunner {
-   readonly telemetry: TurnTelemetry[]
-   readonly turns: QuorumTurn[]
-   readonly content: { type: 'text'; text: string }[]
-   used(): number
-   speakOne(speaker: Speaker, round: number, phase: TurnPhase, extraContext?: string, promptOverride?: string): Promise<TurnOutcome>
-   record(outcome: TurnOutcome, round: number): void
-   note(turn: QuorumTurn, entry: TurnTelemetry): void
-   skip(round: number, from?: number, phase?: TurnPhase, list?: Speaker[]): void
-   runParallel(list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined, override?: (s: Speaker) => string | undefined): Promise<void>
-   runHidden(list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined, override?: (s: Speaker) => string | undefined): Promise<TurnOutcome[]>
-}
-
 /** Which phase of a run a turn belongs to: framing, discussion, entry, closing, voting, synthesis, or elimination. */
 type TurnPhase = 'frame' | 'round' | 'entry' | 'closing' | 'vote' | 'synthesis' | 'elimination'
 
-/** Internal per-turn transcript entry for a quorum round. `index` is the speaker's stable identity (position in `models[]`). */
+/** Internal per-turn transcript entry for a quorum round. `index` is the speaker's stable identity (position in `models[]`). `truncated` marks a turn cut off by maxTokens, so the transcript can flag it to every later reader. */
 interface QuorumTurn {
    index: number
    selector: string
    round: number
    phase: TurnPhase
    text: string
+   truncated?: boolean
+   /** The answer collapsed into a repetition loop; the transcript shows only its head plus a marker. */
+   degenerate?: boolean
+   /** Set when the seat produced no text: the transcript renders a reason instead of silence. */
+   failed?: 'timeout' | 'empty' | 'error'
 }
 
 /** Per-turn telemetry emitted in quorum structuredContent. */

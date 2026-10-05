@@ -356,6 +356,11 @@ folder of your own.
 
 Optional markdown served to clients as MCP `instructions` — describe your
 models and when the AI should use each. See this repo's copy for a template.
+The literal `{longRuns}` marker is replaced with `config/sync/long-runs.md` or
+`config/async/long-runs.md` depending on `ASYNC_TOOLS`, so the delivery
+guidance (block-and-wait vs start/poll/cancel) tracks the mode without
+duplicating the rest of the file. A local `description.md` without the marker
+is served as written; a startup warning notes that mode guidance is missing.
 
 ### Tool, field & message text — `config/*.json` and `config/tools/*.md`
 
@@ -366,10 +371,12 @@ stay in code.) Each file merges over the bundled JSON base per key, so override
 only what you want; open the shipped copies to see the full key set and
 `{token}` placeholders:
 
-- `config/tools/quorum.md` — the `quorum` tool's description. Delete to fall
-  back to the built-in string. This is the only per-tool markdown file that is
-  read: model tools describe themselves from their model file's `description`,
-  and preset tools from the preset's own `description`.
+- `config/tools/quorum.md`, `poll.md`, `cancel.md` — descriptions for the
+  `quorum` tool and (async mode only) the `poll` / `cancel` tools. Delete one to
+  fall back to its built-in string. Model tools describe themselves from their
+  model file's `description`, and preset tools from the preset's own.
+- `config/sync/long-runs.md`, `config/async/long-runs.md` — the mode-specific
+  block spliced into `description.md` at `{longRuns}`.
 - `config/schema.json` — input-field descriptions (`prompt` = shared fields,
   `quorum` = quorum-only; a `quorum` key wins on a name clash).
 - `config/prompts.json` — the prompt-shaping templates models read: role
@@ -397,6 +404,9 @@ config file can't live inside it.)
 | `DYNAMIC_ROLES` | no | Allow the calling AI to define ad-hoc `quorum` roles inline (default `true`). |
 | `PRESETS` | no | Comma-separated **allowlist** of bundled preset slugs to register as tools (e.g. `code_review,debate`). Unset = every bundled preset, so upgrades never silently drop one; set = only these, so a newly shipped bundled preset never appears uninvited. Presets you add under your own `config/presets/` are **always** registered — authoring one is the opt-in — while a local file sharing a bundled slug customizes that preset and still obeys the list. Unknown names are ignored. |
 | `LOG_LEVEL` | no | `debug` \| `info` \| `warn` \| `error` (default `info`). |
+| `ASYNC_TOOLS` | no | `true` runs councils in the background: `quorum` and preset tools return a job handle immediately and `poll` / `cancel` tools are exposed. For hosts whose tool calls time out before a council can finish. Jobs live only in this process's memory. Default `false`. |
+| `TRUST_PROXY_AUTH` | no | `true` binds each job to the caller named by `X-MS-CLIENT-PRINCIPAL-*` headers (Azure Container Apps Easy Auth). Only safe behind an ingress that strips client-supplied copies. Default `false` — any holder of a `jobId` may poll or cancel it. |
+| `JOB_MAX_ACTIVE` / `JOB_MAX_RETAINED` / `JOB_RETAIN_MS` / `JOB_POLL_INTERVAL_MS` / `JOB_SHUTDOWN_GRACE_MS` | no | Async job bounds: concurrent councils (`3`), finished jobs kept (`20`), retention (`1800000` ms), suggested poll cadence (`10000` ms), SIGTERM drain (`20000` ms). |
 
 \* Every model must resolve a `baseUrl` and `apiKey` from its file or the
 defaults — validated at startup.
@@ -456,6 +466,29 @@ npm run build
 npm start           # http
 npm run start:stdio # stdio
 ```
+
+### Async mode — `ASYNC_TOOLS=true`
+
+A council can run for minutes; hosted ChatGPT and Codex abandon a tool call long
+before that (observed ~124 s; Codex defaults to 60 s). With `ASYNC_TOOLS=true`
+the `quorum` and preset tools validate the request, start the council in the
+background, and return at once with a handle — `structuredContent.jobId`, the
+current `state`/`phase`, and a suggested `pollIntervalMs`. Two extra tools
+appear:
+
+- `poll` — read-only; returns the job's state, the answers and public notes
+  completed so far, and (once terminal) `result`: the full council output in
+  its usual shape. `full: true` adds the rendered transcript and timeline.
+- `cancel` — aborts in-flight model calls, returns whatever had completed, and
+  settles the job as `cancelled` with no synthesis. Idempotent.
+
+Individual model tools stay synchronous. Server `instructions` switch to the
+start/poll/cancel workflow so the calling model knows what to do. Jobs are held
+in process memory under `JOB_*` bounds — a restart loses them, and a request
+routed to a different replica cannot see them, so run a single instance (or
+pin sticky routing) when this mode is on. Set `TRUST_PROXY_AUTH=true` behind
+Azure Container Apps Easy Auth to bind each job to the authenticated caller;
+without it, possession of the `jobId` is the only access control.
 
 ## Try it
 

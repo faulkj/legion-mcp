@@ -74,42 +74,16 @@ type PresetValidationResult =
    | { kind: 'presetRoleMissingFile'; role: string }
    | { kind: 'presetSynthUncovered'; role: string }
 
-/** Overridable runtime error messages loaded from config/errors.json. Tokens in {braces} are filled at runtime. */
-interface ErrorMessages {
-   unknownRole: string
-   unknownSelector: string
-   adhocDisabled: string
-   adhocEmptyName: string
-   unresolvableSelector: string
-   synthFailed: string
-   modelFailed: string
-   unknownPreset: string
-   roleNotInPreset: string
-   presetRoleUnderStaffed: string
-   presetRoleOverStaffed: string
-   presetRoleMissingFile: string
-   presetSynthUncovered: string
-   closingWithoutSynth: string
-   eliminateWithoutSynth: string
-   synthTeamed: string
-   frameTeamed: string
-}
-
-/** Overridable prompt-shaping templates loaded from config/prompts.json. Tokens in {braces} are filled at runtime. */
-interface PromptTemplates {
-   roleContract: string
-   contextBlock: string
-   transcriptBlock: string
-   roundExploring: string
-   roundFinal: string
-   roundSynthesis: string
-   closingStatement: string
-   elimination: string
-   entrant: string
-   frame: string
-   reframe: string
-   vote: string
-   synthesis: string
+/** Everything the per-request server factory hot-reloads from disk. Kept as last-known-good in async mode. */
+interface ReloadedConfig {
+   description: string | undefined
+   models: ModelDef[]
+   roles: RoleDef[]
+   schema: SchemaDescriptions
+   templates: PromptTemplates
+   errors: ErrorMessages
+   presets: Presets
+   prompt: Prompt
 }
 
 /** Validated, normalized application configuration. */
@@ -130,4 +104,9 @@ interface AppConfig {
    /** Bundled preset slugs to expose; `undefined` exposes them all. Local-only presets are always exposed. */
    presets?: string[]
    logLevel: LogLevel
+   /** Council tools return a job handle and `poll`/`cancel` are exposed, instead of blocking until the run finishes. */
+   asyncTools: boolean
+   /** Trust Easy Auth principal headers for job ownership. Only safe behind an ingress that strips client-supplied copies. */
+   trustProxyAuth: boolean
+   jobLimits: JobLimits
 }

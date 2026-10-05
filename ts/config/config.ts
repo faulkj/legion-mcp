@@ -2,37 +2,13 @@ import { readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import * as z from 'zod/v4'
 import { log } from '../core/log.js'
-import { bundledDir, csv, layeredFiles, localDir, packageRoot, readOptional, resolveEnvRef, slugKey, slugify } from './text.js'
+import { bundledDir, layeredFiles, localDir, resolveEnvRef, slugKey, slugify } from './text.js'
 
 export { fill, slugify } from './text.js'
 
+export { loadConfig } from './env.js'
+
 export { loadDescription, loadErrors, loadPrompts, loadSchema, loadToolDescription } from './load.js'
-
-/** Parse and validate environment configuration, failing fast on any problem. */
-export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
-   const parsed = envSchema.safeParse(env)
-   if (!parsed.success)
-      throw new Error(`Invalid configuration:\n${z.prettifyError(parsed.error)}`)
-
-   const { DEFAULT_BASE_URL, DEFAULT_API_KEY, ALLOW_NO_MODELS, MCP_TRANSPORT, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, MODEL_TIMEOUT, TOKEN_BUDGET, DYNAMIC_ROLES, PRESETS, LOG_LEVEL } = parsed.data
-
-   return {
-      ...readPackage(),
-      defaultBaseUrl: DEFAULT_BASE_URL?.replace(/\/+$/, ''),
-      defaultApiKey: DEFAULT_API_KEY,
-      allowNoModels: ALLOW_NO_MODELS === 'true',
-      transport: MCP_TRANSPORT,
-      host: HOST,
-      allowedHosts: csv(ALLOWED_HOSTS),
-      port: PORT,
-      maxRounds: MAX_ROUNDS,
-      modelTimeout: MODEL_TIMEOUT,
-      tokenBudget: TOKEN_BUDGET,
-      dynamicRoles: DYNAMIC_ROLES === 'true',
-      presets: csv(PRESETS)?.map(slugify),
-      logLevel: LOG_LEVEL
-   }
-}
 
 /** Scan config/roles/*.md across both layers (local wins); returns empty array when none exist. */
 export const loadRoles = (): RoleDef[] =>
@@ -68,27 +44,6 @@ const
       apiKey: z.string().min(1).optional(),
       omitParams: z.array(z.string()).optional()
    }),
-
-   envSchema = z.object({
-      DEFAULT_BASE_URL: z.url('DEFAULT_BASE_URL must be a valid URL').optional(),
-      DEFAULT_API_KEY: z.string().min(1).optional(),
-      ALLOW_NO_MODELS: z.enum(['true', 'false']).default('false'),
-      MCP_TRANSPORT: z.enum(['http', 'stdio'], { error: 'MCP_TRANSPORT must be "http" or "stdio"' }).default('http'),
-      HOST: z.string().min(1).default('127.0.0.1'),
-      ALLOWED_HOSTS: z.string().optional(),
-      PORT: z.coerce.number().int().positive().default(5000),
-      MAX_ROUNDS: z.coerce.number().int().positive().default(5),
-      MODEL_TIMEOUT: z.coerce.number().int().positive().default(90_000),
-      TOKEN_BUDGET: z.coerce.number().int().positive().optional(),
-      DYNAMIC_ROLES: z.enum(['true', 'false']).default('true'),
-      PRESETS: z.string().optional(),
-      LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info')
-   }),
-
-   readPackage = (): { name: string; version: string } => {
-      const { name = 'mcp-server', version = '0.0.0' } = JSON.parse(readOptional(join(packageRoot, 'package.json')) ?? '{}')
-      return { name, version }
-   },
 
    parseModelFile = (dir: string, file: string): ModelDef => {
       let json: unknown

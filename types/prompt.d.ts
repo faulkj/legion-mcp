@@ -26,6 +26,8 @@ interface PromptResult {
    latencyMs: number
    truncated?: boolean
    reasoningHeavy?: boolean
+   /** The tail of the answer collapsed into repeated words — a looping model, not an argument. */
+   degenerate?: boolean
 }
 
 /** Parsed parts of a council selector: `model`, `model:role`, `model@team`, or `model:role@team`. */

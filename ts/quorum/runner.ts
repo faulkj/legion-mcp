@@ -5,6 +5,9 @@ import { banner } from './helpers.js'
  * Build the stateful turn engine for one quorum run. Owns the telemetry/turns/content
  * collectors and the running token tally; `speakOne` calls a model, `record` commits an
  * outcome in council order (assigning contentIndex), and `skip` marks un-run turns.
+ * `pending` holds public parallel turns that have finished but not yet committed, so a
+ * live snapshot can show them without disturbing commit order. An aborted `signal` turns
+ * every subsequent call into a `cancelled` outcome and `cancelled()` reports it.
  */
 export const makeTurnRunner = (
    args: QuorumInput,
@@ -12,24 +15,34 @@ export const makeTurnRunner = (
    speakers: Speaker[],
    rounds: number,
    prompt: Prompt,
-   templates: PromptTemplates
+   templates: PromptTemplates,
+   signal?: AbortSignal,
+   runId = Math.random().toString(36).slice(2, 8)
 ): TurnRunner => {
    const
       telemetry: TurnTelemetry[] = [],
       turns: QuorumTurn[] = [],
-      content: { type: 'text'; text: string }[] = []
-   let used = 0
+      content: { type: 'text'; text: string }[] = [],
+      pending: QuorumTurn[] = []
+   let
+      used = 0,
+      phase = 'starting'
 
-   const skip = (round: number, from = 0, phase: TurnPhase = 'round', list: Speaker[] = speakers): void =>
+   const skip = (round: number, from = 0, phase: TurnPhase = 'round', list: Speaker[] = speakers, reason = 'budget'): void =>
       list.slice(from).forEach(s =>
-         telemetry.push({ index: s.index, selector: s.selector, modelName: s.def.name, modelId: s.def.model, role: s.role, round, phase, usage: {}, latencyMs: 0, status: 'skipped: budget' }))
+         telemetry.push({ index: s.index, selector: s.selector, modelName: s.def.name, modelId: s.def.model, role: s.role, round, phase, usage: {}, latencyMs: 0, status: `skipped: ${reason}` }))
 
-   const record = ({ text, entry }: TurnOutcome, round: number): void => {
+   const record = ({ text, entry, cancelled }: TurnOutcome, round: number): void => {
       if (text !== null) {
          entry.contentIndex = content.length
          content.push({ type: 'text', text })
-         turns.push({ index: entry.index, selector: entry.selector, round, phase: entry.phase, text })
-      }
+         turns.push({
+            index: entry.index, selector: entry.selector, round, phase: entry.phase, text,
+            ...(entry.status.includes('truncated') ? { truncated: true } : {}),
+            ...(entry.status.includes('degenerate') ? { degenerate: true } : {})
+         })
+      } else if (!cancelled)
+         turns.push({ index: entry.index, selector: entry.selector, round, phase: entry.phase, text: '', failed: failReason(entry.status) })
       telemetry.push(entry)
    }
 
@@ -51,28 +64,52 @@ export const makeTurnRunner = (
             context: extraContext ?? args.context
          },
          started = performance.now()
+      if (signal?.aborted)
+         return { text: null, cancelled: true, entry: { ...base, usage: {}, latencyMs: 0, status: 'cancelled' } }
       try {
-         const result = await prompt(def, roleInput, effectiveRoles, templates)
+         const result = await prompt(def, roleInput, effectiveRoles, templates, signal)
          used += result.usage.totalTokens ?? 0
          // A vote ballot is secret: never log its text (debug logs would otherwise reconstruct who voted for what by selector).
-         logPrompt(promptEntry(def, roleInput, { response: phase === 'vote' ? '(anonymous ballot — redacted)' : result.text, usage: result.usage, latencyMs: result.latencyMs }, selector))
+         logPrompt(promptEntry(def, roleInput, { response: phase === 'vote' ? '(anonymous ballot — redacted)' : result.text, usage: result.usage, latencyMs: result.latencyMs }, selector, runId))
          return { text: result.text, entry: { ...base, usage: result.usage, latencyMs: result.latencyMs, status: okStatus(result) } }
       } catch (err) {
          const
-            message = err instanceof Error ? err.message : String(err),
-            latencyMs = Math.round(performance.now() - started)
-         logPrompt(promptEntry(def, roleInput, { error: message, latencyMs }, selector))
-         return { text: null, entry: { ...base, usage: {}, latencyMs, status: `error: ${message}` } }
+            latencyMs = Math.round(performance.now() - started),
+            cancelled = signal?.aborted === true,
+            message = cancelled ? 'cancelled' : err instanceof Error ? err.message : String(err)
+         logPrompt(promptEntry(def, roleInput, { error: message, latencyMs }, selector, runId))
+         return { text: null, cancelled, entry: { ...base, usage: {}, latencyMs, status: cancelled ? 'cancelled' : `error: ${message}` } }
       }
    }
 
+   const launch = (list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined, override?: (s: Speaker) => string | undefined): Promise<TurnOutcome>[] =>
+      list.map(s => {
+         try { return speakOne(s, round, phase, ctx(s), override?.(s)) }
+         catch (err) {
+            const message = err instanceof Error ? err.message : String(err)
+            return Promise.resolve({ text: null, entry: { index: s.index, selector: s.selector, modelName: s.def.name, modelId: s.def.model, role: s.role, round, phase, usage: {}, latencyMs: 0, status: `error: ${message}` } })
+         }
+      })
+
    const runParallel = async (list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined, override?: (s: Speaker) => string | undefined): Promise<void> => {
-      for (const outcome of await Promise.all(list.map(s => speakOne(s, round, phase, ctx(s), override?.(s)))))
-         record(outcome, round)
+      const outcomes = await Promise.all(launch(list, round, phase, ctx, override).map(p =>
+         p.then(o => (o.text !== null && pending.push({ index: o.entry.index, selector: o.entry.selector, round, phase, text: o.text }), o))))
+      pending.length = 0
+      for (const outcome of outcomes) record(outcome, round)
    }
 
    const runHidden = (list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined, override?: (s: Speaker) => string | undefined): Promise<TurnOutcome[]> =>
-      Promise.all(list.map(s => speakOne(s, round, phase, ctx(s), override?.(s))))
+      Promise.all(launch(list, round, phase, ctx, override))
 
-   return { telemetry, turns, content, used: () => used, speakOne, record, note, skip, runParallel, runHidden }
+   return {
+      telemetry, turns, content, pending,
+      used: () => used,
+      cancelled: () => signal?.aborted === true,
+      phase: () => phase,
+      setPhase: (p: string) => { phase = p },
+      speakOne, record, note, skip, runParallel, runHidden
+   }
 }
+
+const failReason = (status: string): 'timeout' | 'empty' | 'error' =>
+   /timed out/i.test(status) ? 'timeout' : /no output before hitting maxTokens/.test(status) ? 'empty' : 'error'

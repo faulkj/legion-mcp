@@ -5,10 +5,11 @@
 Legion gives you a council of other LLMs to think with. Each individual tool is
 one model. The `quorum` tool fans a prompt out to many.
 
-## Shared parameters (all tools)
+## Shared parameters (model, quorum and preset tools)
 
-- `prompt` (required) — the question or task. Every call is **stateless and
-  one-shot**.
+- `prompt` (required) — the question or task. Every council call is a **new
+  run**: feeding a transcript back as `context` carries the discussion, not the
+  run's field, round or budget state.
 - `context` (optional) — supporting text (code, docs, data) appended to the
   prompt as a separate block. Treated as sensitive: only its presence is logged
   at the info level.
@@ -29,25 +30,12 @@ Identity and telemetry (usage, latency, status) are returned in
 `outputSchema`, so that shape is typed and validated — read it directly instead
 of parsing the answer text.
 
-## Mind your own timeout
+{longRuns}
 
-These calls can be slow. A single model may think for minutes at a high
-`maxTokens`, and a council multiplies that by its speakers and rounds. Legion
-streams progress, but if your harness enforces a fixed wall-clock deadline it
-will abandon the call while the work keeps running — you lose the answer and pay
-for it anyway.
-
-Before a big call, budget against the deadline you actually have:
-
-- Set `maxTokens` (400-800 is plenty for most turns). This is the single
-  biggest lever — uncapped reasoning models can spend the whole budget thinking
-  and return nothing. Some preset roles set their own ceiling (e.g. a
-  synthesizer given headroom to finish), which overrides yours for that seat.
-- Keep `models` and `rounds` small; cost scales with speakers × rounds.
-- Prefer one preset call over a bigger ad-hoc council.
-- If a run is too big for your limit, split it: call with `rounds: 1`, then pass
-  the returned `structuredContent.transcript` back as `context` on the next
-  call. Each leg stays short and nothing is lost between them.
+Whatever the mode, `maxTokens` (400-800 for most turns) is the biggest cost
+lever — uncapped reasoning models can spend the whole budget thinking and return
+nothing. Some preset roles set their own ceiling, which overrides yours for that
+seat. Cost scales with speakers × rounds.
 
 ## Tools
 

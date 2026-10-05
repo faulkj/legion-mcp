@@ -33,13 +33,19 @@ export const makeTurnLabels = (speakers: Speaker[]): string[] => {
 export const toContext = (turns: QuorumTurn[], labels: string[], t: PromptTemplates, callerContext?: string, selfIndex?: number): string | undefined => {
    if (!turns.length) return callerContext
    const
-      eliminated = new Set(turns.filter(turn => turn.phase === 'elimination' && turn.text.endsWith(' eliminated')).map(turn => turn.index)),
+      eliminated = new Set(turns.filter(turn => turn.phase === 'elimination' && !turn.text.startsWith('no elimination')).map(turn => turn.index)),
       phaseTag = (turn: QuorumTurn): string =>
          turn.phase === 'round' ? `round ${turn.round}` : turn.phase,
       mark = (turn: QuorumTurn): string =>
          `${turn.index === selfIndex ? ' · you' : ''}${turn.phase !== 'elimination' && eliminated.has(turn.index) ? ' · eliminated' : ''}`,
       label = (turn: QuorumTurn): string => `${labels[turn.index] ?? turn.selector}${mark(turn)}`,
-      transcript = turns.map(turn => `[${phaseTag(turn)} / ${label(turn)}]\n${turn.text}`).join('\n\n'),
+      body = (turn: QuorumTurn): string =>
+         turn.failed !== undefined
+            ? t.failedTurn[turn.failed]
+            : turn.degenerate
+               ? `${turn.text.slice(0, 400)}\n${t.degenerateTurn}`
+               : turn.truncated ? `${turn.text}\n${t.truncatedTurn}` : turn.text,
+      transcript = turns.map(turn => `[${phaseTag(turn)} / ${label(turn)}]\n${body(turn)}`).join('\n\n'),
       block = fill(t.transcriptBlock, { transcript })
    return callerContext ? `${callerContext}\n\n${block}` : block
 }

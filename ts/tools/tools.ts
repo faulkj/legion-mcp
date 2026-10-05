@@ -1,13 +1,15 @@
 import { McpServer } from '@modelcontextprotocol/server'
 import * as z from 'zod/v4'
 import { fill, slugify } from '../config/config.js'
-import { runQuorum } from '../quorum/quorum.js'
-import { withHeartbeat } from '../quorum/heartbeat.js'
 import { createPrompt } from '../core/llm.js'
 import { logPrompt, okStatus, promptEntry } from '../core/log.js'
+import { makeCouncilHandler } from './council.js'
+import { reservedNames } from './jobs.js'
+import { jobOutputSchema } from './jobSchema.js'
 import { buildInputSchema, modelList, modelOutputSchema, quorumOutputSchema, quorumShape } from './schema.js'
 
 export { registerPresetTools } from './presets.js'
+export { registerJobTools } from './jobs.js'
 
 /** Register one tool per model definition on the given server. */
 export const registerModelTools = (
@@ -16,19 +18,24 @@ export const registerModelTools = (
    roles: RoleDef[],
    prompt: ReturnType<typeof createPrompt>,
    errors: ErrorMessages,
-   schema: SchemaDescriptions = {}
+   schema: SchemaDescriptions = {},
+   asyncTools = false
 ): void => {
-   const inputSchema = buildInputSchema(schema).shape
+   const
+      inputSchema = buildInputSchema(schema).shape,
+      reserved = reservedNames(asyncTools)
    for (const def of models) {
       const
          toolName = slugify(def.name),
          description = def.description ?? `Prompt the ${def.name} model (${def.model}).`
+      if (reserved.has(toolName))
+         throw new Error(`Model "${def.name}" maps to tool "${toolName}", which is a reserved tool name. Rename it.`)
 
-      server.registerTool(toolName, { description, inputSchema, outputSchema: modelOutputSchema }, async (input: PromptInput) => {
+      server.registerTool(toolName, { description, inputSchema, outputSchema: modelOutputSchema }, async (input: PromptInput, ctx) => {
          if (input.role !== undefined && !roles.find(r => r.name === input.role))
             return { content: [{ type: 'text' as const, text: fill(errors.unknownRole, { role: input.role, available: roles.map(r => r.name).join(', ') || 'none' }) }], isError: true }
          try {
-            const result = await prompt(def, input)
+            const result = await prompt(def, input, undefined, undefined, ctx.mcpReq.signal)
             logPrompt(promptEntry(def, input, { response: result.text, usage: result.usage, latencyMs: result.latencyMs }, toolName))
             return {
                content: [{ type: 'text' as const, text: result.text }],
@@ -46,23 +53,16 @@ export const registerModelTools = (
 /** Register the quorum fan-out tool. */
 export const registerQuorumTool = (
    server: McpServer,
-   models: ModelDef[],
-   roles: RoleDef[],
-   prompt: ReturnType<typeof createPrompt>,
-   maxRounds: number,
-   dynamicRoles: boolean,
-   templates: PromptTemplates,
-   errors: ErrorMessages,
-   tokenBudget?: number,
-   presets: Presets = {},
+   deps: CouncilDeps,
    description?: string,
    schema: SchemaDescriptions = {}
 ): void => {
    const
+      { models, config, jobs } = deps,
       d = (key: string) => schema[key] ?? '',
       names = models.map(m => slugify(m.name)),
       quorumSchema = {
-         ...quorumShape(schema, maxRounds, 2, `${d('models')} Available models: ${names.join(', ')}`),
+         ...quorumShape(schema, config.maxRounds, 2, `${d('models')} Available models: ${names.join(', ')}`),
          roles: z.record(z.string(), z.string()).optional().describe(d('roles')),
          mode: z.enum(['sequential', 'parallel', 'private', 'independent']).optional().describe(d('mode')),
          synthesize: z.string().optional().describe(d('synthesize')),
@@ -82,9 +82,9 @@ export const registerQuorumTool = (
       {
          description: `${description ?? fallback}\n\nAvailable models: ${modelList(models)}.`,
          inputSchema: quorumSchema,
-         outputSchema: quorumOutputSchema
+         outputSchema: jobs ? jobOutputSchema : quorumOutputSchema
       },
-      (args: QuorumInput, ctx) => withHeartbeat(ctx, r => runQuorum(args, models, roles, prompt, maxRounds, dynamicRoles, templates, errors, args.tokenBudget ?? tokenBudget, presets, r))
+      makeCouncilHandler(deps)('quorum')
    )
 }
 

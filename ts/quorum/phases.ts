@@ -17,7 +17,7 @@ export const chaseToOne = async (eliminateEvery: number | undefined, rounds: num
    if (eliminateEvery === undefined || eliminateEvery <= 0) return
    for (let extra = regulars().length; regulars().length > 1 && extra > 0; extra--) {
       const before = regulars().length
-      await report(`elimination — ${before} left`), await runElimination(rounds)
+      await report(`elimination after round ${rounds} — ${before} left`), await runElimination(rounds)
       if (regulars().length === before) return
    }
 }
@@ -80,24 +80,22 @@ export const makeCloser = (deps: ClosingDeps): (() => Promise<void>) => {
 
 /** Build the elimination step: the synthesizer picks one live speaker off a numbered menu to drop from `live` (never prompted again), recorded as a transcript note. `optional` lets it decline; an unparseable reply cuts no one. */
 export const makeEliminator = (deps: PhaseDeps): ((round: number) => Promise<void>) => {
-   const { synth, labels, optional, templates, live, liveSpeakers, full, speakOne, note } = deps
+   const { synth, labels, optional, templates, live, liveSpeakers, full, telemetry, speakOne, note } = deps
    return async (round: number): Promise<void> => {
       const candidates = liveSpeakers()
       if (synth === undefined || candidates.length < 2) return
+      const { text, entry, cancelled } = await speakOne(synth, round, 'elimination', full(), fill(templates.elimination, { menu: eliminationMenu(candidates, labels, optional) }))
+      if (cancelled) { telemetry.push({ ...entry, phase: 'elimination' }); return }
       const
-         menu = eliminationMenu(candidates, labels, optional),
-         { text, entry } = await speakOne(synth, round, 'elimination', full(), fill(templates.elimination, { menu })),
          pick = text === null ? null : parseElimination(text, candidates, optional),
          cut = pick === 'none' ? null : pick,
-         status = cut
-            ? `eliminated: ${labels[cut.index]}`
-            : pick === 'none'
-               ? 'no elimination'
-               : 'invalid decision'
+         why = text === null ? '' : eliminationReason(text),
+         tail = why ? ` — ${why}` : '',
+         status = cut ? `eliminated: ${labels[cut.index]}` : pick === 'none' ? 'no elimination' : 'invalid decision'
       if (cut) live.delete(cut.index)
       note(
-         { index: cut ? cut.index : synth.index, selector: synth.selector, round, phase: 'elimination', text: cut ? `${labels[cut.index]} eliminated` : 'no elimination' },
-         { ...entry, phase: 'elimination', status, eliminatedIndex: cut ? cut.index : undefined }
+         { index: cut ? cut.index : synth.index, selector: synth.selector, round, phase: 'elimination', text: (cut ? `${labels[cut.index]} eliminated` : 'no elimination') + tail },
+         { ...entry, phase: 'elimination', status: status + tail, eliminatedIndex: cut ? cut.index : undefined }
       )
    }
 }
@@ -106,6 +104,9 @@ const eliminationMenu = (candidates: Speaker[], labels: string[], optional: bool
    const rows = candidates.map((s, i) => `${i + 1}) ${labels[s.index] ?? s.selector}`)
    return optional ? ['0) no elimination', ...rows].join('\n') : rows.join('\n')
 }
+
+const eliminationReason = (reply: string): string =>
+   reply.replace(/^\s*\d+\s*[\u2014\-:.)]*\s*/, '').replace(/\s+/g, ' ').trim().slice(0, 300)
 
 const parseElimination = (reply: string, candidates: Speaker[], optional: boolean): Speaker | 'none' | null => {
    const match = reply.match(/\d+/)

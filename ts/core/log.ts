@@ -9,19 +9,21 @@ export const banner = (message: string): void =>
 /** Route a completed model-call record to the active sink. */
 export const logPrompt = (entry: PromptLogEntry): void => sink.prompt(entry)
 
-/** Success-path status string for telemetry: flags truncation and reasoning-heavy (thin visible output). */
+/** Success-path status string for telemetry: flags truncation, reasoning-heavy (thin visible output) and degenerate (looping) answers. */
 export const okStatus = (r: PromptResult): string =>
-   [r.truncated ? 'truncated' : '', r.reasoningHeavy ? 'reasoning-heavy' : ''].filter(Boolean).join(', ') || 'ok'
+   [r.truncated ? 'truncated' : '', r.reasoningHeavy ? 'reasoning-heavy' : '', r.degenerate ? 'degenerate' : ''].filter(Boolean).join(', ') || 'ok'
 
 /** Build a PromptLogEntry from a model call and its outcome — the shape a DB/API sink would persist. */
 export const promptEntry = (
    def: ModelDef,
    input: PromptInput,
    outcome: Partial<Pick<PromptLogEntry, 'response' | 'usage' | 'latencyMs' | 'error'>>,
-   toolName: string
+   toolName: string,
+   runId?: string
 ): PromptLogEntry => ({
    timestamp: new Date().toISOString(),
    toolName,
+   ...(runId === undefined ? {} : { runId }),
    modelName: def.name,
    modelId: def.model,
    params: { temperature: input.temperature, maxTokens: input.maxTokens, systemPresent: input.system !== undefined, contextPresent: input.context !== undefined, role: input.role },
@@ -74,19 +76,21 @@ const
          console.error(stamp(colorize(level, `${message}${suffix}`)))
       },
       prompt(entry) {
-         const { toolName, modelId, latencyMs, usage, params } = entry
-         const meta = {
-            modelId,
-            latencyMs,
-            usage,
-            role: params.role,
-            contextPresent: params.contextPresent
-         }
+         const
+            { toolName, modelId, latencyMs, usage, params, runId } = entry,
+            tag = runId === undefined ? toolName : `[${runId}] ${toolName}`,
+            meta = {
+               modelId,
+               latencyMs,
+               usage,
+               role: params.role,
+               contextPresent: params.contextPresent
+            }
 
          if (entry.error !== undefined)
-            this.level('error', `❌ ${toolName} failed`, { ...meta, error: entry.error })
+            this.level('error', `❌ ${tag} failed`, { ...meta, error: entry.error })
          else
-            this.level('info', `🗣️ ${toolName} responded`, meta)
+            this.level('info', `🗣️ ${tag} responded`, meta)
 
          if (order.debug < threshold) return
 

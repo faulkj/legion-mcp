@@ -18,7 +18,7 @@ export const createPrompt = (config: AppConfig) => {
          return clients.get(key)!
       }
 
-   const attempt = async (def: ModelDef, input: PromptInput, roles: RoleDef[], templates: PromptTemplates) => {
+   const attempt = async (def: ModelDef, input: PromptInput, roles: RoleDef[], templates: PromptTemplates, signal?: AbortSignal) => {
       const
          started = performance.now(),
          params = {
@@ -30,14 +30,14 @@ export const createPrompt = (config: AppConfig) => {
             ...(input.temperature === undefined ? {} : { temperature: input.temperature })
          }
       for (const key of def.omitParams ?? []) delete (params as Record<string, unknown>)[key]
-      const res = await clientFor(def).responses.create(params)
+      const res = await clientFor(def).responses.create(params, signal === undefined ? {} : { signal })
       return { res, text: res.output_text ?? '', started }
    }
 
-   return async (def: ModelDef, input: PromptInput, roles: RoleDef[] = [], templates: PromptTemplates = loadPrompts()): Promise<PromptResult> => {
-      let { res, text, started } = await attempt(def, input, roles, templates)
-      if (res.status !== 'completed' && text === '')
-         ({ res, text, started } = await attempt(def, input, roles, templates))
+   return async (def: ModelDef, input: PromptInput, roles: RoleDef[] = [], templates: PromptTemplates = loadPrompts(), signal?: AbortSignal): Promise<PromptResult> => {
+      let { res, text, started } = await attempt(def, input, roles, templates, signal)
+      if (res.status !== 'completed' && text === '' && !signal?.aborted)
+         ({ res, text, started } = await attempt(def, input, roles, templates, signal))
 
       if (res.status !== 'completed' && text === '')
          throw new Error(incompleteMessage(res.status, res.incomplete_details?.reason))
@@ -45,7 +45,8 @@ export const createPrompt = (config: AppConfig) => {
       const
          reasoningTokens = res.usage?.output_tokens_details?.reasoning_tokens,
          visibleTokens = (res.usage?.output_tokens ?? 0) - (reasoningTokens ?? 0),
-         reasoningHeavy = !!reasoningTokens && reasoningTokens >= visibleTokens
+         reasoningHeavy = !!reasoningTokens && reasoningTokens >= visibleTokens,
+         degenerate = isDegenerate(text)
       return {
          text,
          usage: {
@@ -56,13 +57,22 @@ export const createPrompt = (config: AppConfig) => {
          },
          latencyMs: Math.round(performance.now() - started),
          ...(res.status === 'completed' ? {} : { truncated: true }),
-         ...(reasoningHeavy ? { reasoningHeavy: true } : {})
+         ...(reasoningHeavy ? { reasoningHeavy: true } : {}),
+         ...(degenerate ? { degenerate: true } : {})
       }
    }
 }
 
 const
    defaultMaxTokens = 8192,
+
+   // A model stuck in a loop emits a long tail of the same few words. Legit prose keeps well over
+   // half its words unique; a collapsed tail sits near 5%. Only the tail is checked so a long,
+   // healthy answer that ends in a short list is not flagged.
+   isDegenerate = (text: string): boolean => {
+      const words = text.slice(-600).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+      return words.length >= 60 && new Set(words).size / words.length < 0.2
+   },
 
    incompleteMessage = (status?: string, reason?: string): string =>
       reason && reason !== 'max_output_tokens'

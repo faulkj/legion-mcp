@@ -76,6 +76,18 @@
             "warn",
             "error"
           ]
+        },
+        {
+          "description": "Run councils in the background: council tools return a job handle and poll/cancel tools are exposed. Jobs live in process memory only.",
+          "format": "boolean",
+          "name": "ASYNC_TOOLS",
+          "default": "false"
+        },
+        {
+          "description": "Bind async jobs to the caller named by X-MS-CLIENT-PRINCIPAL-* headers. Only safe behind an ingress that strips client-supplied copies.",
+          "format": "boolean",
+          "name": "TRUST_PROXY_AUTH",
+          "default": "false"
         }
       ]
     }

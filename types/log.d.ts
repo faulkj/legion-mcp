@@ -5,6 +5,8 @@ type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 interface PromptLogEntry {
    timestamp: string
    toolName: string
+   /** Short id of the council run this call belongs to, so concurrent runs can be told apart in logs. */
+   runId?: string
    modelName: string
    modelId: string
    params: {

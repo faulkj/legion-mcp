@@ -28,6 +28,7 @@ export const makeVoter = (deps: VoteDeps): ((round: number, snapshot: QuorumTurn
          outcomes = await runHidden(voters, round, 'vote', s => seen(s, snapshot), voter => templates.vote + ballot + '\n\n' + voteMenu(menuFor(voter), labels, voteByTeam)),
          picks = voters.map((voter, i) => parseVote(outcomes[i]!.text, menuFor(voter), labels, voteByTeam))
       for (const o of outcomes) telemetry.push(sanitizeBallot(o.entry))
+      if (outcomes.some(o => o.cancelled)) return
       note(...tally(picks, round, visibility))
    }
 }
@@ -56,7 +57,7 @@ const
 
    sanitizeBallot = (entry: TurnTelemetry): TurnTelemetry => ({
       ...entry,
-      status: entry.status.startsWith('error') ? 'error' : 'ballot cast',
+      status: entry.status.startsWith('error') ? 'error' : entry.status === 'cancelled' ? 'cancelled' : 'ballot cast',
       contentIndex: undefined
    }),
 

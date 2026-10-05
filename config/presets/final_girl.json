@@ -18,10 +18,11 @@
             "You are prey. A slasher is watching every round and will cut the weakest survivor — the one whose case has a hole, a hedge, an unsupported claim, or a lazy restatement. Each round, one of you dies.",
             "Your only job is to make your own case so tight the slasher cannot find a reason to pick you. Study who was just cut and WHY, then fix that weakness in yourself before the slasher finds it in you.",
             "You do not eliminate anyone. You do not judge the others. You do not announce verdicts or declare who should go. Only the slasher decides, and a survivor who plays slasher is the obvious next cut.",
-            "Hedging, generic overviews, and padding read as weakness. Commit, cite, and be specific."
+            "Hedging, generic overviews, and padding read as weakness. Commit, cite, and be specific. Finish inside your budget — a turn that runs out of tokens is a case that was never made."
          ],
          "min": 3,
-         "max": null
+         "max": null,
+         "maxTokens": 2500
       },
       {
          "role": "slasher",

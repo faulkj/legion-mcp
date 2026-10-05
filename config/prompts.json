@@ -2,14 +2,21 @@
    "roleContract": "--- Assigned role ({role}) ---\nUse these role instructions to complete the task while respecting the prompt and context.\n\n{instructions}",
    "contextBlock": "{prompt}\n\n--- Context ---\n{context}",
    "transcriptBlock": "--- Discussion so far ---\n{transcript}\n\n(The [round N / role] labels above are added by the moderator; a turn marked · you was written by you. Do not label your own turn or imitate that format — just give your answer.)",
-   "roundExploring": "[Round {round} of {rounds} — keep exploring]\n\n",
-   "roundFinal": "[Round {round} of {rounds} — final round, commit]\n\n",
+   "roundExploring": "[Round {round} of {rounds} — keep exploring. Finish within your token budget: a turn that gets cut off is marked in the transcript and counts against you.]\n\n",
+   "roundFinal": "[Round {round} of {rounds} — final round, commit. Finish within your token budget: a turn that gets cut off is marked in the transcript and counts against you.]\n\n",
    "roundSynthesis": "[Interim synthesis — consolidate the discussion so far into one working answer to build on]\n\n",
    "closingStatement": "[Closing statement — give your final position after reading the whole discussion. Do not introduce a new format; be concise and decisive.]\n\n",
-   "elimination": "[Elimination — weigh the discussion and reply with ONLY the number of the participant to eliminate. Candidates:\n{menu}]\n\n",
+   "elimination": "[Elimination — weigh the discussion and reply with ONLY the number of the participant to eliminate. A turn marked as cut off is an unfinished argument: weigh it against that participant. Candidates:\n{menu}]\n\n",
    "entrant": "[You are entering the discussion now — a fresh voice. Read what came before, then bring something NEW: a fresh angle, an overlooked point, or a sharper case. Do not just restate or echo what has already been said.]\n\n",
    "frame": "[Framing — you are the neutral chair. Set the stakes and shape the question the others will address. Be brief and concrete; do not take a side.]\n\n",
    "reframe": "[Reframe — you are the neutral chair. Read the discussion so far and steer it: sharpen the question, raise the stakes, or redirect. Be brief; do not take a side.]\n\n",
-   "vote": "[Anonymous vote — your ballot is secret; no one sees who voted for what, only the totals. Reply with ONLY the number of your choice from the menu below (0 to abstain). Do not explain.]\n\n",
-   "synthesis": "[Final synthesis — consolidate the discussion above into one answer]\n\n"
+   "vote": "[Anonymous vote — your ballot is secret; no one sees who voted for what, only the totals. A turn marked as cut off is an unfinished argument: weigh it against that participant. Reply with ONLY the number of your choice from the menu below (0 to abstain). Do not explain.]\n\n",
+   "synthesis": "[Final synthesis — consolidate the discussion above into one answer]\n\n",
+   "truncatedTurn": "[— cut off: this speaker ran out of tokens before finishing —]",
+   "degenerateTurn": "[— degenerate: the rest of this turn collapsed into repeated words and has been omitted —]",
+   "failedTurn": {
+      "timeout": "[— no answer: this speaker timed out and produced nothing this turn —]",
+      "empty": "[— no answer: this speaker spent its whole token budget thinking and produced nothing this turn —]",
+      "error": "[— no answer: this speaker's call failed and produced nothing this turn —]"
+   }
 }

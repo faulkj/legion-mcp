@@ -15,7 +15,7 @@ export const buildTimeline = (telemetry: TurnTelemetry[], labels: string[]): Tim
 
 const detailFor = (t: TurnTelemetry, labels: string[]): string | undefined =>
    t.phase === 'elimination'
-      ? t.eliminatedIndex === undefined ? 'no elimination' : `eliminated ${labels[t.eliminatedIndex] ?? t.eliminatedIndex}`
+      ? t.eliminatedIndex === undefined ? t.status : `eliminated ${labels[t.eliminatedIndex] ?? t.eliminatedIndex}${t.status.includes(' — ') ? t.status.slice(t.status.indexOf(' — ')) : ''}`
       : t.phase === 'vote'
          ? t.status.replace(/^vote tallied: /, '')
          : t.status.startsWith('error') || t.status.startsWith('skipped')
