@@ -43,11 +43,11 @@ export const createPrompt = (config: AppConfig) => {
       const started = performance.now()
       let { res, text } = await attempt(def, input, roles, templates, signal).catch(err => { throw withUsage(err) })
       const prior = res.usage
-      if (res.status !== 'completed' && text === '' && !signal?.aborted)
+      if (text === '' && !signal?.aborted)
          ({ res, text } = await attempt(def, input, roles, templates, signal).catch(err => { throw withUsage(err, prior) }))
 
       const usage = toUsage(res.usage, prior === res.usage ? undefined : prior)
-      if (res.status !== 'completed' && text === '')
+      if (text === '')
          throw Object.assign(new Error(incompleteMessage(res.status, res.incomplete_details?.reason)), { usage })
 
       const
@@ -111,7 +111,9 @@ const
    incompleteMessage = (status?: string, reason?: string): string =>
       reason === 'max_output_tokens'
          ? `${emptyOutputError} — raise maxTokens (reasoning models can spend the full budget thinking before emitting any text)`
-         : `${emptyResponseError}: status ${status ?? 'unknown'}, reason ${reason ?? 'not given'} (after one retry)`,
+         : status === 'completed'
+            ? `${emptyResponseError}: provider reported completed with no text (after one retry)`
+            : `${emptyResponseError}: status ${status ?? 'unknown'}, reason ${reason ?? 'not given'} (after one retry)`,
 
    composeInput = (input: PromptInput, t: PromptTemplates): string =>
       input.context === undefined
