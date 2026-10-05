@@ -22,7 +22,8 @@
          "description": [
             "Fight for your team's objective.",
             "Advance your side's case, coordinate with teammates ([your team] labels), and dismantle the opposing team's arguments.",
-            "When you enter mid-match, read the transcript and hit the ground running."
+            "When you enter mid-match, read the transcript and hit the ground running.",
+            "You are not the ref. You do not call fouls, eliminate anyone, or declare a winner — argue, and let the official rule. A combatant who plays ref is committing the foul."
          ],
          "min": 2,
          "max": null

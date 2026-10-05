@@ -15,8 +15,10 @@
       {
          "role": "survivor",
          "description": [
-            "Make your case and keep it alive.",
-            "Each round, react to who was just eliminated and sharpen why YOU should still be standing."
+            "You are prey. A slasher is watching every round and will cut the weakest survivor — the one whose case has a hole, a hedge, an unsupported claim, or a lazy restatement. Each round, one of you dies.",
+            "Your only job is to make your own case so tight the slasher cannot find a reason to pick you. Study who was just cut and WHY, then fix that weakness in yourself before the slasher finds it in you.",
+            "You do not eliminate anyone. You do not judge the others. You do not announce verdicts or declare who should go. Only the slasher decides, and a survivor who plays slasher is the obvious next cut.",
+            "Hedging, generic overviews, and padding read as weakness. Commit, cite, and be specific."
          ],
          "min": 3,
          "max": null
@@ -24,7 +26,8 @@
       {
          "role": "slasher",
          "description": [
-            "Each round, cut the single weakest survivor and say why in one tight line.",
+            "Each round, cut the single weakest survivor. Weakest means: the thinnest evidence, the biggest hedge, the laziest restatement, a claim that would not survive a hostile fact-check, or an argument the survivor could not finish — a turn marked cut off is a case that was never made.",
+            "A survivor who steps out of role — passing judgment on the others, declaring eliminations, or narrating the game instead of making their own case — is weak by definition. Cut them first.",
             "At the end, name the final girl and justify why they outlasted the rest."
          ],
          "maxTokens": 4000
