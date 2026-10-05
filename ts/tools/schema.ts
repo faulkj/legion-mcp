@@ -74,6 +74,10 @@ export const quorumOutputSchema = {
    })).describe('The run as an ordered event log — the shape of the deliberation without parsing the transcript.'),
    transcript: z.string().describe('Full labelled transcript; feed back as `context` to continue a run across calls.'),
    preset: z.string().optional().describe('Preset key, when the run used one.'),
+   incomplete: z.object({
+      reason: z.literal('elimination-stalled'),
+      remaining: z.array(z.string())
+   }).optional().describe('Required eliminations did not establish a sole survivor; the summary is not a winning verdict.'),
    budget: z.object({
       limit: z.number(),
       used: z.number(),

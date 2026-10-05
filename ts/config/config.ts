@@ -42,7 +42,8 @@ const
       system: z.string().optional(),
       baseUrl: z.url().optional(),
       apiKey: z.string().min(1).optional(),
-      omitParams: z.array(z.string()).optional()
+      omitParams: z.array(z.string()).optional(),
+      reasoning: z.enum(['minimal', 'low', 'medium', 'high']).optional()
    }),
 
    parseModelFile = (dir: string, file: string): ModelDef => {

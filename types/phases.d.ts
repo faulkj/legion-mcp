@@ -12,6 +12,7 @@ interface PhaseDeps {
    liveSpeakers: () => Speaker[]
    full: () => string | undefined
    telemetry: TurnTelemetry[]
+   cancelled: TurnRunner['cancelled']
    speakOne: TurnRunner['speakOne']
    record: TurnRunner['record']
    note: TurnRunner['note']

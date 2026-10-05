@@ -26,6 +26,7 @@ export const runQuorum = async (
    onRunner: (runner: TurnRunner, labels: string[]) => void = () => {},
    runId?: string
 ): Promise<QuorumResult> => {
+   let contestNotice = ''
    const
       { roundSpeakers, synth, frame, labels } = council,
       { preset, effectiveRoles, rounds, mode, synthSelector, synthInterval, reframeEvery, closing, eliminateEvery, enterEvery, optional, cameoRound } = config,
@@ -38,8 +39,8 @@ export const runQuorum = async (
       full = () => toContext(turns, labels, templates, args.context),
       closingContext = (speaker: Speaker) => withObjective(speaker, args.objectives, false, toContext(turns, labels, templates, args.context, speaker.index)),
       seen = makeSeen(mode, labels, templates, args.context, args.objectives, withObjective),
-      refFull = () => withObjective(synth, args.objectives, true, full()),
-      deps = { synth, synthSelector, frame, prompt: args.prompt, labels, optional, templates, errors, live, liveSpeakers: regulars, full: refFull, telemetry, speakOne, record, note },
+      refFull = () => [withObjective(synth, args.objectives, true, full()), contestNotice].filter(Boolean).join('\n\n') || undefined,
+      deps = { synth, synthSelector, frame, prompt: args.prompt, labels, optional, templates, errors, live, liveSpeakers: regulars, full: refFull, telemetry, cancelled, speakOne, record, note },
       runSynthesis = makeSynthesizer(deps),
       runElimination = makeEliminator(deps),
       runFrame = makeFramer(deps),
@@ -81,11 +82,16 @@ export const runQuorum = async (
 
    if (!cancelled()) await chaseToOne(eliminateEvery, rounds, regulars, runElimination, step)
 
+   const remaining = !optional && eliminateEvery !== undefined && eliminateEvery !== 0 && regulars().length > 1
+      ? regulars().map(s => labels[s.index] ?? s.selector)
+      : []
+   if (remaining.length) contestNotice = fill(templates.incompleteContest, { remaining: remaining.join(', ') })
+
    if (closing && !cancelled())
       await step('closing statements'), await runClosing()
    if (closing && runVote && !cancelled()) await step('voting'), await runVote(rounds, [...turns])
 
-   if ((synthInterval === Infinity || closing) && !cancelled())
+   if ((synthInterval === Infinity || closing || remaining.length) && !cancelled())
       await step('synthesizing'), await runSynthesis(0)
 
    const
@@ -94,17 +100,22 @@ export const runQuorum = async (
          ? [{ type: 'text' as const, text: errors.cancelled }]
          : synthFailed ? [{ type: 'text' as const, text: fill(errors.synthFailed, { synth: synthSelector! }) }] : []
 
-   await step(cancelled() ? 'cancelled' : 'done')
+   await step(cancelled()
+      ? 'cancelled'
+      : remaining.length
+         ? 'incomplete'
+         : 'done')
    return {
-      content: [...content, ...tail],
+      content: [...content, ...tail, ...(!cancelled() && contestNotice ? [{ type: 'text' as const, text: contestNotice }] : [])],
       structuredContent: {
          turns: telemetry,
          timeline: buildTimeline(telemetry, labels),
          transcript: toContext(turns, labels, templates) ?? '',
          ...(args.preset ? { preset: args.preset } : {}),
+         ...(!cancelled() && remaining.length ? { incomplete: { reason: 'elimination-stalled' as const, remaining } } : {}),
          ...(tokenBudget ? { budget: { limit: tokenBudget, used: used(), exceeded: used() > tokenBudget } } : {}),
          ...(cancelled() ? { cancelled: true } : {})
       },
-      isError: content.length === 0 || synthFailed || cancelled()
+      isError: content.length === 0 || synthFailed || cancelled() || remaining.length > 0
    }
 }

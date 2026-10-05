@@ -7,6 +7,8 @@ interface ModelDef {
    apiKey?: string
    system?: string
    omitParams?: string[]
+   /** Reasoning effort sent as `reasoning.effort`. Lower it for reasoning models that burn the whole output budget thinking on short turns. */
+   reasoning?: 'minimal' | 'low' | 'medium' | 'high'
 }
 
 /** A hot-droppable role loaded from config/roles/<slug>.md. */
@@ -28,7 +30,7 @@ interface PresetRole {
    description?: string | string[]
    min?: number
    max?: number | null
-   /** Per-seat output ceiling, overriding the call's `maxTokens`. Give reasoning synthesizers headroom: they can spend the whole budget thinking before emitting any text. */
+   /** Per-seat output limit when the caller omits `maxTokens`. */
    maxTokens?: number
    silent?: boolean
    voter?: boolean

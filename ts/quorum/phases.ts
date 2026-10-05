@@ -91,16 +91,16 @@ export const makeCloser = (deps: ClosingDeps): (() => Promise<void>) => {
    }
 }
 
-/** Build the elimination step: the synthesizer picks one live speaker off a numbered menu to drop from `live` (never prompted again), recorded as a transcript note. `optional` lets it decline; an unparseable reply cuts no one. */
+/** Build the elimination step: the synthesizer selects an exact live label to drop, recorded as a transcript note. `optional` permits a pass; malformed or ambiguous commands cut no one. */
 export const makeEliminator = (deps: PhaseDeps): ((round: number) => Promise<void>) => {
    const { synth, labels, optional, templates, live, liveSpeakers, full, telemetry, speakOne, note } = deps
    return async (round: number): Promise<void> => {
       const candidates = liveSpeakers()
       if (synth === undefined || candidates.length < 2) return
       const { text, entry, cancelled } = await speakOne(synth, round, 'elimination', full(), fill(templates.elimination, { menu: eliminationMenu(candidates, labels, optional) }))
-      if (cancelled) { telemetry.push({ ...entry, phase: 'elimination' }); return }
+      if (cancelled || deps.cancelled()) { telemetry.push({ ...entry, phase: 'elimination', status: 'cancelled' }); return }
       const
-         pick = text === null ? null : parseElimination(text, candidates, optional),
+         pick = text === null ? null : parseElimination(text, candidates, labels, optional),
          cut = pick === 'none' ? null : pick,
          why = text === null ? '' : eliminationReason(text),
          tail = why ? ` — ${why}` : '',

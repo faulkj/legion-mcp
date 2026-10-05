@@ -33,6 +33,7 @@ interface PromptTemplates {
    roundSynthesis: string
    closingStatement: string
    elimination: string
+   incompleteContest: string
    entrant: string
    frame: string
    reframe: string

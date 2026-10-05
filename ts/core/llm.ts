@@ -27,7 +27,8 @@ export const createPrompt = (config: AppConfig) => {
             store: false,
             max_output_tokens: input.maxTokens ?? defaultMaxTokens,
             ...composeInstructions(def, input, roles, templates),
-            ...(input.temperature === undefined ? {} : { temperature: input.temperature })
+            ...(input.temperature === undefined ? {} : { temperature: input.temperature }),
+            ...(def.reasoning === undefined ? {} : { reasoning: { effort: def.reasoning } })
          }
       for (const key of def.omitParams ?? []) delete (params as Record<string, unknown>)[key]
       const res = await clientFor(def).responses.create(params, signal === undefined ? {} : { signal })

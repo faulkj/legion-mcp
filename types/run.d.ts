@@ -22,6 +22,7 @@ interface QuorumResult {
       transcript: string
       preset?: string
       budget?: { limit: number; used: number; exceeded: boolean }
+      incomplete?: { reason: 'elimination-stalled'; remaining: string[] }
       cancelled?: true
    }
    isError: boolean

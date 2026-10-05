@@ -160,6 +160,10 @@ Each JSON file becomes a tool, named after the slugified file name
   `["temperature"]`. The server stays provider-agnostic: it never assumes which
   models reject which params — you declare each model's quirks here. Useful for
   reasoning models and some deployments that reject `temperature`.
+- `reasoning` — optional `"minimal" | "low" | "medium" | "high"`, sent as
+  `reasoning.effort`. Reasoning models can spend an entire `maxTokens` thinking
+  and emit nothing; `"low"` may help leave room for an answer. The endpoint must
+  support this parameter; it does not bypass content filtering.
 
 **Hot-drop:** the directory is re-scanned per request — add or edit a model
 file and it's live on the next call, no restart.
@@ -245,7 +249,7 @@ Role object keys:
 | `description` | `string \| string[]` | matching role file | Inline instructions; arrays are joined with newlines. Otherwise `config/roles/<role>.md` must exist. |
 | `min` | non-negative integer | `1` | Minimum speakers; `0` makes the role optional. |
 | `max` | positive integer or `null` | `1` | Maximum speakers; `null` is unbounded. |
-| `maxTokens` | positive integer | call's `maxTokens` | Output ceiling for this role's seats, overriding the caller's `maxTokens`. Give reasoning synthesizers headroom — they can spend a whole budget thinking and emit nothing. |
+| `maxTokens` | positive integer | `8192` | Output limit for this role when the caller omits `maxTokens`. An explicit caller value overrides every role, including neutral roles. Includes hidden reasoning. |
 | `silent` | `boolean` | `false` | Lets the role observe and vote without speaking in normal rounds. |
 | `voter` | `boolean` | all eligible roles | Restricts anonymous ballots to marked roles when any role is marked. |
 | `candidate` | `boolean` | all eligible roles | Restricts ballot choices to marked roles when any role is marked. |
@@ -279,6 +283,14 @@ first lawyer listed for each side gives that side's closing statement:
 
 Things that bite when writing a preset:
 
+- **Eliminations use exact labels.** The judge copies one `CUT <label>` command
+  from the eligible menu, then gives a reason on the next line. Optional cuts
+  also allow `KEEP ALL`. Bare numbers and ambiguous selections are rejected.
+  Local elimination prompt overrides must use this command format.
+- **Required elimination can stall.** Bounded cleanup retries do not guarantee
+  a sole survivor. An unresolved run retains its summary and discussion, but
+  returns `isError: true` and `structuredContent.incomplete` with the remaining
+  labels. Optional-elimination contests are not subject to this requirement.
 - **`min`/`max` count every speaker in that role, not per team.** They bound the
   whole role across all teams, so a tag-team `wrestler` role that must cover
   sides from a 2v2 up to a 6v6 is `min: 4, max: 12` — a 3v3 is just one valid

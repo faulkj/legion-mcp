@@ -60,13 +60,15 @@ export const makeTurnRunner = (
             prompt: promptOverride ?? banner(round, rounds, phase, templates) + args.prompt,
             system: args.system,
             temperature: args.temperature,
-            maxTokens: speaker.maxTokens ?? args.maxTokens,
+            maxTokens: args.maxTokens ?? speaker.maxTokens,
             role,
             context: extraContext ?? args.context
          },
          started = performance.now()
       if (signal?.aborted)
          return { text: null, cancelled: true, entry: { ...base, usage: {}, latencyMs: 0, status: 'cancelled' } }
+      const seat: InFlightSeat = { index, selector, round, phase, startedAt: Date.now() }
+      inFlight.push(seat)
       try {
          const result = await prompt(def, roleInput, effectiveRoles, templates, signal)
          used += result.usage.totalTokens ?? 0
@@ -82,17 +84,16 @@ export const makeTurnRunner = (
          used += usage.totalTokens ?? 0
          logPrompt(promptEntry(def, roleInput, { error: message, latencyMs, usage }, selector, runId))
          return { text: null, cancelled, entry: { ...base, usage, latencyMs, status: cancelled ? 'cancelled' : `error: ${message}` } }
+      } finally {
+         const i = inFlight.indexOf(seat)
+         i >= 0 && inFlight.splice(i, 1)
       }
    }
 
    const launch = (list: Speaker[], round: number, phase: TurnPhase, ctx: (s: Speaker) => string | undefined, override?: (s: Speaker) => string | undefined): Promise<TurnOutcome>[] =>
       list.map(s => {
-         const seat: InFlightSeat = { index: s.index, selector: s.selector, round, phase, startedAt: Date.now() }
-         inFlight.push(seat)
-         const done = () => { const i = inFlight.indexOf(seat); i >= 0 && inFlight.splice(i, 1) }
-         try { return speakOne(s, round, phase, ctx(s), override?.(s)).finally(done) }
+         try { return speakOne(s, round, phase, ctx(s), override?.(s)) }
          catch (err) {
-            done()
             const message = err instanceof Error ? err.message : String(err)
             return Promise.resolve({ text: null, entry: { index: s.index, selector: s.selector, modelName: s.def.name, modelId: s.def.model, role: s.role, round, phase, usage: {}, latencyMs: 0, status: `error: ${message}` } })
          }
