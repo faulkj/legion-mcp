@@ -135,9 +135,10 @@ labels; the tool owns that structure.
 
 **Results**: text answers arrive in council (selector) order; per-turn telemetry
 (usage, latency, `status`, role, `contentIndex`) is in `structuredContent.turns`.
-`status` ∈ `ok` · `truncated` (hit `maxTokens`, partial text returned) ·
-`reasoning-heavy` (spent most of the budget thinking — answer may be thin; may
-combine, e.g. `truncated, reasoning-heavy`) · `skipped: budget` ·
+`status` ∈ `ok` · `truncated` (provider confirmed `maxTokens`, partial text
+returned) · `incomplete: <status (reason)>` (any other non-completed status; text
+may be partial) · `reasoning-heavy` (spent most of the budget thinking — answer
+may be thin; may combine, e.g. `truncated, reasoning-heavy`) · `skipped: budget` ·
 `error: <message>`. `isError: true` when **all** turns fail, or when the
 synthesizer's final answer fails — the discussion is still returned, followed by
 a note that it is not a finished result. Otherwise partial success returns what

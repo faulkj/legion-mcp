@@ -9,9 +9,9 @@ export const banner = (message: string): void =>
 /** Route a completed model-call record to the active sink. */
 export const logPrompt = (entry: PromptLogEntry): void => sink.prompt(entry)
 
-/** Success-path status string for telemetry: flags truncation, reasoning-heavy (thin visible output) and degenerate (looping) answers. */
+/** Success-path status string for telemetry: flags truncation (confirmed maxTokens), other incomplete statuses, reasoning-heavy (thin visible output) and degenerate (looping) answers. */
 export const okStatus = (r: PromptResult): string =>
-   [r.truncated ? 'truncated' : '', r.reasoningHeavy ? 'reasoning-heavy' : '', r.degenerate ? 'degenerate' : ''].filter(Boolean).join(', ') || 'ok'
+   [r.truncated ? 'truncated' : '', r.incomplete ? `incomplete: ${r.incomplete}` : '', r.reasoningHeavy ? 'reasoning-heavy' : '', r.degenerate ? 'degenerate' : ''].filter(Boolean).join(', ') || 'ok'
 
 /** Build a PromptLogEntry from a model call and its outcome — the shape a DB/API sink would persist. */
 export const promptEntry = (

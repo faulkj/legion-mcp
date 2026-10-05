@@ -47,7 +47,7 @@ export const modelOutputSchema = {
    role: z.string().optional().describe('Role applied to the call, when one was requested.'),
    usage: usageSchema().describe('Token usage as reported by the endpoint; fields are absent when it reports none.'),
    latencyMs: z.number().describe('Round-trip time for the model call.'),
-   status: z.string().describe('`ok`, or `truncated` / `reasoning-heavy` (may combine).')
+   status: z.string().describe('`ok`, or `truncated` / `incomplete: <status>` / `reasoning-heavy` / `degenerate` (may combine).')
 }
 
 /** `structuredContent` the quorum and preset tools return: per-turn telemetry, the ordered event timeline, and the rendered transcript. */

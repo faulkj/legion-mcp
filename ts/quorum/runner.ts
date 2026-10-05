@@ -41,6 +41,7 @@ export const makeTurnRunner = (
          turns.push({
             index: entry.index, selector: entry.selector, round, phase: entry.phase, text,
             ...(entry.status.includes('truncated') ? { truncated: true } : {}),
+            ...(entry.status.includes('incomplete:') ? { incomplete: true } : {}),
             ...(entry.status.includes('degenerate') ? { degenerate: true } : {})
          })
       } else if (!cancelled)

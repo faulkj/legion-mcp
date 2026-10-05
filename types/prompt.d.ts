@@ -27,7 +27,10 @@ interface PromptResult {
    text: string
    usage: TokenUsage
    latencyMs: number
+   /** The provider confirmed the answer hit maxTokens (`incomplete_details.reason === 'max_output_tokens'`). */
    truncated?: boolean
+   /** Any other non-completed status, as `status (reason)`; the text may still be partial. */
+   incomplete?: string
    reasoningHeavy?: boolean
    /** The tail of the answer collapsed into repeated words — a looping model, not an argument. */
    degenerate?: boolean

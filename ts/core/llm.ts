@@ -54,12 +54,13 @@ export const createPrompt = (config: AppConfig) => {
          reasoningTokens = usage.reasoningTokens,
          visibleTokens = (res.usage?.output_tokens ?? 0) - (res.usage?.output_tokens_details?.reasoning_tokens ?? 0),
          reasoningHeavy = !!reasoningTokens && reasoningTokens >= visibleTokens,
-         degenerate = isDegenerate(text)
+         degenerate = isDegenerate(text),
+         reason = res.incomplete_details?.reason
       return {
          text,
          usage,
          latencyMs: Math.round(performance.now() - started),
-         ...(res.status === 'completed' ? {} : { truncated: true }),
+         ...(res.status === 'completed' ? {} : reason === 'max_output_tokens' ? { truncated: true } : { incomplete: `${res.status ?? 'unknown'}${reason ? ` (${reason})` : ''}` }),
          ...(reasoningHeavy ? { reasoningHeavy: true } : {}),
          ...(degenerate ? { degenerate: true } : {})
       }

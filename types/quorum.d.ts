@@ -78,7 +78,7 @@ interface ResolvedCouncil {
 /** Which phase of a run a turn belongs to: framing, discussion, entry, closing, voting, synthesis, or elimination. */
 type TurnPhase = 'frame' | 'round' | 'entry' | 'closing' | 'vote' | 'synthesis' | 'elimination'
 
-/** Internal per-turn transcript entry for a quorum round. `index` is the speaker's stable identity (position in `models[]`). `truncated` marks a turn cut off by maxTokens, so the transcript can flag it to every later reader. */
+/** Internal per-turn transcript entry for a quorum round. `index` is the speaker's stable identity (position in `models[]`). `truncated` marks a turn the provider confirmed hit maxTokens; `incomplete` marks any other non-completed status, so the transcript can flag each to every later reader. */
 interface QuorumTurn {
    index: number
    selector: string
@@ -86,6 +86,7 @@ interface QuorumTurn {
    phase: TurnPhase
    text: string
    truncated?: boolean
+   incomplete?: boolean
    /** The answer collapsed into a repetition loop; the transcript shows only its head plus a marker. */
    degenerate?: boolean
    /** Set when the seat produced no text: the transcript renders a reason instead of silence. */

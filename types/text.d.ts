@@ -40,6 +40,7 @@ interface PromptTemplates {
    vote: string
    synthesis: string
    truncatedTurn: string
+   incompleteTurn: string
    degenerateTurn: string
    failedTurn: { timeout: string; empty: string; error: string }
 }

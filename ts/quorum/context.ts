@@ -44,7 +44,9 @@ export const toContext = (turns: QuorumTurn[], labels: string[], t: PromptTempla
             ? t.failedTurn[turn.failed]
             : turn.degenerate
                ? `${turn.text.slice(0, 400)}\n${t.degenerateTurn}`
-               : turn.truncated ? `${turn.text}\n${t.truncatedTurn}` : turn.text,
+               : turn.truncated
+                  ? `${turn.text}\n${t.truncatedTurn}`
+                  : turn.incomplete ? `${turn.text}\n${t.incompleteTurn}` : turn.text,
       transcript = turns.map(turn => `[${phaseTag(turn)} / ${label(turn)}]\n${body(turn)}`).join('\n\n'),
       block = fill(t.transcriptBlock, { transcript })
    return callerContext ? `${callerContext}\n\n${block}` : block
