@@ -6,8 +6,9 @@ import { everyN } from './context.js'
  * candidates (its own seat is included unless the preset sets `allowSelfVote: false`, e.g. a
  * peer-judgment "who's weakest" cut), then the picks are tallied into one anonymous transcript
  * note. Ballots never enter content or the transcript and are redacted from logs; per-voter
- * telemetry carries only a sanitized status, so who voted for what is never recoverable. A voter
- * with no available candidate abstains.
+ * telemetry carries only a sanitized status, and the published choices are sorted by label so
+ * no voter order survives. Small or unanimous electorates still permit inference. A voter with
+ * no available candidate abstains.
  */
 export const makeVoter = (deps: VoteDeps): ((round: number, snapshot: QuorumTurn[]) => Promise<void>) | undefined => {
    const
@@ -61,9 +62,9 @@ const
 
    tally = (picks: (string | null)[], round: number, visibility: VoteVisibility): [QuorumTurn, TurnTelemetry] => {
       const
-         cast = picks.filter((p): p is string => p !== null),
+         cast = picks.filter((p): p is string => p !== null).sort(),
          abstained = picks.length - cast.length,
-         groups = [...cast.reduce((m, p) => m.set(p, (m.get(p) ?? 0) + 1), new Map<string, number>())].sort((a, b) => b[1] - a[1]),
+         groups = [...cast.reduce((m, p) => m.set(p, (m.get(p) ?? 0) + 1), new Map<string, number>())].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
          tallied = groups.map(([label, n]) => `${n} × ${label}`).join('\n') || '(no votes cast)',
          detail = visibility === 'ballots' ? `\n\n--- Ballots ---\n${cast.map(p => `• ${p}`).join('\n')}` : '',
          text = `[anonymous vote — ${cast.length} cast, ${abstained} abstained]\n${tallied}${detail}`,

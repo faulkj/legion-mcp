@@ -90,13 +90,14 @@ peer"), and the voter's own seat is dropped from its menu. Only an anonymous
 **tally** by candidate label is added to the
 transcript (`[vote / anonymous vote]`); the individual ballots never appear in
 content, are **redacted from debug logs**, and per-voter telemetry carries only
-a sanitized status (`ballot cast` / `error`), so who voted for what is never
-recoverable. The engine is **advisory** — it never eliminates or picks a winner
+a sanitized status (`ballot cast` / `error`), so no voter is ever associated with
+a choice (a unanimous or two-seat electorate can still be inferred). The engine
+is **advisory** — it never eliminates or picks a winner
 on its own, so tell the synthesizer/ref to act on the tally if you want it
 binding. `voteEvery: N` votes every Nth round (always including the last);
 `0`/`end` (default) = one final vote before synthesis. `voteVisibility:
 "ballots"` also appends one line per cast ballot — every choice, losing ones
-included, in no particular order (still no voter identities and no ballot text).
+included, sorted by label (still no voter identities and no ballot text).
 Each ballot is a full model call, so `voteEvery: 1` adds ~voters ×
 rounds hidden calls against the token budget. A silent electorate role votes
 without campaigning; neutral voices (synth, framer) don't vote.
