@@ -52,7 +52,7 @@ export const makeFramer = (deps: PhaseDeps): ((round: number) => Promise<void>) 
 
 /** Build the synthesis step: the synthesizer consolidates the whole transcript into one answer (an interim answer on round > 0, the final one on round 0). */
 export const makeSynthesizer = (deps: PhaseDeps): ((round: number) => Promise<void>) => {
-   const { synthSelector, templates, errors, full, telemetry, speakOne, record } = deps
+   const { synthSelector, playing, prompt, templates, errors, full, telemetry, speakOne, record } = deps
    return async (round: number): Promise<void> => {
       if (synthSelector === undefined) return
       const synth = deps.synth()
@@ -60,7 +60,7 @@ export const makeSynthesizer = (deps: PhaseDeps): ((round: number) => Promise<vo
          telemetry.push({ index: -1, selector: synthSelector, modelName: '', modelId: '', round, phase: 'synthesis', usage: {}, latencyMs: 0, status: errors.unresolvableSelector })
          return
       }
-      record(await speakOne(synth, round, 'synthesis', full()), round)
+      record(await speakOne(synth, round, 'synthesis', full(), playing && round === 0 ? templates.lastStanding + prompt : undefined), round)
       telemetry[telemetry.length - 1]?.status.includes('reasoning-heavy') &&
          log('warn', `⚠️ synthesis (${synthSelector}) spent most of its budget reasoning — raise maxTokens or use a lighter model for synthesize`)
    }

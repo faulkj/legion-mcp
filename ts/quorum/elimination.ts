@@ -24,6 +24,6 @@ const verdictOf = (reply: string): { label?: string; reason: string } | null => 
       [command = '', ...rest] = reply.trim().split(/\r?\n/),
       label = command.match(/^CUT (.+)$/)?.[1],
       reason = rest.join('\n')
-   if (!reason.trim() || (label === undefined && command !== 'KEEP ALL') || rest.some(line => /^(?:CUT\s|KEEP ALL\b)/i.test(line.trim()))) return null
+   if ((label === undefined && command !== 'KEEP ALL') || rest.some(line => /^(?:CUT\s|KEEP ALL\b)/i.test(line.trim()))) return null
    return { label, reason }
 }

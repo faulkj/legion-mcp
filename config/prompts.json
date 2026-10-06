@@ -14,6 +14,7 @@
    "reframe": "[Reframe — you are the neutral chair. Read the discussion so far and steer it: sharpen the question, raise the stakes, or redirect. Be brief; do not take a side.]\n\n",
    "vote": "[Anonymous vote — your ballot is secret; no one sees who voted for what, only the totals. A turn marked as cut off is an unfinished argument: weigh it against that participant. Reply with ONLY the number of your choice from the menu below (0 to abstain). Do not explain.]\n\n",
    "synthesis": "[Final synthesis — consolidate the discussion above into one answer]\n\n",
+   "lastStanding": "[Final word — the discussion is over and it falls to you to close it. You are a participant, not a referee: answer the task below in your own voice, continuing from your own prior turns. Do not retell the rounds. If the transcript marks the field unresolved, speak as one of those remaining and do not claim the win.]\n\n",
    "truncatedTurn": "[— cut off: this speaker ran out of tokens before finishing —]",
    "incompleteTurn": "[— incomplete: the provider marked this turn unfinished; the text above may be partial —]",
    "degenerateTurn": "[— degenerate: the rest of this turn collapsed into repeated words and has been omitted —]",

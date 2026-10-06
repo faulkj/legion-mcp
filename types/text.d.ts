@@ -40,6 +40,7 @@ interface PromptTemplates {
    reframe: string
    vote: string
    synthesis: string
+   lastStanding: string
    truncatedTurn: string
    incompleteTurn: string
    degenerateTurn: string

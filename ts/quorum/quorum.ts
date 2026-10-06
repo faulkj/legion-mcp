@@ -41,7 +41,7 @@ export const runQuorum = async (
       seen = makeSeen(mode, labels, templates, args.context, args.objectives, withObjective),
       synth = (): Speaker | undefined => synthRole === undefined ? fixedSynth : regulars().find(s => s.role === synthRole),
       refFull = () => [withObjective(synth(), args.objectives, true, full()), contestNotice].filter(Boolean).join('\n\n') || undefined,
-      deps = { synth, synthSelector, eliminator, frame, prompt: args.prompt, labels, optional, templates, errors, live, liveSpeakers: regulars, full: refFull, telemetry, cancelled, speakOne, record, note },
+      deps = { synth, synthSelector, playing: synthRole !== undefined, eliminator, frame, prompt: args.prompt, labels, optional, templates, errors, live, liveSpeakers: regulars, full: refFull, telemetry, cancelled, speakOne, record, note },
       runSynthesis = makeSynthesizer(deps),
       runElimination = makeEliminator(deps),
       runFrame = makeFramer(deps),

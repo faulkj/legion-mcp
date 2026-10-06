@@ -3,6 +3,8 @@ interface PhaseDeps {
    /** Resolved at call time: a neutral synth seat, or the first live speaker of a playing synth role. */
    synth: () => Speaker | undefined
    synthSelector: string | undefined
+   /** The synth role plays normal rounds, so its final turn is a last-standing close rather than a neutral synthesis. */
+   playing: boolean
    eliminator: Speaker | undefined
    frame: Speaker | undefined
    prompt: string
