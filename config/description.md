@@ -37,7 +37,7 @@ It caps the **visible** answer; reasoning models get their own hidden-thinking
 allotment on top (set per model, 500-3000), so you never need to pad it for
 thinking. The maximum is `MAX_TOKENS` (default 3000); larger values are
 rejected. Omitted, every seat runs at its preset role's limit or that
-ceiling. **Use about 2000** — it is enough for almost every council turn, keeps the
+ceiling. **Use about 1500** — it is enough for almost every council turn, keeps the
 growing transcript (and so every later turn's input) small, and makes speakers
 get to the point. Go higher only for long-form deliverables; plain chat models
 are fine at 800-1500.

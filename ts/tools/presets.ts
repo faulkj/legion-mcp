@@ -30,7 +30,7 @@ export const registerPresetTools = (server: McpServer, deps: CouncilDeps, schema
       server.registerTool(
          toolName,
          {
-            description: `${preset.description}\n\nStaff via models[]: ${staffing}.${synthLine} Available models: ${modelList(models)}.\n\nSet maxTokens to about 2000 — it is plenty per turn, and reasoning models get their own thinking room on top. The maximum is ${config.maxTokens}; larger values are rejected.`,
+            description: `${preset.description}\n\nStaff via models[]: ${staffing}.${synthLine} Available models: ${modelList(models)}.\n\nSet maxTokens to about 1500 — it is plenty per turn, and reasoning models get their own thinking room on top. The maximum is ${config.maxTokens}; larger values are rejected.`,
             inputSchema: presetSchema,
             outputSchema: jobs ? jobOutputSchema : quorumOutputSchema
          },
