@@ -5,7 +5,7 @@
       "role": "Optional role slug from config/roles/ to shape model behavior",
       "system": "Optional system prompt / instructions",
       "temperature": "Optional sampling temperature",
-      "maxTokens": "Optional output-token limit PER TURN, including both visible answer and hidden reasoning. For councils, an explicit value overrides every preset role's limit, including neutral roles. When omitted, the role's configured limit applies, otherwise 8192. A tight ceiling can leave reasoning models no room for a visible answer. If you also set tokenBudget, it must cover every turn's input plus this output — see tokenBudget."
+      "maxTokens": "Optional output-token limit PER TURN, including both visible answer and hidden reasoning. For councils, an explicit value overrides every preset role's limit, including neutral roles. When omitted, the role's configured limit applies, otherwise 8192. Around 2000 is adequate for most council turns and keeps transcript growth and cost down. A tight ceiling can leave reasoning models no room for a visible answer. If you also set tokenBudget, it must cover every turn's input plus this output — see tokenBudget."
    },
    "quorum": {
       "models": "Two or more selectors: \"model\" or \"model:role\". The same model may appear multiple times with different roles (for example \"gpt:judge\" and \"gpt:skeptic\"); each selector is a distinct speaker.",

@@ -35,8 +35,10 @@ of parsing the answer text.
 Whatever the mode, `maxTokens` is the biggest cost lever and it is **per turn**.
 Always set it explicitly on council calls: omitted, every seat runs at its
 preset role's ceiling (often 3-4k) or 8192, and your value overrides those.
-Reasoning models need room (3-4k+) or they spend the whole budget thinking and
-return nothing; plain chat models are fine at 800-1500.
+**Start around 2000** — it is enough for almost every council turn, keeps the
+growing transcript (and so every later turn's input) small, and makes speakers
+get to the point. Go higher only for long-form deliverables; plain chat models
+are fine at 800-1500.
 
 `tokenBudget` is the other axis and counts **input and output of every call**.
 Never set a small `tokenBudget` without also setting `maxTokens` — the default
