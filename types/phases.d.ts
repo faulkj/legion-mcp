@@ -1,7 +1,9 @@
 /** Dependencies the neutral phases (frame, synthesis, elimination) borrow from the running quorum. */
 interface PhaseDeps {
-   synth: Speaker | undefined
+   /** Resolved at call time: a neutral synth seat, or the first live speaker of a playing synth role. */
+   synth: () => Speaker | undefined
    synthSelector: string | undefined
+   eliminator: Speaker | undefined
    frame: Speaker | undefined
    prompt: string
    labels: string[]

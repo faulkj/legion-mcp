@@ -227,13 +227,14 @@ Keys:
 | `roles` | `PresetRole[]` | required | Roles accepted by the preset. |
 | `mode` | `"sequential" \| "parallel" \| "private" \| "independent"` | `"sequential"` | Controls which prior turns each round speaker sees. |
 | `defaultRounds` | positive integer | `1` | Rounds used when the call omits `rounds`. |
-| `synthesizer` | `string` | none | Neutral role that produces synthesis turns. |
+| `synthesizer` | `string` | none | Role that produces synthesis turns. A single-seat role is neutral and sits out the rounds; a multi-seat role (`max` > 1 or `null`) plays, and its first live seat synthesizes. |
 | `synthesizeEvery` | `"end" \| non-negative integer` | `"end"` | Runs synthesis at the end or every Nth round. |
+| `eliminator` | `string` | none | Neutral role that issues eliminations. Required with `eliminateEvery`. |
 | `framer` | `string` | none | Neutral role that opens and redirects the discussion. |
 | `reframeEvery` | `"end" \| non-negative integer` | `"end"` | Reframes only at opening or every Nth round after opening. |
 | `closingStatements` | `boolean` | `false` | Runs a closing phase before final synthesis. |
-| `eliminateEvery` | non-negative integer | `0` | Lets the synthesizer remove one speaker every Nth round. Preset-only. |
-| `eliminationsOptional` | `boolean` | `false` | Lets the synthesizer decline an elimination. Preset-only. |
+| `eliminateEvery` | non-negative integer \| `"spread"` | `0` | Lets the eliminator remove one speaker every Nth round, or spread the cuts evenly. Preset-only. |
+| `eliminationsOptional` | `boolean` | `false` | Lets the eliminator decline an elimination. Preset-only. |
 | `enterEvery` | non-negative integer | `0` | Starts one speaker per team, then adds one benched speaker every Nth round. Preset-only. |
 | `vote` | `string` | none | Ballot instructions; enables anonymous voting. |
 | `voteEvery` | `"end" \| non-negative integer` | `"end"` | Votes at the end or every Nth round. |
@@ -297,12 +298,14 @@ Things that bite when writing a preset:
   staffing (6 wrestlers) inside that range, not its own `max: 3`. The engine
   cannot enforce "even sides" or "one per side" — say it in the `description`
   instead.
-- **Neutral roles cannot be teamed.** The `synthesizer` and `framer` reject a
-  `@team` tag, so a role that belongs to one side can't hold either job.
+- **Neutral roles cannot be teamed.** The `eliminator`, `framer`, and a
+  single-seat `synthesizer` reject a `@team` tag, so a role that belongs to one
+  side can't hold those jobs.
 - **Some keys require others**, and a violation is caught at load: `synthesizeEvery`
-  and `eliminateEvery` need a `synthesizer`, `reframeEvery` needs a `framer`,
-  `closingLast` needs `closing`, vote options need `vote`, and a synthesizer
-  needs at least one other required role (it stops speaking in normal rounds).
+  needs a `synthesizer`, `eliminateEvery` needs an `eliminator`, `reframeEvery`
+  needs a `framer`, `closingLast` needs `closing`, vote options need `vote`, and
+  a single-seat synthesizer needs at least one other required role (it sits out
+  the normal rounds).
   `enterEvery` and `tagTeam` cannot be combined — both decide who speaks.
 - **A malformed preset is skipped, not fatal.** It logs
   `❌ preset skipped — Invalid <file>: <reason>` and every other tool still

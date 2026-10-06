@@ -13,6 +13,7 @@
    "framer": "booker",
    "reframeEvery": 2,
    "enterEvery": 1,
+   "eliminator": "ref",
    "eliminateEvery": 1,
    "eliminationsOptional": true,
    "defaultRounds": 5,

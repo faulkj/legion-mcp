@@ -15,12 +15,14 @@ export const resolve = (selector: string, models: ModelDef[], roles: RoleDef[]):
 
 /**
  * Resolve `selectors` into council seats (one Speaker each, keeping order and duplicates —
- * position is the stable identity). Neutral voices (synthesizer, framer) never speak in normal
- * rounds: an in-list neutral fills its slot from the FIRST match, an external one appends a seat.
- * A seat whose role is in `silentRoles` is flagged `silent` (it hears everything and votes, but
- * takes no round/elimination turn — e.g. an electorate). Returns `{ bad }` for the first unknown selector.
+ * position is the stable identity). Neutral voices (synthesizer, eliminator, framer) never speak
+ * in normal rounds: an in-list neutral fills its slot from the FIRST match, an external one appends
+ * a seat. A synthesizer whose role is `playing` stays in the rounds instead (its seat is chosen at
+ * synthesis time). A seat whose role is in `silentRoles` is flagged `silent` (it hears everything
+ * and votes, but takes no round/elimination turn — e.g. an electorate). Returns `{ bad }` for the
+ * first unknown selector.
  */
-export const resolveSpeakers = (selectors: string[], synthSelector: string | undefined, models: ModelDef[], roles: RoleDef[], frameSelector?: string, silentRoles?: Set<string>, roleTokens?: Map<string, number>): ResolvedCouncil => {
+export const resolveSpeakers = (selectors: string[], synthSelector: string | undefined, models: ModelDef[], roles: RoleDef[], frameSelector?: string, silentRoles?: Set<string>, roleTokens?: Map<string, number>, eliminatorSelector?: string, playing = false): ResolvedCouncil => {
    const
       seats = selectors.map((selector, index) => ({ selector, index, r: resolve(selector, models, roles) })),
       cap = (role?: string): number | undefined => role === undefined ? undefined : roleTokens?.get(role)
@@ -28,18 +30,23 @@ export const resolveSpeakers = (selectors: string[], synthSelector: string | und
       if (s.r === null) return { speakers: [], roundSpeakers: [], labels: [], bad: s.selector }
    const
       speakers: Speaker[] = seats.map(({ selector, index, r }) => ({ index, selector, def: r!.def, role: r!.role, team: r!.team, silent: r!.role !== undefined && silentRoles?.has(r!.role), maxTokens: cap(r!.role) })),
-      pick = (sel: string | undefined, at: number): Speaker | undefined => {
+      extras: Speaker[] = [],
+      pick = (sel: string | undefined): Speaker | undefined => {
          if (sel === undefined) return undefined
          const ext = resolve(sel, models, roles)
-         return speakers.find(s => s.selector === sel) ?? (ext ? { index: at, selector: sel, def: ext.def, role: ext.role, team: ext.team, maxTokens: cap(ext.role) } : undefined)
+         if (!ext) return undefined
+         const seat = speakers.find(s => s.selector === sel) ?? extras.find(s => s.selector === sel)
+         if (seat) return seat
+         const fresh = { index: speakers.length + extras.length, selector: sel, def: ext.def, role: ext.role, team: ext.team, maxTokens: cap(ext.role) }
+         return extras.push(fresh), fresh
       },
-      synth = pick(synthSelector, speakers.length),
-      frame = pick(frameSelector, synth && synth.index >= speakers.length ? speakers.length + 1 : speakers.length),
-      neutral = new Set([synth?.index, frame?.index].filter(i => i !== undefined)),
+      synth = pick(synthSelector),
+      eliminator = pick(eliminatorSelector),
+      frame = pick(frameSelector),
+      neutral = new Set([playing ? undefined : synth?.index, eliminator?.index, frame?.index].filter(i => i !== undefined)),
       roundSpeakers = speakers.filter(s => !neutral.has(s.index)),
-      extras = [synth, frame].filter((s): s is Speaker => s !== undefined && s.index >= speakers.length),
       labels = makeTurnLabels([...speakers, ...extras])
-   return { speakers, roundSpeakers, synth, frame, labels }
+   return { speakers, roundSpeakers, synth, eliminator, frame, labels }
 }
 
 /** Banner prepended to a turn's prompt, chosen by phase: closing statements, eliminations, and syntheses (interim for round > 0, final for round 0) get their own banner; a normal round gets the exploring/final banner, or nothing for a lone round. */

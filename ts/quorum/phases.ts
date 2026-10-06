@@ -52,9 +52,10 @@ export const makeFramer = (deps: PhaseDeps): ((round: number) => Promise<void>) 
 
 /** Build the synthesis step: the synthesizer consolidates the whole transcript into one answer (an interim answer on round > 0, the final one on round 0). */
 export const makeSynthesizer = (deps: PhaseDeps): ((round: number) => Promise<void>) => {
-   const { synth, synthSelector, templates, errors, full, telemetry, speakOne, record } = deps
+   const { synthSelector, templates, errors, full, telemetry, speakOne, record } = deps
    return async (round: number): Promise<void> => {
       if (synthSelector === undefined) return
+      const synth = deps.synth()
       if (synth === undefined) {
          telemetry.push({ index: -1, selector: synthSelector, modelName: '', modelId: '', round, phase: 'synthesis', usage: {}, latencyMs: 0, status: errors.unresolvableSelector })
          return
@@ -91,13 +92,13 @@ export const makeCloser = (deps: ClosingDeps): (() => Promise<void>) => {
    }
 }
 
-/** Build the elimination step: the synthesizer selects an exact live label to drop, recorded as a transcript note. `optional` permits a pass; malformed or ambiguous commands cut no one. */
+/** Build the elimination step: the eliminator selects an exact live label to drop, recorded as a transcript note. `optional` permits a pass; malformed or ambiguous commands cut no one. */
 export const makeEliminator = (deps: PhaseDeps): ((round: number) => Promise<void>) => {
-   const { synth, labels, optional, templates, live, liveSpeakers, full, telemetry, speakOne, note } = deps
+   const { eliminator, labels, optional, templates, live, liveSpeakers, full, telemetry, speakOne, note } = deps
    return async (round: number): Promise<void> => {
       const candidates = liveSpeakers()
-      if (synth === undefined || candidates.length < 2) return
-      const { text, entry, cancelled } = await speakOne(synth, round, 'elimination', full(), fill(templates.elimination, { menu: eliminationMenu(candidates, labels, optional) }))
+      if (eliminator === undefined || candidates.length < 2) return
+      const { text, entry, cancelled } = await speakOne(eliminator, round, 'elimination', full(), fill(templates.elimination, { menu: eliminationMenu(candidates, labels, optional) }))
       if (cancelled || deps.cancelled()) { telemetry.push({ ...entry, phase: 'elimination', status: 'cancelled' }); return }
       const
          pick = text === null ? null : parseElimination(text, candidates, labels, optional),
@@ -107,7 +108,7 @@ export const makeEliminator = (deps: PhaseDeps): ((round: number) => Promise<voi
          status = cut ? `eliminated: ${labels[cut.index]}` : pick === 'none' ? 'no elimination' : text === null ? entry.status : 'invalid decision'
       if (cut) live.delete(cut.index)
       note(
-         { index: cut ? cut.index : synth.index, selector: synth.selector, round, phase: 'elimination', text: (cut ? `${labels[cut.index]} eliminated` : 'no elimination') + tail },
+         { index: cut ? cut.index : eliminator.index, selector: eliminator.selector, round, phase: 'elimination', text: (cut ? `${labels[cut.index]} eliminated` : 'no elimination') + tail },
          { ...entry, phase: 'elimination', status: text === null ? status : status + tail, eliminatedIndex: cut ? cut.index : undefined }
       )
    }

@@ -20,6 +20,12 @@ export const presetSynth = (preset: Preset, selectors: string[], models: ModelDe
       ? undefined
       : selectors.find(s => resolve(s, models, roles)?.role === slugify(preset.synthesize!))
 
+/** The `models[]` selector whose role matches a preset's eliminator role, or undefined if unset/unstaffed. */
+export const presetEliminator = (preset: Preset, selectors: string[], models: ModelDef[], roles: RoleDef[]): string | undefined =>
+   preset.eliminate === undefined
+      ? undefined
+      : selectors.find(s => resolve(s, models, roles)?.role === slugify(preset.eliminate!))
+
 /** The `models[]` selector whose role matches a preset's framer role, or undefined if unstaffed (framer is optional). */
 export const presetFrame = (preset: Preset, selectors: string[], models: ModelDef[], roles: RoleDef[]): string | undefined =>
    preset.frame === undefined

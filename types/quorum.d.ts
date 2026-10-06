@@ -25,6 +25,9 @@ interface QuorumConfig {
    mode: QuorumMode
    synthSelector: string | undefined
    synthInterval: number
+   /** Slug of the synthesizer role when it is a playing role (an `eliminator` is set): the final synthesis goes to its first live seat. */
+   synthRole: string | undefined
+   eliminatorSelector: string | undefined
    frameSelector: string | undefined
    reframeEvery: SynthesizeEvery | undefined
    closing: boolean
@@ -65,11 +68,12 @@ interface Speaker {
    maxTokens?: number
 }
 
-/** The resolved council: every seat, the round speakers (all but the synthesizer), the optional synthesizer, and per-seat display labels. `bad` names the first unresolvable selector instead. */
+/** The resolved council: every seat, the round speakers (all but the neutrals), the optional synthesizer/eliminator/framer, and per-seat display labels. `bad` names the first unresolvable selector instead. */
 interface ResolvedCouncil {
    speakers: Speaker[]
    roundSpeakers: Speaker[]
    synth?: Speaker
+   eliminator?: Speaker
    frame?: Speaker
    labels: string[]
    bad?: string

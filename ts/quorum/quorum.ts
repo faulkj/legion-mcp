@@ -28,8 +28,8 @@ export const runQuorum = async (
 ): Promise<QuorumResult> => {
    let contestNotice = ''
    const
-      { roundSpeakers, synth, frame, labels } = council,
-      { preset, effectiveRoles, rounds, mode, synthSelector, synthInterval, reframeEvery, closing, eliminateEvery, enterEvery, optional, cameoRound } = config,
+      { roundSpeakers, synth: fixedSynth, eliminator, frame, labels } = council,
+      { preset, effectiveRoles, rounds, mode, synthSelector, synthInterval, synthRole, reframeEvery, closing, eliminateEvery, enterEvery, optional, cameoRound } = config,
       runner = makeTurnRunner(args, effectiveRoles, roundSpeakers, rounds, prompt, templates, signal, runId),
       { telemetry, turns, content, used, cancelled, setPhase, speakOne, record, note, skip, runParallel, runHidden } = runner,
       step: ReportPhase = message => (setPhase(message), report(message)),
@@ -39,8 +39,9 @@ export const runQuorum = async (
       full = () => toContext(turns, labels, templates, args.context),
       closingContext = (speaker: Speaker) => withObjective(speaker, args.objectives, false, toContext(turns, labels, templates, args.context, speaker.index)),
       seen = makeSeen(mode, labels, templates, args.context, args.objectives, withObjective),
-      refFull = () => [withObjective(synth, args.objectives, true, full()), contestNotice].filter(Boolean).join('\n\n') || undefined,
-      deps = { synth, synthSelector, frame, prompt: args.prompt, labels, optional, templates, errors, live, liveSpeakers: regulars, full: refFull, telemetry, cancelled, speakOne, record, note },
+      synth = (): Speaker | undefined => synthRole === undefined ? fixedSynth : regulars().find(s => s.role === synthRole),
+      refFull = () => [withObjective(synth(), args.objectives, true, full()), contestNotice].filter(Boolean).join('\n\n') || undefined,
+      deps = { synth, synthSelector, eliminator, frame, prompt: args.prompt, labels, optional, templates, errors, live, liveSpeakers: regulars, full: refFull, telemetry, cancelled, speakOne, record, note },
       runSynthesis = makeSynthesizer(deps),
       runElimination = makeEliminator(deps),
       runFrame = makeFramer(deps),

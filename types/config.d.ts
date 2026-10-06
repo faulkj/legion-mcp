@@ -49,6 +49,8 @@ interface Preset {
    mode?: QuorumMode
    synthesize?: string
    synthesizeEvery?: SynthesizeEvery
+   /** Role that issues eliminations. Required when `eliminateEvery` is set. */
+   eliminate?: string
    frame?: string
    reframeEvery?: SynthesizeEvery
    closingStatements?: boolean

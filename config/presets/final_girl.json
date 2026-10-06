@@ -3,12 +3,13 @@
       "Final girl: a group is picked off one by one each round until a single survivor remains.",
       "",
       "Staff `survivor` with 3 or more models — each keeps making its case round after round, reacting to who was just cut.",
-      "Survivors speak simultaneously within a round (so they answer the last cut, not each other mid-round), then the `slasher` eliminates one until only the final girl is left standing.",
+      "Survivors speak simultaneously within a round (so they answer the last cut, not each other mid-round), then the `slasher` eliminates one until only the final girl is left standing — and she delivers the ending.",
       "Cuts are spread evenly across `rounds`, with the last cut on the final round — 3 survivors over 5 rounds die after rounds 3 and 5, so every round happens and survivors get time to build a case. Ask for at least as many rounds as survivors minus one. Feed the question or task via the prompt/context.",
-      "If the field is still crowded after the last round, bounded cleanup cuts try to reach one survivor. If cleanup stalls, the result explicitly marks the contest incomplete. Cost: one turn per surviving speaker each round, plus elimination calls and retries, plus the closing verdict."
+      "If the field is still crowded after the last round, bounded cleanup cuts try to reach one survivor. If cleanup stalls, the result explicitly marks the contest incomplete and the first remaining survivor closes. Cost: one turn per surviving speaker each round, plus elimination calls and retries, plus the closing turn."
    ],
    "mode": "parallel",
-   "synthesizer": "slasher",
+   "synthesizer": "survivor",
+   "eliminator": "slasher",
    "eliminateEvery": "spread",
    "defaultRounds": 6,
    "roles": [
@@ -18,7 +19,8 @@
             "You are prey. A slasher is watching every round and will cut the weakest survivor — the one whose case has a hole, a hedge, an unsupported claim, or a lazy restatement. Each round, one of you dies.",
             "Your only job is to make your own case so tight the slasher cannot find a reason to pick you. Study who was just cut and WHY, then fix that weakness in yourself before the slasher finds it in you.",
             "You do not eliminate anyone. You do not judge the others. You do not announce verdicts or declare who should go. Only the slasher decides, and a survivor who plays slasher is the obvious next cut.",
-            "Hedging, generic overviews, and padding read as weakness. Commit, cite, and be specific. Finish inside your budget — a turn that runs out of tokens is a case that was never made."
+            "Hedging, generic overviews, and padding read as weakness. Commit, cite, and be specific. Finish inside your budget — a turn that runs out of tokens is a case that was never made.",
+            "If you are asked for the final synthesis, you are the final girl: the slasher is done. Deliver the answer the contest was for, in your own voice — consolidate the surviving case, say what the cuts proved, and close it. Do not retell the rounds. If the contest is marked incomplete, close with the field as it stands and do not crown yourself."
          ],
          "min": 3,
          "max": null,
@@ -29,8 +31,7 @@
          "description": [
             "Each round, cut the single weakest survivor. Weakest means: the thinnest evidence, the biggest hedge, the laziest restatement, a claim that would not survive a hostile fact-check, or an argument the survivor could not finish — a turn marked cut off is a case that was never made.",
             "A survivor who steps out of role — passing judgment on the others, declaring eliminations, or narrating the game instead of making their own case — is weak by definition. Cut them first.",
-            "When cutting, copy the exact CUT command from the menu onto the first line, then give one tight line of why on the next line. Use the full participant label, not a number. Do not change your selection mid-reply.",
-            "At the end, do NOT retell the rounds — the transcript already has them. If exactly one survivor remains, name them and briefly explain why they outlasted the others. If the contest is marked incomplete, summarize the unresolved field without declaring a sole winner."
+            "When cutting, copy the exact CUT command from the menu onto the first line, then give one tight line of why on the next line. Use the full participant label, not a number. Do not change your selection mid-reply."
          ],
          "maxTokens": 4000
       }

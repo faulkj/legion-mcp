@@ -2,7 +2,7 @@ import { fill, slugify } from '../config/config.js'
 import { everyN } from './context.js'
 import { objectiveError } from './entry.js'
 import { resolveSpeakers } from './helpers.js'
-import { mergePresetRoles, presetFrame, presetSynth } from './preset.js'
+import { mergePresetRoles, presetEliminator, presetFrame, presetSynth } from './preset.js'
 
 /**
  * Resolve a quorum call's effective configuration from its args and (optional) preset: merged
@@ -19,6 +19,7 @@ export const resolveConfig = (args: QuorumInput, models: ModelDef[], roles: Role
       baseRoles = [...roles.filter(r => !adHoc.some(a => a.name === r.name)), ...adHoc],
       effectiveRoles = preset ? mergePresetRoles(baseRoles, preset) : baseRoles,
       synthSelector = preset ? presetSynth(preset, args.models, models, effectiveRoles) : args.synthesize,
+      eliminatorSelector = preset ? presetEliminator(preset, args.models, models, effectiveRoles) : undefined,
       closing = (preset?.closingStatements ?? args.closingStatements) === true,
       eliminateEvery = preset?.eliminateEvery,
       rounds = Math.min(maxRounds, Math.max(1, args.rounds ?? preset?.defaultRounds ?? 1))
@@ -30,6 +31,8 @@ export const resolveConfig = (args: QuorumInput, models: ModelDef[], roles: Role
       mode: preset?.mode ?? args.mode ?? 'sequential',
       synthSelector,
       synthInterval: synthSelector === undefined ? Infinity : everyN(preset?.synthesizeEvery ?? args.synthesizeEvery),
+      synthRole: playingSynth(preset),
+      eliminatorSelector,
       frameSelector: preset ? presetFrame(preset, args.models, models, effectiveRoles) : args.frame,
       reframeEvery: preset?.reframeEvery ?? args.reframeEvery,
       closing,
@@ -43,9 +46,18 @@ export const resolveConfig = (args: QuorumInput, models: ModelDef[], roles: Role
          ? Math.min(rounds, Math.max(1, args.cameoRound ?? Math.ceil(rounds / 2)))
          : undefined,
       error: closing && synthSelector === undefined ? 'closingWithoutSynth'
-         : eliminateEvery !== undefined && eliminateEvery !== 0 && synthSelector === undefined ? 'eliminateWithoutSynth'
+         : eliminateEvery !== undefined && eliminateEvery !== 0 && eliminatorSelector === undefined ? 'eliminateWithoutSynth'
             : undefined
    }
+}
+
+// A synthesizer role that can seat more than one speaker is a playing role: it stays in the rounds and the final synthesis goes to its first live seat.
+const playingSynth = (preset: Preset | undefined): string | undefined => {
+   if (preset?.synthesize === undefined) return undefined
+   const
+      slug = slugify(preset.synthesize),
+      role = preset.roles.find(r => slugify(r.role) === slug)
+   return role && (role.max === null || (role.max ?? 1) > 1) ? slug : undefined
 }
 
 /**
@@ -56,15 +68,16 @@ export const resolveConfig = (args: QuorumInput, models: ModelDef[], roles: Role
  */
 export const staffCouncil = (args: QuorumInput, config: QuorumConfig, models: ModelDef[], errors: ErrorMessages): ResolvedCouncil & { error?: string } => {
    const
-      { preset, effectiveRoles, synthSelector, frameSelector, silentRoles, roleTokens } = config,
-      council = resolveSpeakers(args.models, synthSelector, models, effectiveRoles, frameSelector, silentRoles, roleTokens),
-      { roundSpeakers, synth, frame, bad } = council,
+      { preset, effectiveRoles, synthSelector, synthRole, eliminatorSelector, frameSelector, silentRoles, roleTokens } = config,
+      council = resolveSpeakers(args.models, synthSelector, models, effectiveRoles, frameSelector, silentRoles, roleTokens, eliminatorSelector, synthRole !== undefined),
+      { roundSpeakers, synth, eliminator, frame, bad } = council,
       teamed = (predicate: (r: PresetRole) => boolean | undefined) =>
          roundSpeakers.find(s => s.team === undefined && preset?.roles.some(r => predicate(r) && slugify(r.role) === s.role)),
       unteamedCandidate = preset?.voteByTeam ? teamed(r => r.candidate) : undefined,
       unteamedTag = teamed(r => r.tagTeam),
       error = bad ? fill(errors.unknownSelector, { selector: bad })
-         : synth?.team !== undefined ? errors.synthTeamed
+         : synth?.team !== undefined && synthRole === undefined ? errors.synthTeamed
+            : eliminator?.team !== undefined ? errors.synthTeamed
             : frame?.team !== undefined ? errors.frameTeamed
                : unteamedCandidate ? `Selector "${unteamedCandidate.selector}" must use an @team tag for team voting.`
                   : unteamedTag ? `Selector "${unteamedTag.selector}" must use an @team tag for tag-team rounds.`
