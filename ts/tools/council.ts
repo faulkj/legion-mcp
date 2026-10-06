@@ -1,5 +1,6 @@
 import type { ServerContext } from '@modelcontextprotocol/server'
 import { fill } from '../config/config.js'
+import { log } from '../core/log.js'
 import { withHeartbeat } from '../quorum/heartbeat.js'
 import { isQuorumError, prepareQuorum, runQuorum } from '../quorum/quorum.js'
 
@@ -15,6 +16,7 @@ export const makeCouncilHandler = (deps: CouncilDeps) => {
          prepared = prepareQuorum(args, models, roles, config.maxRounds, config.dynamicRoles, errors, presets),
          budget = args.tokenBudget ?? config.tokenBudget
       if (isQuorumError(prepared)) return prepared
+      log('info', `📥 ${tool} call`, { models: args.models, rounds: prepared.config.rounds, maxTokens: args.maxTokens ?? null, tokenBudget: budget ?? null })
       if (jobs === undefined)
          return withHeartbeat(ctx, r => runQuorum(prepared, prompt, templates, errors, budget, r, ctx.mcpReq.signal))
       const started = jobs.start(tool, ctx, (signal, onRunner, id) => runQuorum(prepared, prompt, templates, errors, budget, () => {}, signal, onRunner, id.slice(0, 8)))

@@ -83,6 +83,7 @@ const
                modelId,
                latencyMs,
                usage,
+               maxTokens: params.maxTokens,
                role: params.role,
                contextPresent: params.contextPresent
             }
