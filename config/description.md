@@ -32,10 +32,18 @@ of parsing the answer text.
 
 {longRuns}
 
-Whatever the mode, `maxTokens` (400-800 for most turns) is the biggest cost
-lever — uncapped reasoning models can spend the whole budget thinking and return
-nothing. Some preset roles set their own ceiling, which overrides yours for that
-seat. Cost scales with speakers × rounds.
+Whatever the mode, `maxTokens` is the biggest cost lever and it is **per turn**.
+Always set it explicitly on council calls: omitted, every seat runs at its
+preset role's ceiling (often 3-4k) or 8192, and your value overrides those.
+Reasoning models need room (3-4k+) or they spend the whole budget thinking and
+return nothing; plain chat models are fine at 800-1500.
+
+`tokenBudget` is the other axis and counts **input and output of every call**.
+Never set a small `tokenBudget` without also setting `maxTokens` — the default
+per-turn ceilings will burn through it in a round or two and the rest of the run
+is skipped. Size it as `turns × (context + maxTokens)` where context grows each
+round; for a multi-round council that is usually 150k+. Cost scales with
+speakers × rounds.
 
 ## Tools
 

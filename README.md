@@ -368,7 +368,10 @@ layer, so you get every bundled preset even when you ship no `config/presets/`
 folder of your own.
 
 > **Role text nudges output, it doesn't cap it** — use `maxTokens` for a hard
-> limit, and budget generously for reasoning models and multi-round quorums.
+> per-turn limit, and budget generously for reasoning models and multi-round
+> quorums. `tokenBudget` is a different axis: it counts every call's input
+> *and* output for the whole run, so size it from `turns × (context + maxTokens)`
+> and set it above the estimate — input dominates once the transcript grows.
 
 ### AI guidance — `config/description.md`
 

@@ -18,6 +18,14 @@ voteVisibility — "aggregate" (default, counts only) | "ballots" (also every ca
 tokenBudget — optional soft cumulative token budget (overrides TOKEN_BUDGET)
 ```
 
+**Sizing `tokenBudget` against `maxTokens`**: `maxTokens` caps one turn's
+output; `tokenBudget` counts every call's input *and* output across the whole
+run. Estimate `turns × (context + maxTokens)` where `turns = speakers × rounds
++ eliminations + syntheses (+ closings, votes)` and context grows each round as
+the transcript accumulates — input dominates in long councils. Set the budget
+above that estimate; one that only covers outputs trips in round two and skips
+the rest. It is soft: parallel rounds can overshoot before it checks.
+
 **Selectors**: `"fable"`, `"opus:skeptic"`, `"gpt:builder"`. Same model +
 different roles = distinct speakers (`["gpt:judge", "gpt:skeptic"]`). Identical
 selectors are **not** deduped — `["gpt:critic", "gpt:critic"]` runs two
