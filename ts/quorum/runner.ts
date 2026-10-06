@@ -17,6 +17,7 @@ export const makeTurnRunner = (
    rounds: number,
    prompt: Prompt,
    templates: PromptTemplates,
+   labels: string[],
    signal?: AbortSignal,
    runId = Math.random().toString(36).slice(2, 8)
 ): TurnRunner => {
@@ -64,6 +65,7 @@ export const makeTurnRunner = (
             temperature: args.temperature,
             maxTokens: args.maxTokens ?? speaker.maxTokens,
             role,
+            label: labels[index] ?? selector,
             context: extraContext ?? args.context
          },
          started = performance.now()

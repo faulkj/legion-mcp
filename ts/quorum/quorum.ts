@@ -30,7 +30,7 @@ export const runQuorum = async (
    const
       { roundSpeakers, synth: fixedSynth, eliminator, frame, labels } = council,
       { preset, effectiveRoles, rounds, mode, synthSelector, synthInterval, synthRole, reframeEvery, closing, eliminateEvery, enterEvery, optional, cameoRound } = config,
-      runner = makeTurnRunner(args, effectiveRoles, roundSpeakers, rounds, prompt, templates, signal, runId),
+      runner = makeTurnRunner(args, effectiveRoles, roundSpeakers, rounds, prompt, templates, labels, signal, runId),
       { telemetry, turns, content, used, cancelled, setPhase, speakOne, record, note, skip, runParallel, runHidden } = runner,
       step: ReportPhase = message => (setPhase(message), report(message)),
       live = new Set(roundSpeakers.map(s => s.index)),

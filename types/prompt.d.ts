@@ -9,6 +9,8 @@ interface PromptInput {
    prompt: string
    context?: string
    role?: string
+   /** The speaker's transcript label in a council run (e.g. `survivor 3`); bound into its instructions so it cannot drift into another seat's identity. */
+   label?: string
    system?: string
    temperature?: number
    maxTokens?: number

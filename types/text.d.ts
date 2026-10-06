@@ -25,6 +25,7 @@ interface ErrorMessages {
 
 /** Overridable prompt-shaping templates loaded from config/prompts.json. Tokens in {braces} are filled at runtime. */
 interface PromptTemplates {
+   identity: string
    roleContract: string
    contextBlock: string
    transcriptBlock: string

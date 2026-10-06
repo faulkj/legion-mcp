@@ -124,6 +124,7 @@ const
       const
          role = input.role === undefined ? undefined : roles.find(r => r.name === input.role),
          roleContract = role ? fill(t.roleContract, { role: role.name, instructions: role.instructions }) : undefined,
-         parts = [def.system, input.system, roleContract].filter(Boolean) as string[]
+         identity = input.label === undefined ? undefined : fill(t.identity, { label: input.label }),
+         parts = [def.system, input.system, identity, roleContract].filter(Boolean) as string[]
       return parts.length ? { instructions: parts.join('\n\n') } : {}
    }
