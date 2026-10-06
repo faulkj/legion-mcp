@@ -9,6 +9,8 @@ interface ModelDef {
    omitParams?: string[]
    /** Reasoning effort sent as `reasoning.effort`. Lower it for reasoning models that burn the whole output budget thinking on short turns. */
    reasoning?: 'minimal' | 'low' | 'medium' | 'high'
+   /** Hard output ceiling for this model: every request sends `min(requested, maxTokens)`. For models that think harder the more room they get. */
+   maxTokens?: number
 }
 
 /** A hot-droppable role loaded from config/roles/<slug>.md. */

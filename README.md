@@ -164,6 +164,9 @@ Each JSON file becomes a tool, named after the slugified file name
   `reasoning.effort`. Reasoning models can spend an entire `maxTokens` thinking
   and emit nothing; `"low"` may help leave room for an answer. The endpoint must
   support this parameter; it does not bypass content filtering.
+- `maxTokens` — optional hard output ceiling for this model. Every request sends
+  `min(requested, ceiling)`, whatever the caller or preset role asked for. For
+  models that think harder the more room they get and come back empty.
 
 **Hot-drop:** the directory is re-scanned per request — add or edit a model
 file and it's live on the next call, no restart.

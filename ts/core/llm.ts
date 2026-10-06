@@ -29,7 +29,7 @@ export const createPrompt = (config: AppConfig) => {
             model: def.model,
             input: composeInput(input, templates),
             store: false,
-            max_output_tokens: input.maxTokens ?? defaultMaxTokens,
+            max_output_tokens: Math.min(input.maxTokens ?? defaultMaxTokens, def.maxTokens ?? Infinity),
             ...composeInstructions(def, input, roles, templates),
             ...(input.temperature === undefined ? {} : { temperature: input.temperature }),
             ...(def.reasoning === undefined ? {} : { reasoning: { effort: def.reasoning } })
