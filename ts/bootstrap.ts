@@ -60,7 +60,7 @@ export const makeServerFactory = (config: AppConfig, jobs?: JobService): () => M
          ),
          deps: CouncilDeps = { models, roles, prompt, config, templates, errors, presets, jobs }
 
-      registerModelTools(server, models, roles, prompt, errors, schema, config.asyncTools)
+      registerModelTools(server, models, roles, prompt, errors, schema, config.asyncTools, config.maxTokens)
       registerQuorumTool(server, deps, loadToolDescription('quorum'), schema)
       registerPresetTools(server, deps, schema)
       jobs && registerJobTools(server, jobs, errors, { poll: loadToolDescription('poll'), cancel: loadToolDescription('cancel') })

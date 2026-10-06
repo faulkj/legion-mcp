@@ -23,8 +23,7 @@
             "If you are given the final word, you are the final girl and the ending is yours. Turn the tables: use what you did and what the cuts taught you to trap, outwit, or finish the slasher, then get out — in your own voice, from your own story. If the contest is marked incomplete, you are one of the few still standing; end it from there and end find closure."
          ],
          "min": 3,
-         "max": null,
-         "maxTokens": 3500
+         "max": null
       },
       {
          "role": "slasher",
@@ -32,8 +31,7 @@
             "Each round, cut the single weakest survivor. Weakest means: the thinnest evidence, the biggest hedge, the laziest restatement, a claim that would not survive a hostile fact-check, or an argument the survivor could not finish — a turn marked cut off is a case that was never made.",
             "A survivor who steps out of role — passing judgment on the others, declaring eliminations, or narrating the game instead of making their own case — is weak by definition. Cut them first.",
             "When cutting, copy the exact CUT command from the menu onto the first line, then give one tight line of why on the next line. Use the full participant label, not a number. Do not change your selection mid-reply."
-         ],
-         "maxTokens": 4000
+         ]
       }
    ]
 }

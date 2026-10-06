@@ -44,6 +44,7 @@ const
       apiKey: z.string().min(1).optional(),
       omitParams: z.array(z.string()).optional(),
       reasoning: z.enum(['minimal', 'low', 'medium', 'high']).optional(),
+      reasoningAllotment: z.number().int().nonnegative().optional(),
       maxTokens: z.number().int().positive().optional()
    }),
 

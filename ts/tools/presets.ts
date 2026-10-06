@@ -24,13 +24,13 @@ export const registerPresetTools = (server: McpServer, deps: CouncilDeps, schema
          floor = preset.roles.reduce((n, r) => n + (r.min ?? 1), 0),
          staffing = preset.roles.map(roleCardinality).join(', '),
          synthLine = preset.synthesize ? ` ${slugify(preset.synthesize)} also synthesizes.` : '',
-         presetSchema = quorumShape(schema, config.maxRounds, floor, `${d('models')} Staff via model:role selectors — ${staffing}. Available models: ${names.join(', ')}.`),
+         presetSchema = quorumShape(schema, config.maxRounds, config.maxTokens, floor, `${d('models')} Staff via model:role selectors — ${staffing}. Available models: ${names.join(', ')}.`),
          run = handler(toolName)
 
       server.registerTool(
          toolName,
          {
-            description: `${preset.description}\n\nStaff via models[]: ${staffing}.${synthLine} Available models: ${modelList(models)}.`,
+            description: `${preset.description}\n\nStaff via models[]: ${staffing}.${synthLine} Available models: ${modelList(models)}.\n\nSet maxTokens to about 2000 — it is plenty per turn, and reasoning models get their own thinking room on top. The maximum is ${config.maxTokens}; larger values are rejected.`,
             inputSchema: presetSchema,
             outputSchema: jobs ? jobOutputSchema : quorumOutputSchema
          },

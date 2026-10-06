@@ -19,8 +19,9 @@ tokenBudget — optional soft cumulative token budget (overrides TOKEN_BUDGET)
 ```
 
 **Sizing `tokenBudget` against `maxTokens`**: `maxTokens` caps one turn's
-output; `tokenBudget` counts every call's input *and* output across the whole
-run. Estimate `turns × (context + maxTokens)` where `turns = speakers × rounds
+visible output (reasoning models add their own thinking allotment on top);
+`tokenBudget` counts every call's input *and* output across the whole run.
+Estimate `turns × (context + maxTokens + allotment)` where `turns = speakers × rounds
 + eliminations + syntheses (+ closings, votes)` and context grows each round as
 the transcript accumulates — input dominates in long councils. Set the budget
 above that estimate; one that only covers outputs trips in round two and skips

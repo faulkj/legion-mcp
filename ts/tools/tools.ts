@@ -19,10 +19,11 @@ export const registerModelTools = (
    prompt: ReturnType<typeof createPrompt>,
    errors: ErrorMessages,
    schema: SchemaDescriptions = {},
-   asyncTools = false
+   asyncTools = false,
+   maxTokens = 3000
 ): void => {
    const
-      inputSchema = buildInputSchema(schema).shape,
+      inputSchema = buildInputSchema(schema, maxTokens).shape,
       reserved = reservedNames(asyncTools)
    for (const def of models) {
       const
@@ -62,7 +63,7 @@ export const registerQuorumTool = (
       d = (key: string) => schema[key] ?? '',
       names = models.map(m => slugify(m.name)),
       quorumSchema = {
-         ...quorumShape(schema, config.maxRounds, 2, `${d('models')} Available models: ${names.join(', ')}`),
+         ...quorumShape(schema, config.maxRounds, config.maxTokens, 2, `${d('models')} Available models: ${names.join(', ')}`),
          roles: z.record(z.string(), z.string()).optional().describe(d('roles')),
          mode: z.enum(['sequential', 'parallel', 'private', 'independent']).optional().describe(d('mode')),
          synthesize: z.string().optional().describe(d('synthesize')),

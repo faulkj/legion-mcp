@@ -10,7 +10,7 @@ const usageSchema = () => z.object({
 })
 
 /** The prompt fields shared by every tool (models tools include `role`; quorum-family omits it). */
-export const buildInputSchema = (schema: SchemaDescriptions = {}) => {
+export const buildInputSchema = (schema: SchemaDescriptions = {}, maxTokens = 3000) => {
    const d = (key: string) => schema[key] ?? ''
    return z.object({
       prompt: z.string().min(1).describe(d('prompt')),
@@ -18,12 +18,12 @@ export const buildInputSchema = (schema: SchemaDescriptions = {}) => {
       role: z.string().optional().describe(d('role')),
       system: z.string().optional().describe(d('system')),
       temperature: z.number().min(0).max(2).optional().describe(d('temperature')),
-      maxTokens: z.number().int().positive().optional().describe(d('maxTokens'))
+      maxTokens: z.number().int().positive().max(maxTokens).optional().describe(d('maxTokens'))
    })
 }
 
 /** Shared quorum-family schema: a `models` selector array (min speakers + description) plus rounds/tokenBudget and the base prompt fields (minus `role`). */
-export const quorumShape = (schema: SchemaDescriptions, maxRounds: number, minModels: number, modelsDescription: string) => {
+export const quorumShape = (schema: SchemaDescriptions, maxRounds: number, maxTokens: number, minModels: number, modelsDescription: string) => {
    const d = (key: string) => schema[key] ?? ''
    return {
       models: z.array(z.string()).min(minModels).describe(modelsDescription),
@@ -31,7 +31,7 @@ export const quorumShape = (schema: SchemaDescriptions, maxRounds: number, minMo
       cameoRound: z.number().int().min(1).max(maxRounds).optional().describe(d('cameoRound')),
       objectives: z.record(z.string(), z.string()).optional().describe(d('objectives')),
       tokenBudget: z.number().int().positive().optional().describe(d('tokenBudget')),
-      ...buildInputSchema(schema).omit({ role: true }).shape
+      ...buildInputSchema(schema, maxTokens).omit({ role: true }).shape
    }
 }
 

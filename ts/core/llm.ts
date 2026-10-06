@@ -29,7 +29,7 @@ export const createPrompt = (config: AppConfig) => {
             model: def.model,
             input: composeInput(input, templates),
             store: false,
-            max_output_tokens: Math.min(input.maxTokens ?? defaultMaxTokens, def.maxTokens ?? Infinity),
+            max_output_tokens: Math.min(Math.min(input.maxTokens ?? config.maxTokens, config.maxTokens) + (def.reasoningAllotment ?? 0), def.maxTokens ?? Infinity),
             ...composeInstructions(def, input, roles, templates),
             ...(input.temperature === undefined ? {} : { temperature: input.temperature }),
             ...(def.reasoning === undefined ? {} : { reasoning: { effort: def.reasoning } })
@@ -68,8 +68,6 @@ export const createPrompt = (config: AppConfig) => {
 }
 
 const
-   defaultMaxTokens = 8192,
-
    sum = (a?: number, b?: number): number | undefined => a === undefined && b === undefined ? undefined : (a ?? 0) + (b ?? 0),
 
    // Both attempts of one turn are billed, so the retry's usage is added to the first response's.
@@ -110,7 +108,7 @@ const
 
    incompleteMessage = (status?: string, reason?: string): string =>
       reason === 'max_output_tokens'
-         ? `${emptyOutputError} — raise maxTokens (reasoning models can spend the full budget thinking before emitting any text)`
+         ? `${emptyOutputError} — raise maxTokens, or this model's reasoningAllotment (reasoning models can spend the full budget thinking before emitting any text)`
          : status === 'completed'
             ? `${emptyResponseError}: provider reported completed with no text (after one retry)`
             : `${emptyResponseError}: status ${status ?? 'unknown'}, reason ${reason ?? 'not given'} (after one retry)`,

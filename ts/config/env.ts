@@ -9,7 +9,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
       throw new Error(`Invalid configuration:\n${z.prettifyError(parsed.error)}`)
 
    const {
-      DEFAULT_BASE_URL, DEFAULT_API_KEY, ALLOW_NO_MODELS, MCP_TRANSPORT, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, MODEL_TIMEOUT, TOKEN_BUDGET, DYNAMIC_ROLES, PRESETS, LOG_LEVEL,
+      DEFAULT_BASE_URL, DEFAULT_API_KEY, ALLOW_NO_MODELS, MCP_TRANSPORT, HOST, ALLOWED_HOSTS, PORT, MAX_ROUNDS, MAX_TOKENS, MODEL_TIMEOUT, TOKEN_BUDGET, DYNAMIC_ROLES, PRESETS, LOG_LEVEL,
       ASYNC_TOOLS, TRUST_PROXY_AUTH, JOB_RETAIN_MS, JOB_MAX_ACTIVE, JOB_MAX_RETAINED, JOB_POLL_INTERVAL_MS, JOB_SHUTDOWN_GRACE_MS
    } = parsed.data
 
@@ -23,6 +23,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
       allowedHosts: csv(ALLOWED_HOSTS),
       port: PORT,
       maxRounds: MAX_ROUNDS,
+      maxTokens: MAX_TOKENS,
       modelTimeout: MODEL_TIMEOUT,
       tokenBudget: TOKEN_BUDGET,
       dynamicRoles: DYNAMIC_ROLES === 'true',
@@ -43,6 +44,7 @@ const
       HOST: z.string().min(1).default('127.0.0.1'),
       ALLOWED_HOSTS: z.string().optional(),
       PORT: z.coerce.number().int().positive().default(5000),
+      MAX_TOKENS: z.coerce.number().int().positive().default(3000),
       MAX_ROUNDS: z.coerce.number().int().positive().default(5),
       MODEL_TIMEOUT: z.coerce.number().int().positive().default(90_000),
       TOKEN_BUDGET: z.coerce.number().int().positive().optional(),
