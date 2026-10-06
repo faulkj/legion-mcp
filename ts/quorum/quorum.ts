@@ -1,6 +1,7 @@
 import { fill } from '../config/config.js'
 import { log } from '../core/log.js'
 import { makeSeen, toContext } from './context.js'
+import { budgetShortfall } from './helpers.js'
 import { entrantFirst, entryDue, makeEntry, makeField, nextEntrant, recordEntry, rotateTeams, withObjective } from './entry.js'
 import { chaseToOne, eliminationDue, frameDue, makeCloser, makeEliminator, makeFramer, makeSynthesizer } from './phases.js'
 import { makeTurnRunner } from './runner.js'
@@ -97,9 +98,11 @@ export const runQuorum = async (
 
    const
       synthFailed = !cancelled() && synthSelector !== undefined && telemetry.findLast(t => t.phase === 'synthesis')?.contentIndex === undefined,
-      tail = cancelled()
-         ? [{ type: 'text' as const, text: errors.cancelled }]
-         : synthFailed ? [{ type: 'text' as const, text: fill(errors.synthFailed, { synth: synthSelector! }) }] : []
+      shortfall = cancelled() ? null : budgetShortfall(telemetry, used(), tokenBudget, errors.budgetExhausted),
+      tail = (cancelled()
+         ? [errors.cancelled]
+         : [synthFailed ? fill(errors.synthFailed, { synth: synthSelector! }) : null, shortfall]
+      ).filter(t => t !== null).map(text => ({ type: 'text' as const, text }))
 
    await step(cancelled()
       ? 'cancelled'
@@ -117,6 +120,6 @@ export const runQuorum = async (
          ...(tokenBudget ? { budget: { limit: tokenBudget, used: used(), exceeded: used() > tokenBudget } } : {}),
          ...(cancelled() ? { cancelled: true } : {})
       },
-      isError: content.length === 0 || synthFailed || cancelled() || remaining.length > 0
+      isError: content.length === 0 || synthFailed || cancelled() || remaining.length > 0 || shortfall !== null
    }
 }

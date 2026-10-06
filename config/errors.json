@@ -17,6 +17,7 @@
    "synthTeamed": "Neutral officials (synthesizer, eliminator) cannot carry a team tag — drop the \"@team\" from that selector.",
    "frameTeamed": "The framer is a neutral chair and cannot carry a team tag — drop the \"@team\" from the frame selector.",
    "cancelled": "The council was cancelled before it finished — the text above is whatever completed, not a finished result. No synthesis was run.",
+   "budgetExhausted": "INCOMPLETE — tokenBudget {limit} ran out ({used} tokens used) and {skipped} planned turns were skipped ({seats}), so the verdict above is missing their input. Every turn re-sends the growing transcript, so input dominates spend. Call this tool again right away with the same arguments and tokenBudget of at least {suggested} (or lower maxTokens / rounds / speakers).",
    "jobsBusy": "The server is already running {active} of {max} councils. Poll an existing job or try again shortly.",
    "jobHandle": "Council {state} as job {jobId} ({phase}). Call `poll` with this jobId every ~{seconds}s until state is completed, failed or cancelled; call `cancel` to stop it. Do not start another council for the same question.",
    "jobNotFound": "No job {jobId} is available to you. It may have expired, belong to another caller, or live on a different server instance."

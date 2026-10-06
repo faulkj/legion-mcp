@@ -18,6 +18,7 @@ interface ErrorMessages {
    synthTeamed: string
    frameTeamed: string
    cancelled: string
+   budgetExhausted: string
    jobsBusy: string
    jobHandle: string
    jobNotFound: string

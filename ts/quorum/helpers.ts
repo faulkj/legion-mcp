@@ -2,6 +2,21 @@ import { fill, slugify } from '../config/config.js'
 import { makeTurnLabels } from './context.js'
 import { parseSelector } from './selectors.js'
 
+/**
+ * Rerun guidance when the token budget skipped turns, or null when none were. The suggested budget
+ * extrapolates spend per completed turn to every planned turn — a floor, since later turns re-send
+ * a longer transcript.
+ */
+export const budgetShortfall = (telemetry: TurnTelemetry[], used: number, limit: number | undefined, template: string): string | null => {
+   const
+      skipped = telemetry.filter(t => t.status === 'skipped: budget'),
+      ran = Math.max(1, telemetry.filter(t => !t.status.startsWith('skipped') && t.status !== 'cancelled').length),
+      seats = [...new Set(skipped.map(t => t.selector))].join(', ')
+   return !limit || !skipped.length
+      ? null
+      : fill(template, { limit, used, skipped: skipped.length, seats, suggested: Math.ceil(used * (ran + skipped.length) / ran / 10000) * 10000 })
+}
+
 /** Resolve a `model[:role][@team]` selector to its model def, optional role, and optional (slugified) team; null when the model or role is unknown. */
 export const resolve = (selector: string, models: ModelDef[], roles: RoleDef[]): { def: ModelDef; role?: string; team?: string } | null => {
    const
