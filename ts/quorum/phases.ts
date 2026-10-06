@@ -60,7 +60,13 @@ export const makeSynthesizer = (deps: PhaseDeps): ((round: number) => Promise<vo
          telemetry.push({ index: -1, selector: synthSelector, modelName: '', modelId: '', round, phase: 'synthesis', usage: {}, latencyMs: 0, status: errors.unresolvableSelector })
          return
       }
-      record(await speakOne(synth, round, 'synthesis', full(), playing && round === 0 ? templates.lastStanding + prompt : undefined), round)
+      const
+         override = playing && round === 0 ? templates.lastStanding + prompt : undefined,
+         first = await speakOne(synth, round, 'synthesis', full(), override),
+         outcome = first.text === null && !first.cancelled && !deps.cancelled()
+            ? (telemetry.push(first.entry), log('warn', `⚠️ synthesis (${synthSelector}) failed — retrying once`), await speakOne(synth, round, 'synthesis', full(), override))
+            : first
+      record(outcome, round)
       telemetry[telemetry.length - 1]?.status.includes('reasoning-heavy') &&
          log('warn', `⚠️ synthesis (${synthSelector}) spent most of its budget reasoning — raise maxTokens or use a lighter model for synthesize`)
    }

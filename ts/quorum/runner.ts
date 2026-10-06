@@ -1,5 +1,5 @@
 import { isEmptyResponse } from '../core/llm.js'
-import { logPrompt, okStatus, promptEntry } from '../core/log.js'
+import { log, logPrompt, okStatus, promptEntry } from '../core/log.js'
 import { banner } from './helpers.js'
 
 /**
@@ -31,9 +31,12 @@ export const makeTurnRunner = (
       used = 0,
       phase = 'starting'
 
-   const skip = (round: number, from = 0, phase: TurnPhase = 'round', list: Speaker[] = speakers, reason = 'budget'): void =>
-      list.slice(from).forEach(s =>
+   const skip = (round: number, from = 0, phase: TurnPhase = 'round', list: Speaker[] = speakers, reason = 'budget'): void => {
+      const skipped = list.slice(from)
+      skipped.length && log('warn', `⏭️ [${runId}] skipped ${phase} ${round}: ${skipped.map(s => s.selector).join(', ')} (${reason}, ${used} tokens used)`)
+      skipped.forEach(s =>
          telemetry.push({ index: s.index, selector: s.selector, modelName: s.def.name, modelId: s.def.model, role: s.role, round, phase, usage: {}, latencyMs: 0, status: `skipped: ${reason}` }))
+   }
 
    const record = ({ text, entry, cancelled }: TurnOutcome, round: number): void => {
       if (text !== null) {
